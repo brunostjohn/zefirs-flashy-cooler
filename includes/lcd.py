@@ -1,8 +1,9 @@
 import usb
 import usb.backend.libusb1
-from datetime import datetime, timedelta
 import codecs
+from datetime import datetime, timedelta
 from math import ceil
+from time import sleep
 
 class LCD:
     def __init__(self):
@@ -39,6 +40,7 @@ class LCD:
         self.__endpoint.write(data)
 
     def send_static_image(self, image_path):
+        loop_start=datetime.now()
         if datetime.now() - self.__last_time < timedelta(milliseconds=self.__frametime_ms):
             # making sure we dont get weird glitches by bombarding the display with jpegs
             return
@@ -54,6 +56,10 @@ class LCD:
             else:
                 self.send_packet(len(i), bytes.fromhex(i), packets_sent, b"\x00")
             packets_sent += 1
+        timediff = datetime.now() - loop_start
+        if timediff < timedelta(milliseconds=self.__frametime_ms):
+            sleep((timedelta(milliseconds=self.__frametime_ms) - timediff).total_seconds()) # waiting for next frame moment
+            
 
 
 if __name__ == "__main__":
