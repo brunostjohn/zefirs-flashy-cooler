@@ -5,4 +5,5 @@ A physical manifestation of my deeply rooted hate for Corsair's software solutio
 
 ## Dependencies:
 - libusb
+- pyusb
 ## Installation:
