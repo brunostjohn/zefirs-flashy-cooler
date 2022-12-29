@@ -58,7 +58,7 @@ class LCD:
             packets_sent += 1
         timediff = datetime.now() - loop_start
         if timediff < timedelta(milliseconds=self.__frametime_ms):
-            sleep((timedelta(milliseconds=self.__frametime_ms) - timediff).total_seconds()) # waiting for next frame moment
+            sleep((timedelta(milliseconds=self.__frametime_ms) - timediff).total_seconds()) # waiting for next frame moment in case we rendered prematurely
             
 
 
