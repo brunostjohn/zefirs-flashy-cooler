@@ -5,7 +5,7 @@ from datetime import datetime
 import time
 
 class Time(Theme):
-    def __init__(self, image_path):
+    def __init__(self):
         super().__init__
         self.__font = ImageFont.truetype(font="./themes/time/font.otf", size=50)
     def get_frame(self):

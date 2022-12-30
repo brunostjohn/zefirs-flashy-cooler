@@ -5,12 +5,11 @@ from theme import Theme
 from time import sleep
 
 class Renderer:
-    def __init__(self, LCD: LCD, theme, smoother: bool = False):
+    def __init__(self, LCD: LCD, theme):
         self.__LCD = LCD
         self.__theme = theme
         self.__is_thread = True
         self.__last_time = datetime.now()
-        self.__smoother = smoother
         if self.__theme.get_framerate() is None:
             self.__internal_fps = self.__LCD.get_framerate()
             self.__internal_frametime = self.__LCD.get_frametime()
@@ -30,7 +29,7 @@ class Renderer:
             self.__LCD.send_frame(image)
             timediff = datetime.now() - loop_start
             if timediff < timedelta(milliseconds=self.__internal_frametime):
-                sleep((timedelta(milliseconds=self.__internal_frametime) - timediff).total_seconds()) # waiting for next frame moment in case we rendered prematurely
+                sleep((timedelta(milliseconds=self.__internal_frametime) - timediff).total_seconds()/2) # waiting for next frame moment in case we rendered prematurely
         return
     
     def start_rendering(self):

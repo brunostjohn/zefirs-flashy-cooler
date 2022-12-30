@@ -9,7 +9,7 @@ from themes.static_image.theme import Static_Image
 
 if __name__ == "__main__":
     lcd = LCD(25)
-    theme = Time("image.jpeg")
+    theme = Time()
     # theme = Static_Image("image2.jpeg")
     renderer = Renderer(lcd, theme)
     renderer.start_rendering()
