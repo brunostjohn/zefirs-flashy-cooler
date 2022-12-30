@@ -9,6 +9,7 @@ Will it run on Linux or macOS? Maybe. Probably not.
 ## Dependencies:
 - libusb
 - pyusb
+- Pillow
 ## Installation:
 WIP. Please wait for this to actually be a feasible software solutions to daily drive this.
 ## What it does and what it doesn't do.
