@@ -2,12 +2,14 @@ import io
 from libraries.theme import Theme
 from PIL import Image, ImageDraw, ImageFont
 from datetime import datetime
+import time
 
 class Time(Theme):
     def __init__(self, image_path):
         super().__init__
         self.__font = ImageFont.truetype(font="./themes/time/font.otf", size=50)
     def get_frame(self):
+        start = time.time()
         image = ""
         size = (width, height) = 480, 480
         img = Image.new("RGB", size, (255, 255, 255))
@@ -20,6 +22,3 @@ class Time(Theme):
         image.save(imgByteArr, format="JPEG")
         imgByteArr = imgByteArr.getvalue()
         return imgByteArr.hex()
-    def get_framerate(self):
-        return 10.0
-        

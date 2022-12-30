@@ -5,11 +5,12 @@ from theme import Theme
 from time import sleep
 
 class Renderer:
-    def __init__(self, LCD: LCD, theme):
+    def __init__(self, LCD: LCD, theme, smoother: bool = False):
         self.__LCD = LCD
         self.__theme = theme
         self.__is_thread = True
         self.__last_time = datetime.now()
+        self.__smoother = smoother
         if self.__theme.get_framerate() is None:
             self.__internal_fps = self.__LCD.get_framerate()
             self.__internal_frametime = self.__LCD.get_frametime()
