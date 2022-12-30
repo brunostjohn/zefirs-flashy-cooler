@@ -25,9 +25,6 @@ class Renderer:
     def __requestFrames(self):
         while self.__is_thread:
             loop_start=datetime.now()
-            if datetime.now() - self.__last_time < timedelta(milliseconds=self.__internal_frametime):
-                # let's not render a bunch of frames without purpose
-                continue
             self.__last_time = datetime.now()
             image = self.__theme.get_frame()
             self.__LCD.send_frame(image)

@@ -9,11 +9,11 @@ from themes.static_image.theme import Static_Image
 
 if __name__ == "__main__":
     lcd = LCD(25)
-    # theme = Time("image.jpeg")
-    theme = Static_Image("image2.jpeg")
-    renderer = Renderer(lcd, theme, smoother = True)
+    theme = Time("image.jpeg")
+    # theme = Static_Image("image2.jpeg")
+    renderer = Renderer(lcd, theme)
     renderer.start_rendering()
     if input("press enter to stop") is not None:
         renderer.stop_rendering()
         sys.exit()
-    #### todo fix the massive choppiness of the display during dynamic themes
+    #### todo make it smoother and less cpu heavy
