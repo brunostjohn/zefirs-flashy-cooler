@@ -6,12 +6,9 @@ A physical manifestation of my deeply rooted hate for Corsair's software solutio
 This is designed explicitly for use with Windows.
 Will it run on Linux or macOS? Maybe. Probably not.
 
-## Dependencies:
-- libusb
-- pyusb
-- Pillow
 ## Installation:
 WIP. Please wait for this to actually be a feasible software solutions to daily drive this.
+
 ## What it does and what it doesn't do.
 - [x] Display a static image to the LCD.
 - [x] Have theme support.
