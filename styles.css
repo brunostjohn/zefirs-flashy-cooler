@@ -1,0 +1,12 @@
+#controlbar {
+    padding: 5px;
+    background-color: #343a40;
+    position: fixed;
+    bottom: 0;
+    overflow: hidden;
+    width: 70%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 5px;
+    border-radius: 10px;
+}
