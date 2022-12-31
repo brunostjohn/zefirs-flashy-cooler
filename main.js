@@ -6,6 +6,8 @@ nativeTheme.themeSource = "dark";
 
 const LCD = new lcd.LCD();
 
+// todo: https://flaviocopes.com/canvas-node-generate-image/
+
 const createWindow = () => {
     const mainWindow = new BrowserWindow({
         width: 1200,
@@ -38,5 +40,5 @@ const createTray = () => {
 }
 
 app.on("window-all-closed", () => {
-    app.exit(0);
+    // app.exit(0);
 })
