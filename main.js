@@ -1,6 +1,6 @@
 const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences} = require("electron");
 const path = require("path");
-const lcd =  require("./capellix.js");
+const lcd =  require("./libraries/capellix.js");
 
 nativeTheme.themeSource = "dark";
 
@@ -11,10 +11,10 @@ const createWindow = () => {
         width: 1200,
         height: 800,
         webPreferences: {
-            preload: path.join(__dirname, "preload.js")
+            preload: path.join(__dirname, "libraries/preload.js")
         }
     })
-    mainWindow.loadFile("renderer.html");
+    mainWindow.loadFile("assets/ui/renderer.html");
     mainWindow.removeMenu()
 }
 
