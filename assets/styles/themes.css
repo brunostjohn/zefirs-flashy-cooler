@@ -1,0 +1,35 @@
+#card-container {
+    display: flex;
+}
+
+.card {
+    padding: 4px;
+    overflow: hidden;
+    width: 15rem;
+    transition: box-shadow 0.2s;
+}
+
+.card-title {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+}
+
+.card-text {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+}
+
+.card-img {
+    max-width: 15rem;
+    max-height: 15rem;
+    margin-bottom: 4px;
+}
+
+.card:hover {
+    box-shadow: 0px 0px 57px -26px rgba(255,255,255,0.65);
+    transition: box-shadow 0.2s;
+}

@@ -22,4 +22,13 @@ function renderFrame() {
     return canvas.toBuffer("image/jpeg").toString("base64");
 }
 
-module.exports = {renderFrame};
+function renderPreview(){
+  return renderFrame();
+}
+
+module.exports = {renderFrame, info: {
+  id: "1",
+  title: "Clock",
+  description: "Displays the current time.",
+  preview: renderPreview()
+}};

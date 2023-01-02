@@ -5,10 +5,32 @@
         <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
         <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css" />
         <link rel="stylesheet" href="../styles/styles.css" />
+        <link rel="stylesheet" href="../styles/renderer.css" />
         <title>CapellixLCD - Renderer</title>
     </head>
     <body>
-        
+        <div class="col-container">
+            <div class="col" id="larger">
+                <h1>column</h1>
+            </div>
+            <div class="col" id="smaller">
+                <div id="rendering">
+                    <h4>Currently rendering:</h2>
+                        <div class="card">
+                            <img src="" class="card-img-top" id="preview" />
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    Nothing
+                                </h5>
+                                <div class="card-text">
+                                    <p id="fps">FPS: 0fps</p>
+                                </div>
+                            </div>
+                        </div>
+                </div>
+                <button id="btn" class="btn btn-primary btn-lg">Start Rendering</button>
+            </div>
+        </div>
 
         <nav class="nav nav-pills nav-fill" id="controlbar">
             <a class="nav-link" aria-current="page" href="themes.html">Themes</a>
@@ -16,5 +38,6 @@
             <a class="nav-link active" href="renderer.html">Renderer</a>
             <a class="nav-link" href="settings.html">Settings</a>
         </nav>
+        <script src="../scripts/renderer.js"></script>
     </body>
 </html>

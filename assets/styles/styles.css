@@ -1,6 +1,6 @@
 #controlbar {
     padding: 5px;
-    background-color: #343a40;
+    background-color: rgba(52, 58, 64, 0.3);
     position: fixed;
     bottom: 0;
     overflow: hidden;
@@ -9,4 +9,10 @@
     transform: translateX(-50%);
     margin: 5px;
     border-radius: 10px;
+    backdrop-filter: blur(6px);
+}
+
+#controlbar .active {
+    background-color: rgba(13, 110, 253, 0.8);
+    backdrop-filter: blur(6px);
 }
