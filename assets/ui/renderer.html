@@ -10,7 +10,17 @@
     <body>
         <div class="col-container">
             <div class="col" id="larger">
-                <h1>column</h1>
+                <h1>About the theme</h1>
+                <hr />
+                <h2 id="themeName">Theme name</h2>
+                <p id="themeDescription">Theme description</p>
+                <div id="parameters">
+                    <hr id="separator"/>
+                    <h2>Controllable parameters</h2>
+                    <form id="parameterContainer">
+                    </form>
+                    <button type="button" class="btn btn-primary" id="apply">Apply</button>
+                </div>
             </div>
             <div class="col" id="smaller">
                 <div id="rendering">
@@ -21,10 +31,6 @@
                                 <h5 class="card-title" id="title">
                                     Nothing
                                 </h5>
-                                <div class="card-text">
-                                    <p id="fps">FPS: 0fps</p>
-                                    <p id="limit">Actual FPS: 0fps</p>
-                                </div>
                             </div>
                         </div>
                 </div>

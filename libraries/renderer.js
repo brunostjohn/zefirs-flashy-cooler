@@ -1,6 +1,6 @@
 const {workerData, parentPort} = require("worker_threads");
 const lcd =  require("./capellix.js");
-const usbDetect = require("usb-detection");
+// const usbDetect = require("usb-detection");
 const { performance } = require('perf_hooks');
 let themeScript = require(workerData.renderPath);
 
@@ -34,15 +34,15 @@ class Renderer{
 
 renderer = new Renderer(workerData)
 
-usbDetect.on('add:6940:3129', LCD.reconstructUSB );
+// usbDetect.on('add:6940:3129', LCD.reconstructUSB );
 
 parentPort.on("message", message => {
     if(message=="stop"){
         renderer.stopRendering();
-        usbDetect.stopMonitoring();
+        // usbDetect.stopMonitoring();
     } else if(message=="start"){
         renderer.startRendering();
-        usbDetect.startMonitoring();
+        // usbDetect.startMonitoring();
     } else if(message=="exit"){
         renderer.stopRendering();
         parentPort.close();

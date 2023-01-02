@@ -17,3 +17,6 @@ WIP. Please wait for this to actually be a feasible software solutions to daily 
 - [ ] Have a GUI.
 - [ ] Have external theme/plugin support.
 - [ ] A bunch of other stuff I'll probably come up with while developing this.
+
+### Last words
+I'm literally learning JavaScript, NodeJS, and all the other technologies I'm using here while writing this. If there's anything you feel can be improved, feel free to submit a PR.

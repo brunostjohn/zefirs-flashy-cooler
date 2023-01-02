@@ -38,7 +38,7 @@
 #larger {
     max-width: 70%;
     width:70%;
-    padding: 5px;
+    padding: 15px;
 }
 
 
@@ -48,4 +48,14 @@
 
 #preview {
     border-radius: 50%;
+    margin: 3px;
+    max-width: 15rem;
+    max-height: 15rem;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+}
+
+h2 {
+    text-align: right;
 }

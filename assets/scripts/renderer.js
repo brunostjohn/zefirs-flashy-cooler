@@ -5,6 +5,15 @@ window.addEventListener("load", (event) => {
     window.electronAPI.getThemeList();
 })
 
+function makeId(length) {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
     
 window.electronAPI.updateRenderStatus((_event, value) => {
     if (value == 1){
@@ -32,9 +41,52 @@ window.electronAPI.receiveThemeList((_event, theme) => {
     if(theme.isActive) {
         document.getElementById("preview").src=theme.preview;
         document.getElementById("title").innerText=theme.title;
+        document.getElementById("themeName").innerText=theme.title;
+        document.getElementById("themeDescription").innerText=theme.description;
+        if(theme.hasConfig){
+            const controllableParameters = theme.controllableParameters;
+            Object.keys(controllableParameters).forEach(key => {
+                createControllableParameter(controllableParameters[key]);
+            });
+        } else {
+            const container = document.getElementById("parameters");
+            container.style.visibility = "hidden";
+        }
     }
 });
 
-window.electronAPI.acceptFps((_event, fps) => {
-    document.getElementById("limit").innerText = "Actual FPS: " + Math.round(fps) + " fps";
+const apply = document.getElementById("apply");
+
+let parameters = [];
+
+apply.addEventListener("click", () => {
+    parameters.forEach(controllableParameter => {
+        const controllingElement = document.getElementById(controllableParameter.id);
+        controllableParameter.value = controllingElement.value;
+    });
+    window.electronAPI.parametersSendback(parameters);
+
+    window.location.reload();
 });
+
+// TODO: Add default values back!
+
+function createControllableParameter(controllableParameter) {
+    const form = document.getElementById("parameterContainer");
+    let htmlToAppend = "";
+    if(controllableParameter.type == "colour") {
+        htmlToAppend += "<input type='color' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' /><label for='" + controllableParameter.id + "' class='form-label'>" + controllableParameter.title + "</label>";
+    } else if (controllableParameter.type == "file") {
+        htmlToAppend += "<label for='>" + controllableParameter.id + "'class='form-label'>" + controllableParameter.title + "</label><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
+        form.insertAdjacentHTML("beforeend", htmlToAppend);
+        const button = document.getElementById(controllableParameter.id);
+        button.addEventListener("click", async () => {
+            const filePath = await window.electronAPI.openFile();
+            button.value = filePath;
+        });
+        htmlToAppend = "";
+    }
+    htmlToAppend += "<br /><br />";
+    parameters.push(controllableParameter);
+    form.insertAdjacentHTML("beforeend", htmlToAppend);
+}

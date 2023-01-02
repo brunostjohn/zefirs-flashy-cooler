@@ -8,5 +8,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     acceptFps: (callback) => ipcRenderer.on("fps", callback),
     getThemeList: () => ipcRenderer.invoke("themes:getThemeList"),
     receiveThemeList: (callback) => ipcRenderer.on("theme", callback),
-    themeSelected: (themeId) => ipcRenderer.send("themes:themeSelected", themeId)
+    themeSelected: (themeId) => ipcRenderer.send("themes:themeSelected", themeId),
+    parametersSendback: (parameters) => ipcRenderer.send("renderer:parameterTransfer", parameters),
+    openFile: () => ipcRenderer.invoke("global:openFile")
 })

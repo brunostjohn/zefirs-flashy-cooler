@@ -2,19 +2,10 @@ const {createCanvas} = require("@napi-rs/canvas");
 const fs = require("fs");
 const path = require("path");
 
-const config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
+let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
 const width = 480;
 const height = 480;
-
-const controllableParameters = {
-  textColour: {
-    
-  },
-  backgroundColour: {
-    
-  }
-};
 
 function addZero(i) {
     if (i < 10) {i = "0" + i}
@@ -36,12 +27,29 @@ function renderFrame() {
 }
 
 function renderPreview(){
+  reloadConfig();
   return renderFrame();
 }
 
-module.exports = {renderFrame, info: {
+function reloadConfig() {
+  config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
+}
+
+module.exports = {renderFrame, renderPreview, info: {
   title: "Clock",
   description: "Displays the current time.",
   preview: renderPreview(), 
-  hasConfig: true
+  hasConfig: true,
+  controllableParameters: {
+    backgroundColour: {
+      type: "colour",
+      title: "Background Colour",
+      defaultValue: "#1862d9"
+    },
+    textColour: {
+      type: "colour",
+      title: "Text Colour",
+      defaultValue: "#d318d9"
+    }
+  }
 }};

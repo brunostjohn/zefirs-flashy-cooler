@@ -1,8 +1,9 @@
-const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain} = require("electron");
+const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
 const path = require("path");
 const { Worker } = require("worker_threads");
 const config = require("./app.config.js");
 const fs = require("fs");
+const theme = require("./themes/clock/theme.js");
 
 if (require("electron-squirrel-startup")) app.quit();
 
@@ -29,32 +30,37 @@ fs.readdirSync(themeFolder).forEach(file => {
     const theme = require(path.join(__dirname, "themes", file, "theme.js"));
     let activeFlag = false;
     const themepath = path.join(__dirname, "themes", file, "theme.js");
+    const configpath = path.join(__dirname, "themes", file, "config.json");
     if (config.defaultThemePath == themepath) {
         activeFlag = true;
     }
-    themeList.push({
+    let entry = {
         path: themepath,
         id: makeId(32),
         title: theme.info.title,
         description: theme.info.description,
         preview: "data:image/jpeg;base64," + theme.info.preview,
         isActive: activeFlag,
-        hasConfig: theme.hasConfig,
-        configPath: path.join(__dirname, "themes", file, "config.json")
-    });
+        hasConfig: theme.info.hasConfig,
+        configPath: configpath,
+        controllableParameters: theme.info.controllableParameters
+    };
+    if (theme.info.hasConfig) {
+        const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
+        Object.keys(configTheme).forEach(key => {
+            entry.controllableParameters[key]["value"] = configTheme[key];
+            entry.controllableParameters[key]["varName"] = key;
+            entry.controllableParameters[key]["id"] = makeId(32);
+        });
+    }
+    themeList.push(entry);
 });
 
 themeList.sort((a,b) => {
-    const item1 = a.id;
-    const item2 = b.id;
+    const item1 = a.title;
+    const item2 = b.title;
 
-    if (item1 < item2){
-        return -1;
-    }
-    if(item1>item2) {
-        return 1
-    }
-    return 0;
+    return item1.localeCompare(item2, undefined, {numeric: true})
 });
 
 const createWindow = () => {
@@ -69,12 +75,14 @@ const createWindow = () => {
     ipcMain.handle("renderer:stopRendering", stopRendering);
     ipcMain.handle("themes:getThemeList", getThemeList);
     ipcMain.on("themes:themeSelected", selectTheme);
+    ipcMain.on("renderer:parameterTransfer", applyParameters)
     ipcMain.handle("renderer:renderStatus", renderStatus);
+    ipcMain.handle("global:openFile", handleFileOpen);
     mainWindow.loadFile("assets/ui/themes.html");
-    mainWindow.removeMenu();
+    // mainWindow.removeMenu();
 }
 
-const worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: config.defaultThemePath, fps: fps} });
+let worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: config.defaultThemePath, fps: fps} });
 
 worker.on("error", err => {
     console.log(err);
@@ -140,8 +148,25 @@ function getThemeList(){
     });
 }
 
+async function handleFileOpen() {
+    const { canceled, filePaths } = await dialog.showOpenDialog()
+    if (canceled) {
+      return
+    } else {
+      return filePaths[0]
+    }
+  }
+  
+
 function selectTheme(_event, themeId) {
     const found = themeList.find(element => element.id == themeId);
+    themeList.forEach(item => {
+        if(item.id == themeId){
+            item.isActive=true;
+        } else {
+            item.isActive=false;
+        }
+    });
     worker.postMessage(found.path);
     if(rendering) {
         startRendering()
@@ -154,4 +179,36 @@ function renderStatus() {
     } else {
         mainWindow.webContents.send("rendering", 0);
     }
+}
+
+function applyParameters(_event, parameters) {
+    themeList.forEach(item => {
+        if(item.isActive){
+            const configTheme = JSON.parse(fs.readFileSync(item.configPath));
+            Object.keys(configTheme).forEach(key => {
+                parameters.forEach(parameter => {
+                    if(parameter.varName == key) {
+                        configTheme[key] = parameter.value;
+                    }
+
+                });
+                Object.keys(item.controllableParameters).forEach(localParameter => {
+                    parameters.forEach(parameter => {
+                        if(item.controllableParameters[localParameter]["varName"] == parameter.varName) {
+                            item.controllableParameters[localParameter]["value"] = parameter.value;
+                        }
+                });
+            })
+            });
+            const finalConfig = JSON.stringify(configTheme);
+            fs.writeFileSync(item.configPath, finalConfig);
+            const theme = require(item.path);
+            item.preview = "data:image/jpeg;base64," + theme.renderPreview();
+            worker.postMessage("exit");
+            worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: item.path, fps: fps} }); // worker needs to be destroyed for on the fly editing to work
+            if(rendering) {
+                startRendering();
+            }
+        }
+    });
 }
