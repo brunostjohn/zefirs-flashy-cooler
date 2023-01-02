@@ -2,7 +2,6 @@
 <html data-bs-theme="dark">
     <head>
         <meta charset="UTF-8" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'" />
         <link rel="stylesheet" href="../../node_modules/bootstrap/dist/css/bootstrap.min.css" />
         <link rel="stylesheet" href="../styles/styles.css" />
         <link rel="stylesheet" href="../styles/renderer.css" />
@@ -19,11 +18,12 @@
                         <div class="card">
                             <img src="" class="card-img-top" id="preview" />
                             <div class="card-body">
-                                <h5 class="card-title">
+                                <h5 class="card-title" id="title">
                                     Nothing
                                 </h5>
                                 <div class="card-text">
                                     <p id="fps">FPS: 0fps</p>
+                                    <p id="limit">Actual FPS: 0fps</p>
                                 </div>
                             </div>
                         </div>

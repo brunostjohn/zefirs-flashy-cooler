@@ -7,7 +7,6 @@ function renderPreview(){
 }
 
 module.exports = {renderFrame, info: {
-    id: "2",
     title: "Static Image",
     description: "Displays a static Image.",
     preview: renderPreview()

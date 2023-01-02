@@ -43,6 +43,12 @@ class LCD {
             this.endpoint.transfer(finalPacket);
         }
     }
+    reconstructUSB(){
+        this.device = findByIds(vid, pid);
+        this.device.open(true);
+        this.device.interface(0).claim();
+        this.endpoint = this.device.interfaces[0].endpoints[1];
+    }
 }
 
 module.exports = {LCD};

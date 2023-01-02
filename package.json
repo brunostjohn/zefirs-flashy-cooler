@@ -34,6 +34,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "nan": "^2.14.0",
     "systeminformation": "^5.16.9",
-    "usb": "^2.6.0"
+    "usb": "^2.6.0",
+    "usb-detection": "^4.14.1"
   }
 }

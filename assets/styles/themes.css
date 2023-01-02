@@ -4,9 +4,10 @@
 
 .card {
     padding: 4px;
-    overflow: hidden;
-    width: 15rem;
+    overflow: visible;
+    width: 16rem;
     transition: box-shadow 0.2s;
+    margin: 10px;
 }
 
 .card-title {
@@ -27,9 +28,23 @@
     max-width: 15rem;
     max-height: 15rem;
     margin-bottom: 4px;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    border-radius: 100%;
 }
 
 .card:hover {
     box-shadow: 0px 0px 57px -26px rgba(255,255,255,0.65);
     transition: box-shadow 0.2s;
+}
+
+.badge {
+    margin-left: 3px;
+}
+
+.active-badge {
+    transition: opacity 0.3s;
+    float: right;
+    margin-right: 5px;
 }

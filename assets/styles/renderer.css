@@ -45,3 +45,7 @@
 .card {
     margin: 10px;
 }
+
+#preview {
+    border-radius: 50%;
+}

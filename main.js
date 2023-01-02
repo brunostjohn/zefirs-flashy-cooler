@@ -8,21 +8,53 @@ if (require("electron-squirrel-startup")) app.quit();
 
 nativeTheme.themeSource = "dark";
 
-let fps = 25;
+let fps = config.fps;
 let mainWindow;
 let themeList = [];
+let rendering = config.renderAtStartup;
 
 const themeFolder = path.join(__dirname, "themes");
 
+function makeId(length) {
+    var result           = '';
+    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var charactersLength = characters.length;
+    for ( var i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
 fs.readdirSync(themeFolder).forEach(file => {
     const theme = require(path.join(__dirname, "themes", file, "theme.js"));
+    let activeFlag = false;
+    const themepath = path.join(__dirname, "themes", file, "theme.js");
+    if (config.defaultThemePath == themepath) {
+        activeFlag = true;
+    }
     themeList.push({
-        path: path.join(__dirname, "themes", file, "theme.js"),
-        id: theme.info.id,
+        path: themepath,
+        id: makeId(32),
         title: theme.info.title,
         description: theme.info.description,
-        preview: "data:image/jpeg;base64," + theme.info.preview
+        preview: "data:image/jpeg;base64," + theme.info.preview,
+        isActive: activeFlag,
+        hasConfig: theme.hasConfig,
+        configPath: path.join(__dirname, "themes", file, "config.json")
     });
+});
+
+themeList.sort((a,b) => {
+    const item1 = a.id;
+    const item2 = b.id;
+
+    if (item1 < item2){
+        return -1;
+    }
+    if(item1>item2) {
+        return 1
+    }
+    return 0;
 });
 
 const createWindow = () => {
@@ -35,7 +67,9 @@ const createWindow = () => {
     })
     ipcMain.handle("renderer:startRendering", startRendering);
     ipcMain.handle("renderer:stopRendering", stopRendering);
-    ipcMain.handle("themes:getThemeList", getThemeList)
+    ipcMain.handle("themes:getThemeList", getThemeList);
+    ipcMain.on("themes:themeSelected", selectTheme);
+    ipcMain.handle("renderer:renderStatus", renderStatus);
     mainWindow.loadFile("assets/ui/themes.html");
     mainWindow.removeMenu();
 }
@@ -46,13 +80,18 @@ worker.on("error", err => {
     console.log(err);
 });
 
-worker.on('message', (msg) => { console.log(msg); });
+worker.on('message', (msg) => { 
+    mainWindow.webContents.send("fps", msg);
+});
 
 worker.on("unhandledRejection", error => {throw error});
 
 app.whenReady().then(() => {
     createWindow();
     createTray();
+    if(rendering) {
+        startRendering();
+    }
 })
 
 let tray;
@@ -85,16 +124,34 @@ function startRendering() {
     tray.setContextMenu(contextMenuActive);
     mainWindow.webContents.send("rendering", 1);
     worker.postMessage("start"); 
+    rendering = true;
 }
 
 function stopRendering() {
     tray.setContextMenu(contextMenuInactive);
     mainWindow.webContents.send("rendering", 0);
     worker.postMessage("stop");
+    rendering = false;
 }
 
 function getThemeList(){
     themeList.forEach(theme => {
         mainWindow.webContents.send("theme", theme);
     });
+}
+
+function selectTheme(_event, themeId) {
+    const found = themeList.find(element => element.id == themeId);
+    worker.postMessage(found.path);
+    if(rendering) {
+        startRendering()
+    }
+}
+
+function renderStatus() {
+    if(rendering) {
+        mainWindow.webContents.send("rendering", 1);
+    } else {
+        mainWindow.webContents.send("rendering", 0);
+    }
 }

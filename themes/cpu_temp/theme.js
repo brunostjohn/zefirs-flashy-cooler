@@ -23,7 +23,6 @@ function renderPreview(){
 }
 
 module.exports = {renderFrame, info: {
-    id: "0",
     title: "CPU Temperature",
     description: "Displays the CPU temperature.",
     preview: renderPreview()
