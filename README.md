@@ -7,15 +7,15 @@ This is designed explicitly for use with Windows.
 Will it run on Linux or macOS? Maybe. Probably not.
 
 ## Installation:
-WIP. Please wait for this to actually be a feasible software solutions to daily drive this.
+Download the installer from the releases tab and enjoy. There are some bugs to iron out so please submit on issue when you notice one. LibreHardwareMonitor is required for this to be able to use any system sensor input (CPU, GPU etc.).
 
 ## What it does and what it doesn't do.
 - [x] Display a static image to the LCD.
 - [x] Have theme support.
-- [ ] Read data from system sensors.
-- [ ] Display that data.
-- [ ] Have a GUI.
-- [ ] Have external theme/plugin support.
+- [x] Read data from system sensors.
+- [x] Display that data.
+- [x] Have a GUI.
+- [x] Have external theme support.
 - [ ] A bunch of other stuff I'll probably come up with while developing this.
 
 ### Last words

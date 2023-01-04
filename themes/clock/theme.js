@@ -23,7 +23,7 @@ function renderFrame() {
     context.textAlign = "center";
     context.fillStyle = config.textColour;
     context.fillText(time, 240, 240);
-    return canvas.toBuffer("image/jpeg").toString("base64");
+    return canvas.toBuffer("image/jpeg", 100).toString("base64");
 }
 
 function renderPreview(){

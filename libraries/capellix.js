@@ -23,6 +23,7 @@ class LCD {
         } else {
             chunks.push(image);
         }
+        // console.log("jpeg size: " + image.length +" chunk length: " + chunks.length);
         let packetsSent = 0;
         let packet;
         let signature = 0x00;
@@ -48,10 +49,7 @@ class LCD {
         }
     }
     reconstructUSB(){
-        this.device = findByIds(vid, pid);
-        this.device.open(true);
-        this.device.interface(0).claim();
-        this.endpoint = this.device.interfaces[0].endpoints[1];
+        // add later
     }
 }
 

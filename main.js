@@ -1,9 +1,9 @@
 const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
 const path = require("path");
 const { Worker } = require("worker_threads");
-const config = require("./app.config.js");
 const fs = require("fs");
-const theme = require("./themes/clock/theme.js");
+const { Z_FIXED } = require("zlib");
+let config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
 
 if (require("electron-squirrel-startup")) app.quit();
 
@@ -13,6 +13,14 @@ let fps = config.fps;
 let mainWindow;
 let themeList = [];
 let rendering = config.renderAtStartup;
+
+if (config.defaultThemePath == "") {
+    config.defaultThemePath = path.join(__dirname, "themes", "static_image", "theme.js");
+}
+
+if (!fs.existsSync(config.defaultThemePath)) {
+    config.defaultThemePath = path.join(__dirname, "themes", "static_image", "theme.js");
+}
 
 const themeFolder = path.join(__dirname, "themes");
 
@@ -79,7 +87,7 @@ const createWindow = () => {
     ipcMain.handle("renderer:renderStatus", renderStatus);
     ipcMain.handle("global:openFile", handleFileOpen);
     mainWindow.loadFile("assets/ui/themes.html");
-    // mainWindow.removeMenu();
+    mainWindow.removeMenu();
 }
 
 let worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: config.defaultThemePath, fps: fps} });
@@ -107,13 +115,13 @@ let tray;
 const contextMenuInactive = Menu.buildFromTemplate([
     { label: 'Open CapellixLCD', click() { createWindow(); }},
     { label: 'Start Rendering', click() {startRendering()} },
-    { label: 'Quit CapellixLCD', click() { worker.postMessage("exit"); app.exit(0); } }
+    { label: 'Quit CapellixLCD', click() { exit(); } }
 ])
 
 const contextMenuActive = Menu.buildFromTemplate([
     { label: 'Open CapellixLCD', click() { createWindow(); }},
     { label: 'Stop Rendering', click() {stopRendering();} },
-    { label: 'Quit CapellixLCD', click() { worker.postMessage("exit"); app.exit(0); } }
+    { label: 'Quit CapellixLCD', click() { exit(); } }
 ])
 
 const createTray = () => {
@@ -127,6 +135,17 @@ const createTray = () => {
 app.on("window-all-closed", () => {
     app.exit(0);
 });
+
+function exit() {
+    themeList.forEach(theme => {
+        if (theme.isActive) {
+            config.defaultThemePath = theme.path;
+        }
+    });
+    console.log(config);
+    worker.postMessage("exit");
+    app.exit(0);
+}
 
 function startRendering() {
     tray.setContextMenu(contextMenuActive);
@@ -151,18 +170,21 @@ function getThemeList(){
 async function handleFileOpen() {
     const { canceled, filePaths } = await dialog.showOpenDialog()
     if (canceled) {
-      return
+        return
     } else {
-      return filePaths[0]
+        return filePaths[0]
     }
-  }
-  
+}
+
 
 function selectTheme(_event, themeId) {
     const found = themeList.find(element => element.id == themeId);
     themeList.forEach(item => {
         if(item.id == themeId){
             item.isActive=true;
+            config.defaultThemePath = item.path;
+            fs.writeFileSync(path.join(__dirname, "app.config.json"), JSON.stringify(config));
+            config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
         } else {
             item.isActive=false;
         }

@@ -1,5 +1,10 @@
 module.exports = {
-  packagerConfig: {},
+  packagerConfig: {
+    "name": "CapellixLCD",
+    "win32metadata": {
+      "requested-execution-level": "requireAdministrator"
+    }
+  },
   rebuildConfig: {},
   makers: [
     {

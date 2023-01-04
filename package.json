@@ -37,8 +37,9 @@
     "nan": "^2.14.0",
     "node-base64-image": "^2.0.4",
     "node-hid": "^2.1.2",
+    "node-wmi": "^0.0.5",
     "systeminformation": "^5.16.9",
-    "usb": "^2.6.0",
-    "usb-detection": "^4.14.1"
+    "usb-detection": "^4.14.1",
+    "winax": "^3.3.4"
   }
 }
