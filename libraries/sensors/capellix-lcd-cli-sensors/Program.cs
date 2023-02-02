@@ -14,27 +14,50 @@ static void Monitor()
 
     computer.Open();
     computer.Accept(new UpdateVisitor());
-
+    Console.WriteLine("{");
     foreach (IHardware hardware in computer.Hardware)
     {
-        Console.WriteLine("Hardware: {0}", hardware.Name);
-
+        Console.WriteLine("\t\"" + hardware.Name + "\": {");
+        if (hardware.SubHardware.Any())
+        {
+            Console.WriteLine("\t\t\"subdevices\": {");
+        }
         foreach (IHardware subhardware in hardware.SubHardware)
         {
-            Console.WriteLine("\tSubhardware: {0}", subhardware.Name);
+            Console.WriteLine("\t\t\t\""+subhardware.Name+"\": {");
 
             foreach (ISensor sensor in subhardware.Sensors)
             {
-                Console.WriteLine("\t\tSensor: {0}, value: {1}", sensor.Name, sensor.Value);
+                Console.WriteLine("\t\t\t\t\"{0}\": \"{1}\"", sensor.Name, sensor.Value);
             }
-        }
+                if (subhardware.Equals(hardware.SubHardware.Last()))
+                {
+                Console.WriteLine("\t\t\t}");
+                } else
+                {
+                    Console.WriteLine("\t\t\t},");
+                }
 
+            Console.WriteLine("\t\t}");
+        }
+        if (hardware.SubHardware.Any())
+        {
+            Console.WriteLine("\t}");
+        }
+        Console.WriteLine("\"sensors\": {");
         foreach (ISensor sensor in hardware.Sensors)
         {
-            Console.WriteLine("\tSensor: {0}, value: {1}", sensor.Name, sensor.Value);
+            Console.WriteLine("\"{0}\": \"{1}\"", sensor.Name, sensor.Value);
+        }
+        if (hardware.Equals(computer.Hardware.Last()))
+        {
+        Console.WriteLine("}");
+        } else
+        {
+            Console.WriteLine("},");
         }
     }
-
+    Console.WriteLine("}");
     computer.Close();
 }
 

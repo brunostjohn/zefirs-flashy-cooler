@@ -6,7 +6,7 @@ const height = 480;
 let cputemp = 0;
 
 const sensors = new Sensors();
-console.log(sensors.getGPUTemps());
+
 
 function renderFrame() {
     const canvas = createCanvas(width, height);

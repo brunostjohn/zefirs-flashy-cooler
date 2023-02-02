@@ -1,6 +1,8 @@
 # CapellixLCD
 This is a desktop app that controls the Capellix cooler's LCD instead of iCUE.
 
+![Screenshot](https://raw.githubusercontent.com/brunostjohn/capellix-lcd/main/screenshot.png)
+
 A physical manifestation of my deeply rooted hate for Corsair's software solutions.
 
 This is designed explicitly for use with Windows.

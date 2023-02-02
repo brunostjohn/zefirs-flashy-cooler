@@ -8,6 +8,7 @@
     left: 50%;
     transform: translateX(-50%);
     margin: 5px;
+    margin-bottom: 8px;
     border-radius: 10px;
     backdrop-filter: blur(6px);
 }

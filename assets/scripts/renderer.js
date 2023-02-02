@@ -1,6 +1,24 @@
 const btn = document.getElementById("btn");
 
 window.addEventListener("load", (event) => {
+    Coloris({
+        themeMode: 'dark',
+        theme: "pill",
+        alpha: false,
+        swatches: [
+            '#264653',
+            '#2a9d8f',
+            '#e9c46a',
+            'rgb(244,162,97)',
+            '#e76f51',
+            '#d62828',
+            'navy',
+            '#07b',
+            '#0096c7',
+            '#00b4d880',
+            'rgb(0,119,182)'
+          ],
+      });
     window.electronAPI.renderStatus();
     window.electronAPI.getThemeList();
 })
@@ -75,7 +93,7 @@ function createControllableParameter(controllableParameter) {
     const form = document.getElementById("parameterContainer");
     let htmlToAppend = "";
     if(controllableParameter.type == "colour") {
-        htmlToAppend += "<input type='color' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' /><label for='" + controllableParameter.id + "' class='form-label'>" + controllableParameter.title + "</label>";
+        htmlToAppend += "<input type='text' class='reset-this' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' data-coloris/><label for='" + controllableParameter.id + "' class='form-label'>" + controllableParameter.title + "</label>";
     } else if (controllableParameter.type == "file") {
         htmlToAppend += "<label for='>" + controllableParameter.id + "'class='form-label'>" + controllableParameter.title + "</label><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
         form.insertAdjacentHTML("beforeend", htmlToAppend);
