@@ -3,6 +3,7 @@ const path = require("path");
 const { Worker } = require("worker_threads");
 const fs = require("fs");
 const { Z_FIXED } = require("zlib");
+const Sensors = require("./libraries/sensors.js")
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
 
 if (require("electron-squirrel-startup")) app.quit();
@@ -73,7 +74,7 @@ themeList.sort((a,b) => {
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
-        width: 1200,
+        width: 1120,
         height: 800,
         webPreferences: {
             preload: path.join(__dirname, "libraries/preload.js")
@@ -97,7 +98,8 @@ worker.on("error", err => {
 });
 
 worker.on('message', (msg) => { 
-    mainWindow.webContents.send("fps", msg);
+    // mainWindow.webContents.send("fps", msg);
+    console.log(msg);
 });
 
 worker.on("unhandledRejection", error => {throw error});

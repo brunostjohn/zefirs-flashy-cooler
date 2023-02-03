@@ -1,49 +1,41 @@
-require("winax");
+const {execFile, execFileSync} = require("child_process");
+const path = require("path");
 
 class Sensors {
-    constructor() {
-        this.connection = new ActiveXObject("WbemScripting.SWbemLocator");
-        this.svr = this.connection.ConnectServer(".", "root\\LibreHardwareMonitor");
-    }
-
-    query(queryString) {
-        const results = [];
-        const queryResponse = this.svr.ExecQuery(queryString);
-        for (let i = 0; i < queryResponse.Count; i += 1) {
-            const properties = queryResponse.ItemIndex(i).Properties_;
-            let count = properties.Count;
-            const propEnum = properties._NewEnum;
-            const obj = {};
-            while (count) {
-            count -= 1;
-            const prop = propEnum.Next(1);
-            obj[prop.Name] = prop.Value;
-            }
-            results.push(obj);
+    constructor(persistentUpdate=true) {
+        this.sensordata = this.updateSensorsSyncAlt();
+        this.firstrun = true;
+        if(persistentUpdate == true) {
+            this.startUpdating();
+        } else {
+            this.updateSensorsSync();
         }
-        return results;
     }
 
-    getHardware() {
-        return this.query('Select * from Hardware');
+    updateSensors() {
+        execFile(path.join(__dirname, "sensors", "capellix-lcd-cli-sensors", "bin", "Release", "net6.0", "capellix-lcd-cli-sensors.exe"), (error, stdout, stderr) => {
+            this.sensordata = JSON.parse(stdout);
+        });
     }
 
-    getGPUTemps() {
-        const temps = [];
-        const sensorResults = this.svr.ExecQuery('Select * from Sensor Where (Parent LIKE "/nvidiagpu/[0-9]" OR Parent LIKE "/atigpu/[0-9]") AND SensorType = "Temperature"');
-        console.log(sensorResults);
-        for (let i = 0; i < sensorResults.Count; i += 1) {
-          const p = sensorResults.ItemIndex(i).Properties_;
-          temps.push({
-            Name: p.Item('Name').Value,
-            Identifier: p.Item('Identifier').Value,
-            InstanceId: p.Item('InstanceId').Value,
-            Min: p.Item('Min').Value,
-            Max: p.Item('Max').Value,
-          });
-        }
-    
-        return temps;
+    updateSensorsSync() {
+        this.sensordata = JSON.parse(execFileSync(path.join(__dirname, "sensors", "capellix-lcd-cli-sensors", "bin", "Release", "net6.0", "capellix-lcd-cli-sensors.exe")));
+    }
+
+    updateSensorsSyncAlt() {
+        this.sensordata = JSON.parse(execFileSync(path.join(__dirname, "sensors", "capellix-lcd-cli-sensors", "bin", "Release", "net6.0", "capellix-lcd-cli-sensors.exe")));
+    }
+
+    startUpdating() {
+        this.timer = setInterval(this.updateSensors, 500);
+    }
+
+    stopUpdating() {
+        clearTimeout(this.updateSensors);
+    }
+
+    fetchSensors() {
+        return this.sensordata;
     }
 }
 
