@@ -1,9 +1,7 @@
-# CapellixLCD
+# ![Logo](https://raw.githubusercontent.com/brunostjohn/capellix-lcd/main/assets/images/android-chrome-192x192.png) Zefir's Flashy Cooler
 This is a desktop app that controls the Capellix cooler's LCD instead of iCUE.
 
 ![Screenshot](https://raw.githubusercontent.com/brunostjohn/capellix-lcd/main/screenshot.png)
-
-A physical manifestation of my deeply rooted hate for Corsair's software solutions.
 
 This is designed explicitly for use with Windows.
 Will it run on Linux or macOS? Maybe. Probably not.
@@ -22,3 +20,4 @@ Download the installer from the releases tab and enjoy. There are some bugs to i
 
 ### Last words
 I'm literally learning JavaScript, NodeJS, and all the other technologies I'm using here while writing this. If there's anything you feel can be improved, feel free to submit a PR.
+Massive thanks to TheDordo from the SignalRGB theme for working on REing the display's LCD protocol with me.

@@ -3,7 +3,8 @@ const path = require("path");
 const { Worker } = require("worker_threads");
 const fs = require("fs");
 const { Z_FIXED } = require("zlib");
-const Sensors = require("./libraries/sensors.js")
+const Sensors = require("./libraries/sensors.js");
+const log = require("why-is-node-running");
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
 
 if (require("electron-squirrel-startup")) app.quit();
@@ -78,7 +79,8 @@ const createWindow = () => {
         height: 800,
         webPreferences: {
             preload: path.join(__dirname, "libraries/preload.js")
-        }
+        },
+        icon: path.join(__dirname, "assets", "images", "favicon.ico")
     })
     ipcMain.handle("renderer:startRendering", startRendering);
     ipcMain.handle("renderer:stopRendering", stopRendering);
@@ -135,7 +137,9 @@ const createTray = () => {
 }
 
 app.on("window-all-closed", () => {
+    exit();
     app.exit(0);
+    // log();
 });
 
 function exit() {
@@ -144,9 +148,10 @@ function exit() {
             config.defaultThemePath = theme.path;
         }
     });
-    console.log(config);
+    const finalConfig = JSON.stringify(config);
+    // fs.writeFileSync(path.join(__dirname, "app.config.json"), config);
+    // console.log(config);
     worker.postMessage("exit");
-    app.exit(0);
 }
 
 function startRendering() {

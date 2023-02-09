@@ -5,18 +5,18 @@ const width = 480;
 const height = 480;
 let cputemp = "0";
 
-let sensors = new Sensors(persistentUpdate=true);
-let sensordata;
+// let sensors = new Sensors(persistentUpdate=true);
+// let sensordata;
 
 function renderFrame() {
-    sensordata = sensors.fetchSensors();
-    console.log(sensordata);
-    if (sensordata === undefined || sensordata === {}){
-        cputemp = "0";
-    } else {
-        console.log(sensordata);
-        cputemp = sensordata["12th Gen Intel Core i7-12700K"]["Main Sensors"]["values"][20];
-    }
+    // sensordata = sensors.fetchSensors();
+    // console.log(sensordata);
+    // if (sensordata === undefined || sensordata === {}){
+    //     cputemp = "0";
+    // } else {
+    //     console.log(sensordata);
+    //     cputemp = sensordata["12th Gen Intel Core i7-12700K"]["Main Sensors"]["values"][20];
+    // }
     const canvas = createCanvas(width, height);
     const context = canvas.getContext("2d");
     context.fillStyle = "#00000";
@@ -30,10 +30,10 @@ function renderFrame() {
 }
 
 function renderPreview(){
-    sensors = new Sensors(persistentUpdate=false);
+    // sensors = new Sensors(persistentUpdate=false);
     const returned = renderFrame();
-    sensors = new Sensors(persistentUpdate=true);
-    sensordata = sensors.fetchSensors();
+    // sensors = new Sensors(persistentUpdate=true);
+    // sensordata = sensors.fetchSensors();
     return returned;
 }
 

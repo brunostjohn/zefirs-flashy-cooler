@@ -1,11 +1,13 @@
 #card-container {
     display: flex;
+    flex-wrap: wrap;
 }
 
 .card {
     padding: 4px;
     overflow: visible;
     width: 16rem;
+    min-width: 16rem;
     transition: box-shadow 0.2s;
     margin: 10px;
 }

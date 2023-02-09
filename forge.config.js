@@ -1,8 +1,7 @@
 module.exports = {
   packagerConfig: {
-    "name": "CapellixLCD",
+    "name": "Zefir's Flashy Cooler",
     "win32metadata": {
-      "requested-execution-level": "requireAdministrator"
     }
   },
   rebuildConfig: {},
