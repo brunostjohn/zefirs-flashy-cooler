@@ -17,8 +17,8 @@ class Renderer{
         this.timer = setInterval(this.render, this.frametime);
     }
 
-    stopRendering(){
-        this.LCD.exit();
+    stopRendering(bul){
+        if (bul) this.LCD.exit();
         clearInterval(this.timer);
     }
 
@@ -39,20 +39,19 @@ renderer = new Renderer(workerData, LCD)
 
 parentPort.on("message", message => {
     if(message=="stop"){
-        renderer.stopRendering();
+        renderer.stopRendering(false);
         // usbDetect.stopMonitoring();
     } else if(message=="start"){
         renderer.startRendering();
         // usbDetect.startMonitoring();
     } else if(message=="exit"){
-        renderer.stopRendering();
+        renderer.stopRendering(true);
         parentPort.close();
-        process.exit();
     } else if(Number.isInteger(message)) {
-        renderer.stopRendering();
+        renderer.stopRendering(false);
         renderer.setFramerate(message);
     } else {
-        renderer.stopRendering();
+        renderer.stopRendering(false);
         renderer.changeTheme(message);
     }
 });

@@ -5,7 +5,8 @@ const width = 480;
 const height = 480;
 let cputemp = "0";
 
-// let sensors = new Sensors(persistentUpdate=true);
+let sensors = new Sensors();
+console.log(sensors.query("Select Name, Identifier From Hardware"));
 // let sensordata;
 
 function renderFrame() {
@@ -30,15 +31,12 @@ function renderFrame() {
 }
 
 function renderPreview(){
-    // sensors = new Sensors(persistentUpdate=false);
-    const returned = renderFrame();
-    // sensors = new Sensors(persistentUpdate=true);
-    // sensordata = sensors.fetchSensors();
-    return returned;
+    return renderFrame();
 }
 
 module.exports = {renderFrame, info: {
     title: "Sensor Text",
     description: "Displays data from system sensors.",
-    preview: renderPreview()
+    preview: renderPreview(),
+    requresSensors: true
 }};

@@ -39,10 +39,16 @@ function makeId(length) {
 fs.readdirSync(themeFolder).forEach(file => {
     const theme = require(path.join(__dirname, "themes", file, "theme.js"));
     let activeFlag = false;
+    let requiresSensors = true;
     const themepath = path.join(__dirname, "themes", file, "theme.js");
     const configpath = path.join(__dirname, "themes", file, "config.json");
     if (config.defaultThemePath == themepath) {
         activeFlag = true;
+    }
+    if ("requiresSensors" in theme.info){
+        if(theme.info.requiresSensors) {
+            requiresSensors = true;
+        }
     }
     let entry = {
         path: themepath,
@@ -53,7 +59,8 @@ fs.readdirSync(themeFolder).forEach(file => {
         isActive: activeFlag,
         hasConfig: theme.info.hasConfig,
         configPath: configpath,
-        controllableParameters: theme.info.controllableParameters
+        controllableParameters: theme.info.controllableParameters,
+        requiresSensors: requiresSensors
     };
     if (theme.info.hasConfig) {
         const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
@@ -234,6 +241,7 @@ function applyParameters(_event, parameters) {
             const theme = require(item.path);
             item.preview = "data:image/jpeg;base64," + theme.renderPreview();
             worker.postMessage("exit");
+            sleep(300);
             worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: item.path, fps: fps} }); // worker needs to be destroyed for on the fly editing to work
             if(rendering) {
                 startRendering();
@@ -241,3 +249,11 @@ function applyParameters(_event, parameters) {
         }
     });
 }
+
+function sleep(milliseconds) {
+    const date = Date.now();
+    let currentDate = null;
+    do {
+      currentDate = Date.now();
+    } while (currentDate - date < milliseconds);
+  }

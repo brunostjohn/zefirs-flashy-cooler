@@ -1,32 +1,26 @@
-// const {usb, findByIds, Transfer, transfer} = require("usb");
 var HID = require('node-hid');
 
 class LCD {
     constructor() {
-        // usb.setDebugLevel(3);
         this.vid = 0x1b1c;
         this.pid = 0x0c39;
-        // this.device = findByIds(vid, pid);
-        // this.device.open(true);
-        // this.device.interface(0).claim();
-        // this.endpoint = this.device.interfaces[0].endpoints[1];
         this.device = new HID.HID(this.vid, this.pid);
         this.device.on('data', function(data) {console.log(data)} )
         this.device.on("error", function(error) { console.log(error); });
-        // this.device.sendFeatureReport([0x03, 0x0D, 0x01, 0x01, 0x78, 0x00, 0xC0, 0x03, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF]);
         this.framebufReset(); 
-        this.framebufResetter = setTimeout(this.framebufReset.bind(this), 60000);
+        this.framebufResetter = setInterval(this.framebufReset.bind(this), 360000);
     }
 
     framebufReset() {
+        // this somehow works, i have literally no idea how or why but it is the best solution for now
         this.device.sendFeatureReport([0x03, 0x0D, 0x01, 0x01, 0x78, 0x00, 0xC0, 0x03, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF]); // or this one?
         this.device.sendFeatureReport([0x03, 0x01, 0x64, 0x01, 0x78, 0x00, 0xC0, 0x03, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF, 0x2F, 0x2F, 0x2F, 0xFF]); // maybe this packet resets the fb?
-        // this.device.pause(30);
+        this.sleep(100);
     }
 
     exit() {
         this.device.close();
-        clearTimeout(this.framebufResetter);
+        clearInterval(this.framebufResetter);
     }
 
     sleep(milliseconds) {
@@ -84,10 +78,9 @@ class LCD {
             if (failedPacket && signature) {
                 let unfuckPacket = [0x03, 0x19, 0x40, signature, packetsSent, 0x00, (chunk.length >> 8 & 0xFF), (chunk.length & 0xFF)];
                 unfuckPacket = unfuckPacket.concat(chunk.splice(0, 24));
-                this.device.sendFeatureReport(unfuckPacket);
+                try {this.device.sendFeatureReport(unfuckPacket);} catch {failedPacket = false; this.reconstructUSB();}
                 console.log("unfucking!");
-                this.device.pause(6000);
-                this.device.resume();
+                this.sleep(6000);
                 failedPacket = false;
             }
         }

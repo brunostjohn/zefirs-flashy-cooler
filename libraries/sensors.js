@@ -1,16 +1,31 @@
-const {execFile, execFileSync} = require("child_process");
-const path = require("path");
+// const {execFile, execFileSync} = require("child_process");
+// const path = require("path");
+const ActiveX = require("winax");
 
 class Sensors {
-    constructor(persistentUpdate=true) {
-        // this.sensordata = this.updateSensorsSyncAlt();
-        // this.firstrun = true;
-        // if(persistentUpdate == true) {
-        //     this.startUpdating();
-        // } else {
-        //     this.updateSensorsSync();
-        // }
+    constructor() {
+        this.conn = new ActiveX.Object("WbemScripting.SWbemLocator");
+        this.svr = this.conn.ConnectServer(".", "root\\LibreHardwareMonitor");
     }
+
+    query(queryString) {
+        const results = [];
+        const queryResponse = this.svr.ExecQuery(queryString);
+        for (let i = 0; i < queryResponse.Count; i += 1) {
+          const properties = queryResponse.ItemIndex(i).Properties_;
+          let count = properties.Count;
+          const propEnum = properties._NewEnum;
+          const obj = {};
+          while (count) {
+            count -= 1;
+            const prop = propEnum.Next(1);
+            obj[prop.Name] = prop.Value;
+          }
+          results.push(obj);
+        }
+    
+        return results;
+      }
 
     // updateSensors() {
     //     execFile(path.join(__dirname, "sensors", "capellix-lcd-cli-sensors", "bin", "Release", "net6.0", "capellix-lcd-cli-sensors.exe"), (error, stdout, stderr) => {
