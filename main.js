@@ -1,3 +1,6 @@
+const appVersion = "0.0.1";
+const releaseType = "alpha";
+
 const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
 const path = require("path");
 const { Worker } = require("worker_threads");
@@ -6,8 +9,15 @@ const { Z_FIXED } = require("zlib");
 const Sensors = require("./libraries/sensors.js");
 const log = require("why-is-node-running");
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
+const {exec, execSync} = require("child_process");
+
+let iCueRunning = true;
+let libreRunning = true;
 
 if (require("electron-squirrel-startup")) app.quit();
+try{execSync("tasklist | findstr \"iCUE.exe\"")} catch {iCueRunning = false}
+try{execSync("tasklist | findstr \"LibreHardwareMonitor.exe\"")} catch {libreRunning = false};
+
 
 nativeTheme.themeSource = "dark";
 
@@ -39,38 +49,40 @@ function makeId(length) {
 fs.readdirSync(themeFolder).forEach(file => {
     const theme = require(path.join(__dirname, "themes", file, "theme.js"));
     let activeFlag = false;
-    let requiresSensors = true;
+    let requiresSensors = false;
     const themepath = path.join(__dirname, "themes", file, "theme.js");
     const configpath = path.join(__dirname, "themes", file, "config.json");
     if (config.defaultThemePath == themepath) {
         activeFlag = true;
     }
-    if ("requiresSensors" in theme.info){
+    if (theme.info.requiresSensors != undefined){
         if(theme.info.requiresSensors) {
             requiresSensors = true;
         }
     }
-    let entry = {
-        path: themepath,
-        id: makeId(32),
-        title: theme.info.title,
-        description: theme.info.description,
-        preview: "data:image/jpeg;base64," + theme.info.preview,
-        isActive: activeFlag,
-        hasConfig: theme.info.hasConfig,
-        configPath: configpath,
-        controllableParameters: theme.info.controllableParameters,
-        requiresSensors: requiresSensors
-    };
-    if (theme.info.hasConfig) {
-        const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
-        Object.keys(configTheme).forEach(key => {
-            entry.controllableParameters[key]["value"] = configTheme[key];
-            entry.controllableParameters[key]["varName"] = key;
-            entry.controllableParameters[key]["id"] = makeId(32);
-        });
+    if (((requiresSensors && libreRunning) || !requiresSensors)){
+        let entry = {
+            path: themepath,
+            id: makeId(32),
+            title: theme.info.title,
+            description: theme.info.description,
+            preview: "data:image/jpeg;base64," + theme.info.preview,
+            isActive: activeFlag,
+            hasConfig: theme.info.hasConfig,
+            configPath: configpath,
+            controllableParameters: theme.info.controllableParameters,
+            requiresSensors: requiresSensors
+        };
+        if (theme.info.hasConfig) {
+            const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
+            Object.keys(configTheme).forEach(key => {
+                entry.controllableParameters[key]["value"] = configTheme[key];
+                entry.controllableParameters[key]["varName"] = key;
+                entry.controllableParameters[key]["id"] = makeId(32);
+            });
+        }
+        themeList.push(entry);
     }
-    themeList.push(entry);
 });
 
 themeList.sort((a,b) => {
@@ -82,7 +94,7 @@ themeList.sort((a,b) => {
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
-        width: 1120,
+        width: 1130,
         height: 800,
         webPreferences: {
             preload: path.join(__dirname, "libraries/preload.js")
@@ -93,9 +105,15 @@ const createWindow = () => {
     ipcMain.handle("renderer:stopRendering", stopRendering);
     ipcMain.handle("themes:getThemeList", getThemeList);
     ipcMain.on("themes:themeSelected", selectTheme);
-    ipcMain.on("renderer:parameterTransfer", applyParameters)
+    ipcMain.on("renderer:parameterTransfer", applyParameters);
     ipcMain.handle("renderer:renderStatus", renderStatus);
     ipcMain.handle("global:openFile", handleFileOpen);
+    ipcMain.handle("settings:requestConfig", requestConfig);
+    ipcMain.handle("settings:requestVersion", requestVersion);
+    ipcMain.handle("settings:requestHealth", requestHealth);
+    ipcMain.on("settings:configSendback", configSendback);
+    ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
+    ipcMain.handle("settings:openThemeFolder", openThemeFolder);
     mainWindow.loadFile("assets/ui/themes.html");
     mainWindow.removeMenu();
 }
@@ -148,6 +166,26 @@ app.on("window-all-closed", () => {
     app.exit(0);
     // log();
 });
+
+function requestConfig() {
+    mainWindow.webContents.send("settings:receiveConfig", config);
+}
+
+function requestVersion() {
+    mainWindow.webContents.send("settings:receiveVersion", appVersion + "@" + releaseType);
+}
+
+function requestHealth() {
+    mainWindow.webContents.send("settings:receiveHealth", [iCueRunning, libreRunning]);
+}
+
+function requestThemeFolder() {
+    mainWindow.webContents.send("settings:receiveThemeFolder", path.join(__dirname, "themes"))
+}
+
+function openThemeFolder() {
+    exec("start " + path.join(__dirname, "themes"));
+}
 
 function exit() {
     themeList.forEach(theme => {
@@ -207,6 +245,11 @@ function selectTheme(_event, themeId) {
     if(rendering) {
         startRendering()
     }
+}
+
+function configSendback(_event, config){
+    const toWrite = JSON.stringify(config);
+    fs.writeFileSync(path.join(__dirname, "app.config.json"), toWrite);
 }
 
 function renderStatus() {

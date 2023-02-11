@@ -10,5 +10,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
     receiveThemeList: (callback) => ipcRenderer.on("theme", callback),
     themeSelected: (themeId) => ipcRenderer.send("themes:themeSelected", themeId),
     parametersSendback: (parameters) => ipcRenderer.send("renderer:parameterTransfer", parameters),
-    openFile: () => ipcRenderer.invoke("global:openFile")
+    openFile: () => ipcRenderer.invoke("global:openFile"),
+    requestConfig: () => ipcRenderer.invoke("settings:requestConfig"),
+    requestVersion: () => ipcRenderer.invoke("settings:requestVersion"),
+    requestHealth: () => ipcRenderer.invoke("settings:requestHealth"),
+    receiveVersion: (callback) => ipcRenderer.on("settings:receiveVersion", callback),
+    receiveConfig: (callback) => ipcRenderer.on("settings:receiveConfig", callback),
+    receiveHealth: (callback) => ipcRenderer.on("settings:receiveHealth", callback),
+    configSendback: (config) => ipcRenderer.send("settings:configSendback", config),
+    requestThemeFolder: () => ipcRenderer.invoke("settings:requestThemeFolder"),
+    receiveThemeFolder: (themeFolder) => ipcRenderer.on("settings:receiveThemeFolder", themeFolder),
+    openThemeFolder: () => ipcRenderer.invoke("settings:openThemeFolder")
 })

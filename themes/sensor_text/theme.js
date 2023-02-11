@@ -38,5 +38,5 @@ module.exports = {renderFrame, info: {
     title: "Sensor Text",
     description: "Displays data from system sensors.",
     preview: renderPreview(),
-    requresSensors: true
+    requiresSensors: true
 }};

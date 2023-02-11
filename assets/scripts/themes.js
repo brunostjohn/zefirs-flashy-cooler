@@ -1,6 +1,8 @@
 window.addEventListener("load", (event) => {
     window.electronAPI.getThemeList();
+    window.electronAPI.requestConfig();
     window.electronAPI.renderStatus();
+    window.electronAPI.requestHealth();
 })
 
 const body = document.getElementById("card-container");
@@ -40,3 +42,32 @@ function themeSelect(themeId) {
     }
     document.getElementById(themeId).style.opacity = "1";
 }
+
+const alertPlaceholder = document.getElementById("liveAlertPlaceholder");
+
+const alert1 = (message, type) => {
+    const wrapper = document.createElement("div");
+    wrapper.innerHTML = [
+      `<div class="alert alert-${type} alert-dismissible" role="alert">`,
+      `   <div>${message}</div>`,
+      '   <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>',
+      '</div>'
+    ].join('')
+  
+    alertPlaceholder.append(wrapper);
+}
+
+let showWarningAlert;
+
+window.electronAPI.receiveConfig((_event, value) => {
+    showWarningAlert = value.showWarningAlert;
+});
+
+window.electronAPI.receiveHealth((_event, value) => {
+    if(value[0]) {
+        alert1("iCUE is running. DO NOT start rendering. Please check the Settings' Health segment!", "danger");
+    }
+    if (!value[1]) {
+        if(showWarningAlert) { alert1("LibreHardwareMonitor isn't running. Please check the Settings' Health segment! If you don't wish to receive this alert, please disable it in the Settings.", "warning"); }
+    }
+});

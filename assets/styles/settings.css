@@ -1,42 +1,6 @@
-.col-container {
-    display: table;
-    width: 100%;
-    min-height: 100%;
-    height: 100%;
-    position:absolute;
-    top:0;
-    bottom:0;
-    left:0;
-    right:0;
-}
-  
-.col {
-    display: table-cell;
-    min-height: 100%;
-    height: 100%;
-}
-
-#smaller {
-    max-width: 30%;
-    width: 30%;
-    outline-style: solid;
-    outline-width:1px;
-    outline-color: var(--bs-secondary-bg);
-    text-align: center;
-    vertical-align: middle;
-    /* overflow-y: hidden; */
-}
-
 #zefirCard {
     float: right;
     margin-left: 1rem;
-}
-
-#larger {
-    max-width: 70%;
-    width:70%;
-    padding: 15px;
-    /* overflow-y: hidden; */
 }
 
 #version {
