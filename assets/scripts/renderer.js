@@ -87,15 +87,26 @@ apply.addEventListener("click", () => {
     window.location.reload();
 });
 
-// TODO: Add default values back!
+const reset = document.getElementById("reset");
+
+reset.addEventListener("click", () => {
+    parameters.forEach(controllableParameter => {
+        const controllingElement = document.getElementById(controllableParameter.id);
+        controllableParameter.value = controllableParameter.defaultValue;
+        controllingElement.value = controllableParameter.defaultValue;
+    });
+    window.electronAPI.parametersSendback(parameters);
+
+    window.location.reload();
+});
 
 function createControllableParameter(controllableParameter) {
     const form = document.getElementById("parameterContainer");
     let htmlToAppend = "";
     if(controllableParameter.type == "colour") {
-        htmlToAppend += "<input type='text' class='reset-this' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' data-coloris/><label for='" + controllableParameter.id + "' class='form-label'>" + controllableParameter.title + "</label>";
+        htmlToAppend += "<h4>" + controllableParameter.title + "</h4><input type='text' class='reset-this' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' data-coloris/>";
     } else if (controllableParameter.type == "file") {
-        htmlToAppend += "<label for='>" + controllableParameter.id + "'class='form-label'>" + controllableParameter.title + "</label><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
+        htmlToAppend += "<h4>" + controllableParameter.title + "</h4><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
         form.insertAdjacentHTML("beforeend", htmlToAppend);
         const button = document.getElementById(controllableParameter.id);
         button.addEventListener("click", async () => {

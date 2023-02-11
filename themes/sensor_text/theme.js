@@ -6,7 +6,7 @@ const height = 480;
 let cputemp = "0";
 
 let sensors = new Sensors();
-console.log(sensors.query("Select Name, Identifier From Hardware"));
+// console.log(sensors.query("Select Name, Identifier From Hardware"));
 // let sensordata;
 
 function renderFrame() {
