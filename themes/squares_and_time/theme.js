@@ -7,7 +7,7 @@ let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 const width = 480;
 const height = 480;
 
-let cellsPerLine = 8;
+let cellsPerLine = 12;
 
 let cellSize = width / cellsPerLine;
 

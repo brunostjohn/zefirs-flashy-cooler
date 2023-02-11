@@ -22,4 +22,4 @@ Download the installer from the releases tab and enjoy. There are some bugs to i
 ### Last words
 I'm literally learning JavaScript, NodeJS, and all the other technologies I'm using here while writing this. If there's anything you feel can be improved, feel free to submit a PR.
 
-Massive thanks to TheDordo from the SignalRGB theme for working on REing the display's LCD protocol with me.
+Massive thanks to TheDordo from the SignalRGB theme for working on REing the display's USB protocol with me.
