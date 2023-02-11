@@ -7,7 +7,7 @@ let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 const width = 480;
 const height = 480;
 
-let cellsPerLine = 12;
+let cellsPerLine = config.amountOfSquares;
 
 let cellSize = width / cellsPerLine;
 
@@ -56,6 +56,13 @@ function renderFrame() {
 
 function renderPreview(){
   reloadConfig();
+  cellsPerLine = config.amountOfSquares;
+  cellSize = width / cellsPerLine;
+  for (let i = 1; i <= cellsPerLine; i++) {
+    for ( let j = 1; j <= cellsPerLine; j++) {
+      colours.push(getRandomInt(0, 360));
+    }
+  }
   return renderFrame();
 }
 
@@ -69,15 +76,14 @@ module.exports = {renderFrame, renderPreview, info: {
   preview: renderPreview(), 
   hasConfig: true,
   controllableParameters: {
-    colour1: {
-      type: "colour",
-      title: "Colour 1",
-      defaultValue: "#1862d9"
-    },
-    colour2: {
-      type: "colour",
-      title: "Colour 2",
-      defaultValue: "#d318d9"
+    amountOfSquares: {
+      type: "range",
+      title: "Amount of Squares",
+      defaultValue: 8,
+      min: 2,
+      max: 12,
+      step: 2,
+      typeofValue: "integer"
     }
   }
 }};

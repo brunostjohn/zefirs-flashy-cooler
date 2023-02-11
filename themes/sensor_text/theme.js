@@ -4,20 +4,27 @@ const {createCanvas} = require("@napi-rs/canvas");
 const width = 480;
 const height = 480;
 let cputemp = "0";
+let cpuvalue = "";
 
 let sensors = new Sensors();
+// const emitter = sensors.startMonitoring("/intelcpu/0/temperature/12", "current");
+// cputemp = 
 // console.log(sensors.query("Select Name, Identifier From Hardware"));
+// console.log(sensors.listHardware());
+// console.log(sensors.listSensorTypes("/gpu-amd/0"));
+// console.log(sensors.listSensorsByType("/intelcpu/0", "Temperature"));
+// console.log(sensors.getSensorValueByPath("/intelcpu/0/temperature/12", "current"));
+// console.log(sensors.testFunction());
 // let sensordata;
 
+// const valueEmitter = new EventEmitter();
+// setInterval(function() {valueEmitter.emit("value", sensors.getSensorValueByPath("/intelcpu/0/temperature/12", "current"));}, 500);
+
+// valueEmitter.on("value", (value) => {
+//     cputemp = value;
+// });
+
 function renderFrame() {
-    // sensordata = sensors.fetchSensors();
-    // console.log(sensordata);
-    // if (sensordata === undefined || sensordata === {}){
-    //     cputemp = "0";
-    // } else {
-    //     console.log(sensordata);
-    //     cputemp = sensordata["12th Gen Intel Core i7-12700K"]["Main Sensors"]["values"][20];
-    // }
     const canvas = createCanvas(width, height);
     const context = canvas.getContext("2d");
     context.fillStyle = "#00000";

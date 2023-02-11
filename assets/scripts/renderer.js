@@ -24,8 +24,8 @@ window.addEventListener("load", (event) => {
 })
 
 function makeId(length) {
-    var result           = '';
-    var characters       = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    var result = "";
+    var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     var charactersLength = characters.length;
     for ( var i = 0; i < length; i++ ) {
         result += characters.charAt(Math.floor(Math.random() * charactersLength));
@@ -104,7 +104,15 @@ function createControllableParameter(controllableParameter) {
     const form = document.getElementById("parameterContainer");
     let htmlToAppend = "";
     if(controllableParameter.type == "colour") {
-        htmlToAppend += "<h4>" + controllableParameter.title + "</h4><input type='text' class='reset-this' id='" + controllableParameter.id + "' value='" + controllableParameter.value +"' data-coloris/>";
+        htmlToAppend += "<h4>" + controllableParameter.title + "</h4><input type='text' class='reset-this form-control' id='" + controllableParameter.id + "' value='" + controllableParameter.value + "' data-coloris /><span class='badge rounded-pill' id='" + controllableParameter.id + "badge'" + ">Current colour</span>";
+        form.insertAdjacentHTML("beforeend", htmlToAppend);
+        const colour = document.getElementById(controllableParameter.id);
+        const colourBadge = document.getElementById(controllableParameter.id + "badge");
+        colourBadge.style.backgroundColor = colour.value;
+        colour.addEventListener("input", () => {
+            colourBadge.style.backgroundColor = colour.value;
+        });
+        htmlToAppend = "";
     } else if (controllableParameter.type == "file") {
         htmlToAppend += "<h4>" + controllableParameter.title + "</h4><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
         form.insertAdjacentHTML("beforeend", htmlToAppend);
@@ -114,6 +122,17 @@ function createControllableParameter(controllableParameter) {
             button.value = filePath;
         });
         htmlToAppend = "";
+    } else if (controllableParameter.type == "range") {
+        htmlToAppend += "<h4>" + controllableParameter.title + "</h4><input type='range' class='form-range' min='" + controllableParameter.min + "' max='" + controllableParameter.max + "' step='" + controllableParameter.step + "' id='" + controllableParameter.id + "' value='" + controllableParameter.value + "' /><label for='" + controllableParameter.id + "' class='form-label' id='" + controllableParameter.id + "label'>Current value: " + controllableParameter.value +"</label>";
+        form.insertAdjacentHTML("beforeend", htmlToAppend);
+        const range = document.getElementById(controllableParameter.id);
+        const rangeLabel = document.getElementById(controllableParameter.id + "label");
+        range.addEventListener("input", () => {
+            rangeLabel.textContent = "Current value: " + range.value;
+        });
+        htmlToAppend = "";
+    } else if (controllableParameter.type == "sensor") {
+        
     }
     htmlToAppend += "<br /><br />";
     parameters.push(controllableParameter);
