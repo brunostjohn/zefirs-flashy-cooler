@@ -13,8 +13,8 @@ Download the installer from the releases tab and enjoy. There are some bugs to i
 ## What it does and what it doesn't do.
 - [x] Display a static image to the LCD.
 - [x] Have theme support.
-- [ ] Read data from system sensors.
-- [ ] Display that data.
+- [x] Read data from system sensors.
+- [x] Display that data.
 - [x] Have a GUI.
 - [x] Have external theme support.
 - [ ] A bunch of other stuff I'll probably come up with while developing this.

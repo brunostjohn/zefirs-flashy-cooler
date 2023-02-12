@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     themeSelected: (themeId) => ipcRenderer.send("themes:themeSelected", themeId),
     parametersSendback: (parameters) => ipcRenderer.send("renderer:parameterTransfer", parameters),
     openFile: () => ipcRenderer.invoke("global:openFile"),
+    requestSensorInfoForPath: (callback) => ipcRenderer.send("renderer:sensorInfoForPath", callback),
     requestConfig: () => ipcRenderer.invoke("settings:requestConfig"),
     requestVersion: () => ipcRenderer.invoke("settings:requestVersion"),
     requestHealth: () => ipcRenderer.invoke("settings:requestHealth"),

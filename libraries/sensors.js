@@ -12,6 +12,8 @@ class Sensors {
         if(this.libreRunning) {
           this.conn = new ActiveX.Object("WbemScripting.SWbemLocator");
           this.svr = this.conn.ConnectServer(".", "root\\LibreHardwareMonitor");
+          this.lastTime = Date.now()
+          this.lastValue = 0;
         }
     }
 
@@ -128,6 +130,16 @@ class Sensors {
         };
         return unitsObject[sensorType];
     }
+
+    rateLimitedGetSensorValueByPath(sensorPath, valueType, ms) {
+        if(Date.now() - ms > this.lastTime) {
+            this.lastValue = this.getSensorValueByPath(sensorPath, valueType);
+            this.lastTime = Date.now();
+        }
+        return this.lastValue;
+    }
+
+    
 }
 
 module.exports = Sensors;

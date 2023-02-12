@@ -1,23 +1,114 @@
+const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
+if (require("electron-squirrel-startup")) app.quit();
+
 const appVersion = "0.0.1";
 const releaseType = "alpha";
 
-const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
+const colors = require("colors");
+
+console.log("Zefir's Flashy Cooler ver. ".yellow + appVersion.blue + "@" + releaseType.red + " starting...".yellow);
+
 const path = require("path");
+require("update-electron-app")()
+const ActiveX = require("winax");
 const { Worker } = require("worker_threads");
 const fs = require("fs");
 const { Z_FIXED } = require("zlib");
 const Sensors = require("./libraries/sensors.js");
-const log = require("why-is-node-running");
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
 const {exec, execSync} = require("child_process");
+const { stringify } = require("querystring");
 
 let iCueRunning = true;
 let libreRunning = true;
 
-if (require("electron-squirrel-startup")) app.quit();
+console.log("Performing init...".cyan);
+
 try{execSync("tasklist | findstr \"iCUE.exe\"")} catch {iCueRunning = false}
 try{execSync("tasklist | findstr \"LibreHardwareMonitor.exe\"")} catch {libreRunning = false};
 
+console.log("iCUE: ".blue + iCueRunning + "\nLibreHardwareMonitor: ".blue + libreRunning);
+
+//massive behemoth of a thing
+const hardwareTrees = [];
+
+if (libreRunning) {
+    process.stdout.write("[  ] Creating hardware tree...\r".grey);
+    const conn = new ActiveX.Object("WbemScripting.SWbemLocator");
+    const svr = conn.ConnectServer(".", "root\\LibreHardwareMonitor");
+    let queryString = "Select Name, Identifier From Hardware";
+    const results = [];
+    let queryResponse = svr.ExecQuery(queryString);
+    for (let i = 0; i < queryResponse.Count; i += 1) {
+        const properties = queryResponse.ItemIndex(i).Properties_;
+        let count = properties.Count;
+        const propEnum = properties._NewEnum;
+        const obj = {};
+        while (count) {
+            count -= 1;
+            const prop = propEnum.Next(1);
+            obj[prop.Name] = prop.Value;
+        }
+        results.push(obj);
+    }
+    const finalArray = [];
+    results.forEach((result) => {
+        const hardwarePath = result.Identifier;
+        const hardwareName = result.Name;
+        const finalObject = {
+            name: hardwareName,
+            path: hardwarePath,
+            sensorTree: []
+        };
+        queryString = "Select SensorType From Sensor Where Parent = \"" + hardwarePath + "\"";
+        const results2 = [];
+        queryResponse = svr.ExecQuery(queryString);
+        for (let i = 0; i < queryResponse.Count; i += 1) {
+            const properties = queryResponse.ItemIndex(i).Properties_;
+            let count = properties.Count;
+            const propEnum = properties._NewEnum;
+            const obj = {};
+            while (count) {
+                count -= 1;
+                const prop = propEnum.Next(1);
+                obj[prop.Name] = prop.Value;
+            }
+            results2.push(obj);
+        }
+        const sensorCats = [];
+        results2.forEach((result) => {
+            if(!sensorCats.includes(result.SensorType)) {
+                sensorCats.push(result.SensorType);
+            }
+        });
+        sensorCats.forEach((sensorCat) => {
+            const treeByCat = {category: sensorCat, sensors: []};
+            queryString = "Select Identifier, Name From Sensor Where Parent = \"" + hardwarePath + "\" And SensorType = \"" + sensorCat + "\"";
+            const results3 = [];
+            queryResponse = svr.ExecQuery(queryString);
+            for (let i = 0; i < queryResponse.Count; i += 1) {
+                const properties = queryResponse.ItemIndex(i).Properties_;
+                let count = properties.Count;
+                const propEnum = properties._NewEnum;
+                const obj = {};
+                while (count) {
+                    count -= 1;
+                    const prop = propEnum.Next(1);
+                    obj[prop.Name] = prop.Value;
+                }
+                results3.push(obj);
+            }
+            results3.forEach((result) => {
+                const sensorObject = {name: result.Name, path: result.Identifier};
+                treeByCat.sensors.push(sensorObject);
+            });
+            finalObject.sensorTree.push(treeByCat);
+        });
+        hardwareTrees.push(finalObject);
+    });
+    ActiveX.release(conn);
+    process.stdout.write("[" + "OK".green + "] Hardware tree created    \n");
+}
 
 nativeTheme.themeSource = "dark";
 
@@ -25,6 +116,7 @@ let fps = config.fps;
 let mainWindow;
 let themeList = [];
 let rendering = config.renderAtStartup;
+let activeThemeNeedsSensorsFlag = false;
 
 if (config.defaultThemePath == "") {
     config.defaultThemePath = path.join(__dirname, "themes", "static_image", "theme.js");
@@ -46,6 +138,8 @@ function makeId(length) {
     return result;
 }
 
+process.stdout.write("[  ] Reading themes...\r".grey);
+
 fs.readdirSync(themeFolder).forEach(file => {
     const theme = require(path.join(__dirname, "themes", file, "theme.js"));
     let activeFlag = false;
@@ -58,6 +152,7 @@ fs.readdirSync(themeFolder).forEach(file => {
     if (theme.info.requiresSensors != undefined){
         if(theme.info.requiresSensors) {
             requiresSensors = true;
+            activeThemeNeedsSensorsFlag = requiresSensors && activeFlag ? true : false;
         }
     }
     if (((requiresSensors && libreRunning) || !requiresSensors)){
@@ -85,12 +180,34 @@ fs.readdirSync(themeFolder).forEach(file => {
     }
 });
 
+
 themeList.sort((a,b) => {
     const item1 = a.title;
     const item2 = b.title;
-
+    
     return item1.localeCompare(item2, undefined, {numeric: true})
 });
+
+if (activeThemeNeedsSensorsFlag && !libreRunning) {
+    themeList[0].isActive = true;
+}
+
+process.stdout.write("[" + "OK".green + "] " + themeList.length + " themes loaded    \n");
+
+ipcMain.handle("renderer:startRendering", startRendering);
+ipcMain.handle("renderer:stopRendering", stopRendering);
+ipcMain.handle("themes:getThemeList", getThemeList);
+ipcMain.on("themes:themeSelected", selectTheme);
+ipcMain.on("renderer:parameterTransfer", applyParameters);
+ipcMain.handle("renderer:renderStatus", renderStatus);
+ipcMain.handle("global:openFile", handleFileOpen);
+ipcMain.on("renderer:sensorInfoForPath", handleSensorFullInfo);
+ipcMain.handle("settings:requestConfig", requestConfig);
+ipcMain.handle("settings:requestVersion", requestVersion);
+ipcMain.handle("settings:requestHealth", requestHealth);
+ipcMain.on("settings:configSendback", configSendback);
+ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
+ipcMain.handle("settings:openThemeFolder", openThemeFolder);
 
 const createWindow = () => {
     mainWindow = new BrowserWindow({
@@ -101,19 +218,6 @@ const createWindow = () => {
         },
         icon: path.join(__dirname, "assets", "images", "favicon.ico")
     })
-    ipcMain.handle("renderer:startRendering", startRendering);
-    ipcMain.handle("renderer:stopRendering", stopRendering);
-    ipcMain.handle("themes:getThemeList", getThemeList);
-    ipcMain.on("themes:themeSelected", selectTheme);
-    ipcMain.on("renderer:parameterTransfer", applyParameters);
-    ipcMain.handle("renderer:renderStatus", renderStatus);
-    ipcMain.handle("global:openFile", handleFileOpen);
-    ipcMain.handle("settings:requestConfig", requestConfig);
-    ipcMain.handle("settings:requestVersion", requestVersion);
-    ipcMain.handle("settings:requestHealth", requestHealth);
-    ipcMain.on("settings:configSendback", configSendback);
-    ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
-    ipcMain.handle("settings:openThemeFolder", openThemeFolder);
     mainWindow.loadFile("assets/ui/themes.html");
     mainWindow.removeMenu();
 }
@@ -132,11 +236,15 @@ worker.on('message', (msg) => {
 worker.on("unhandledRejection", error => {throw error});
 
 app.whenReady().then(() => {
-    createWindow();
+    console.log("Init finished successfully.".green)
+    if(!config.startMinimised) {  console.log("Creating window..."); createWindow(); }
+    console.log("Creating tray...");
     createTray();
     if(rendering) {
+        console.log("Autostarting rendering...".blue);
         startRendering();
     }
+    console.log("App successfully opened.".green);
 })
 
 let tray;
@@ -160,8 +268,8 @@ const createTray = () => {
 }
 
 app.on("window-all-closed", () => {
-    exit();
-    app.exit(0);
+    // exit();
+    // app.exit(0);
     // log();
 });
 
@@ -195,6 +303,7 @@ function exit() {
     // fs.writeFileSync(path.join(__dirname, "app.config.json"), config);
     // console.log(config);
     worker.postMessage("exit");
+    app.exit(0);
 }
 
 function startRendering() {
@@ -226,6 +335,12 @@ async function handleFileOpen() {
     }
 }
 
+function handleSensorFullInfo(_event, pathAndID) {
+    if(libreRunning) {
+        console.log(results);
+    }
+}
+
 
 function selectTheme(_event, themeId) {
     const found = themeList.find(element => element.id == themeId);
@@ -248,6 +363,10 @@ function selectTheme(_event, themeId) {
 function configSendback(_event, config){
     const toWrite = JSON.stringify(config);
     fs.writeFileSync(path.join(__dirname, "app.config.json"), toWrite);
+    app.setLoginItemSettings({
+        openAtLogin: true,
+        path: path.basename(process.execPath)
+    });
 }
 
 function renderStatus() {

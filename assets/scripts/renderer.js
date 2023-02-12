@@ -132,9 +132,13 @@ function createControllableParameter(controllableParameter) {
         });
         htmlToAppend = "";
     } else if (controllableParameter.type == "sensor") {
-        
+        appendSensors(controllableParameter);
     }
     htmlToAppend += "<br /><br />";
     parameters.push(controllableParameter);
     form.insertAdjacentHTML("beforeend", htmlToAppend);
+}
+
+function appendSensors(controllableParameter) {
+    window.electronAPI.requestSensorInfoForPath([controllableParameter.value, controllableParameter.id]);
 }

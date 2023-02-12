@@ -2,14 +2,13 @@
   "name": "zefirs-flashy-cooler",
   "version": "0.0.1",
   "devDependencies": {
-    "@electron-forge/cli": "^6.0.4",
+    "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.4",
     "@electron-forge/maker-rpm": "^6.0.4",
-    "@electron-forge/maker-squirrel": "^6.0.4",
+    "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.4",
     "electron": "^20.0.0",
-    "electron-rebuild": "^3.2.9",
-    "why-is-node-running": "^2.2.2"
+    "electron-rebuild": "^3.2.9"
   },
   "description": "An iCue replacement for the Capellix LCD lineup.",
   "main": "main.js",
@@ -21,24 +20,26 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/brunostjohn/capellix-lcd.git"
+    "url": "git+https://github.com/brunostjohn/zefirs-flashy-cooler.git"
   },
   "author": "Bruno St. John",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/brunostjohn/capellix-lcd/issues"
+    "url": "https://github.com/brunostjohn/zefirs-flashy-cooler/issues"
   },
-  "homepage": "https://github.com/brunostjohn/capellix-lcd#readme",
+  "homepage": "https://github.com/brunostjohn/zefirs-flashy-cooler#readme",
   "dependencies": {
+    "@electron-forge/publisher-github": "^6.0.5",
     "@melloware/coloris": "^0.16.1",
     "@napi-rs/canvas": "^0.1.30",
     "bootstrap": "^5.3.0-alpha1",
+    "colors": "^1.4.0",
     "electron-squirrel-startup": "^1.0.0",
     "image-size": "^1.0.2",
-    "mime-types": "^2.1.35",
     "nan": "^2.14.0",
     "node-base64-image": "^2.0.4",
     "node-hid": "^2.1.2",
+    "update-electron-app": "^2.0.1",
     "usb": "^2.7.0",
     "usb-detection": "^4.14.1",
     "winax": "^3.3.4"

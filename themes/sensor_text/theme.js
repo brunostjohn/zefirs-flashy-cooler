@@ -27,6 +27,7 @@ let sensors = new Sensors();
 function renderFrame() {
     const canvas = createCanvas(width, height);
     const context = canvas.getContext("2d");
+    cputemp = sensors.rateLimitedGetSensorValueByPath("/intelcpu/0/temperature/12", "current", 3000);
     context.fillStyle = "#00000";
     context.fillRect(0,0,width,height);
     const time = "CPU Temperature: " + cputemp;
@@ -45,5 +46,12 @@ module.exports = {renderFrame, info: {
     title: "Sensor Text",
     description: "Displays data from system sensors.",
     preview: renderPreview(),
-    requiresSensors: true
+    requiresSensors: true,
+    hasConfig: true,
+    controllableParameters: {
+        sensorPath: {
+            type: "sensor",
+            title: "Sensor"
+        }
+    }
 }};
