@@ -1,6 +1,6 @@
 {
   "name": "zefirs-flashy-cooler",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.4",

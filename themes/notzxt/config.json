@@ -1,1 +1,1 @@
-{"sensorPath1":"/intelcpu/0/temperature/12","sensorPath2":"/gpu-amd/0/temperature/0","sensorText":"CPU Temperature","colour1":"#084ff7","colour2":"#ff00a4","refreshFrequency":"3000"}
+{"sensorPath1":"/intelcpu/0/temperature/12","sensorPath2":"/gpu-amd/0/temperature/0","sensorText":"CPU Temperature","colour1":"#084ff7","colour2":"#ff00a4","backgroundColour":"#ffffff","refreshFrequency":"3000","textColour":"#000000"}

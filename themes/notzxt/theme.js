@@ -34,41 +34,49 @@ context.textAlign = "center";
 
 function renderFrame() {
     sensorValue1 = sensors.rateLimitedGetSensorValueByPath(config.sensorPath1, "current", config.refreshFrequency);
+    let sensorValueCalc1, sensorValueCalc2;
     if(sensorValue1 > 85){
-        sensorValue1 = 85;
+        sensorValueCalc1 = 85;
     } else if (sensorValue1<30){
-        sensorValue1 = 30;
+        sensorValueCalc1 = 30;
+    } else {
+        sensorValueCalc1 = sensorValue1;
     }
     sensorValue2 = sensors.rateLimitedGetSensorValueByPath2(config.sensorPath2, "current", config.refreshFrequency);
     if(sensorValue2 > 85){
-        sensorValue2 = 85;
+        sensorValueCalc2 = 85;
     } else if (sensorValue2<30){
-        sensorValue2 = 30;
+        sensorValueCalc2 = 30;
+    } else {
+        sensorValueCalc2 = sensorValue2;
     }
     
     context.clearRect(0,0,480,480);
+
+    context.fillStyle = config.backgroundColour;
+    context.fillRect(0,0,width,height);
     
     context.beginPath();
-    context.arc(width/2, height/2, 200, scale(sensorValue1, 30, 85, 0.9, 0.6) * Math.PI, scale(sensorValue1, 30, 85, 1.1, 1.4) * Math.PI);
+    context.arc(width/2, height/2, 200, scale(sensorValueCalc1, 30, 85, 0.9, 0.6) * Math.PI, scale(sensorValueCalc1, 30, 85, 1.1, 1.4) * Math.PI);
     context.strokeStyle = config.colour1;
     context.fillStyle = config.colour1;
     context.font = "40px Gotham-SSM";
     context.fillText("CPU", 150, 300);
     context.font = "70px Gotham-SSM";
-    context.fillStyle = "#ffffff";
+    context.fillStyle = config.textColour;
     context.fillText(sensorValue1 + "°", 168, 250);
     context.lineWidth = 40;
     context.lineCap = "round";
     context.stroke();
 
     context.beginPath();
-    context.arc(width/2, height/2, 200, scale(sensorValue2, 30, 85, 1.9, 1.6) * Math.PI, scale(sensorValue2, 30, 85, 2.1, 2.4) * Math.PI);
+    context.arc(width/2, height/2, 200, scale(sensorValueCalc2, 30, 85, 1.9, 1.6) * Math.PI, scale(sensorValueCalc2, 30, 85, 2.1, 2.4) * Math.PI);
     context.strokeStyle = config.colour2;
     context.fillStyle = config.colour2;
     context.font = "40px Gotham-SSM";
     context.fillText("GPU", 330, 300);
     context.font = "70px Gotham-SSM";
-    context.fillStyle = "#ffffff";
+    context.fillStyle = config.textColour;
     context.fillText(sensorValue2 + "°", 348, 250);
     context.lineWidth = 40;
     context.lineCap = "round";
@@ -119,6 +127,16 @@ module.exports = {renderFrame, renderPreview, info: {
         colour2: {
             type: "colour",
             title: "Right Sensor Colour",
+            defaultValue: "#d318d9"
+        },
+        backgroundColour: {
+            type: "colour",
+            title: "Background Colour",
+            defaultValue: "#d318d9"
+        },
+        textColour: {
+            type: "colour",
+            title: "Text Colour",
             defaultValue: "#d318d9"
         }
     }

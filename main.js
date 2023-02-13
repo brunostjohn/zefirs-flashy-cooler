@@ -1,7 +1,7 @@
 const {app, Tray, Menu, nativeImage, BrowserWindow, nativeTheme, systemPreferences, ipcMain, dialog} = require("electron");
 if (require("electron-squirrel-startup")) app.quit();
 
-const appVersion = "0.0.1";
+const appVersion = "0.0.2";
 const releaseType = "alpha";
 
 const colors = require("colors");
