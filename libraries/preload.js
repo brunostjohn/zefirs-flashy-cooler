@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     themeSelected: (themeId) => ipcRenderer.send("themes:themeSelected", themeId),
     parametersSendback: (parameters) => ipcRenderer.send("renderer:parameterTransfer", parameters),
     openFile: () => ipcRenderer.invoke("global:openFile"),
-    requestSensorInfoForPath: (callback) => ipcRenderer.send("renderer:sensorInfoForPath", callback),
+    requestSensorInfo: () => ipcRenderer.invoke("renderer:sensorInfo"),
     requestConfig: () => ipcRenderer.invoke("settings:requestConfig"),
     requestVersion: () => ipcRenderer.invoke("settings:requestVersion"),
     requestHealth: () => ipcRenderer.invoke("settings:requestHealth"),
@@ -21,5 +21,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     configSendback: (config) => ipcRenderer.send("settings:configSendback", config),
     requestThemeFolder: () => ipcRenderer.invoke("settings:requestThemeFolder"),
     receiveThemeFolder: (themeFolder) => ipcRenderer.on("settings:receiveThemeFolder", themeFolder),
-    openThemeFolder: () => ipcRenderer.invoke("settings:openThemeFolder")
+    openThemeFolder: () => ipcRenderer.invoke("settings:openThemeFolder"),
+    receiveSensorInfo: (callback) => ipcRenderer.on("renderer:receiveSensorInfo", callback)
 })

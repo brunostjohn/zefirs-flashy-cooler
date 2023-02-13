@@ -58,6 +58,7 @@ function renderPreview(){
   reloadConfig();
   cellsPerLine = config.amountOfSquares;
   cellSize = width / cellsPerLine;
+  colours = [];
   for (let i = 1; i <= cellsPerLine; i++) {
     for ( let j = 1; j <= cellsPerLine; j++) {
       colours.push(getRandomInt(0, 360));

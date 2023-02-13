@@ -1,6 +1,5 @@
 const {workerData, parentPort} = require("worker_threads");
 const lcd =  require("./capellix.js");
-// const usbDetect = require("usb-detection");
 let themeScript = require(workerData.renderPath);
 
 LCD = new lcd.LCD();
@@ -25,17 +24,23 @@ class Renderer{
     render(){
         LCD.sendFrame(themeScript.renderFrame());
     }
+
     setFramerate(framerate){
         this.frametime=1000/framerate;
     }
+
     changeTheme(path) {
         themeScript = require(path);
+    }
+
+    wrapUp(){
+        if(typeof themeScript.wrapUp === "function"){
+            themeScript.wrapUp();
+        }
     }
 }
 
 renderer = new Renderer(workerData, LCD)
-
-// usbDetect.on('add:6940:3129', LCD.reconstructUSB );
 
 parentPort.on("message", message => {
     if(message=="stop"){
@@ -46,6 +51,7 @@ parentPort.on("message", message => {
         // usbDetect.startMonitoring();
     } else if(message=="exit"){
         renderer.stopRendering(true);
+        renderer.wrapUp();
         parentPort.close();
     } else if(Number.isInteger(message)) {
         renderer.stopRendering(false);

@@ -10,17 +10,21 @@ class Sensors {
             this.libreRunning = false
         };
         if(this.libreRunning) {
-          this.conn = new ActiveX.Object("WbemScripting.SWbemLocator");
-          this.svr = this.conn.ConnectServer(".", "root\\LibreHardwareMonitor");
-          this.lastTime = Date.now()
-          this.lastValue = 0;
+            this.lastTime = Date.now()
+            this.lastValue = 0;
+            this.runAgain = true;
+            this.lastValue2 = 0;
+            this.lastTime2 = Date.now();
         }
     }
-
+    
     query(queryString) {
         if (this.libreRunning) {
+            this.conn = new ActiveX.Object("WbemScripting.SWbemLocator");
+            this.svr = this.conn.ConnectServer(".", "root\\LibreHardwareMonitor");
             const results = [];
             const queryResponse = this.svr.ExecQuery(queryString);
+            ActiveX.release(this.conn);
             for (let i = 0; i < queryResponse.Count; i += 1) {
                 const properties = queryResponse.ItemIndex(i).Properties_;
                 let count = properties.Count;
@@ -38,6 +42,10 @@ class Sensors {
         } else {
           return {value: "0.0", unit: "unit"}
         }
+    }
+
+    disableSensors() {
+        this.runAgain = false;
     }
 
     listHardware() {
@@ -132,14 +140,20 @@ class Sensors {
     }
 
     rateLimitedGetSensorValueByPath(sensorPath, valueType, ms) {
-        if(Date.now() - ms > this.lastTime) {
+        if((Date.now() - ms > this.lastTime) && this.runAgain) {
             this.lastValue = this.getSensorValueByPath(sensorPath, valueType);
             this.lastTime = Date.now();
         }
         return this.lastValue;
     }
 
-    
+    rateLimitedGetSensorValueByPath2(sensorPath, valueType, ms) {
+        if((Date.now() - ms > this.lastTime2) && this.runAgain) {
+            this.lastValue2 = this.getSensorValueByPath(sensorPath, valueType);
+            this.lastTime2 = Date.now();
+        }
+        return this.lastValue2;
+    }
 }
 
 module.exports = Sensors;

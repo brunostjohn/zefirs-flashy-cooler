@@ -19,6 +19,7 @@ window.addEventListener("load", (event) => {
             'rgb(0,119,182)'
           ],
       });
+    window.electronAPI.requestSensorInfo();
     window.electronAPI.renderStatus();
     window.electronAPI.getThemeList();
 })
@@ -32,6 +33,13 @@ function makeId(length) {
     }
     return result;
 }
+
+let sensorinfo;
+
+window.electronAPI.receiveSensorInfo((_event, value) => {
+    sensorinfo = value;
+    // console.log(value);
+});
     
 window.electronAPI.updateRenderStatus((_event, value) => {
     if (value == 1){
@@ -91,9 +99,11 @@ const reset = document.getElementById("reset");
 
 reset.addEventListener("click", () => {
     parameters.forEach(controllableParameter => {
-        const controllingElement = document.getElementById(controllableParameter.id);
-        controllableParameter.value = controllableParameter.defaultValue;
-        controllingElement.value = controllableParameter.defaultValue;
+        if(controllableParameter.type != "sensor"){
+            const controllingElement = document.getElementById(controllableParameter.id);
+            controllableParameter.value = controllableParameter.defaultValue;
+            controllingElement.value = controllableParameter.defaultValue;
+        }
     });
     window.electronAPI.parametersSendback(parameters);
 
@@ -112,7 +122,7 @@ function createControllableParameter(controllableParameter) {
         colour.addEventListener("input", () => {
             colourBadge.style.backgroundColor = colour.value;
         });
-        htmlToAppend = "";
+        htmlToAppend = "<br /><br />";
     } else if (controllableParameter.type == "file") {
         htmlToAppend += "<h4>" + controllableParameter.title + "</h4><button type='button' class='btn btn-outline-info' id='" + controllableParameter.id + "'>Open File</button>";
         form.insertAdjacentHTML("beforeend", htmlToAppend);
@@ -121,7 +131,7 @@ function createControllableParameter(controllableParameter) {
             const filePath = await window.electronAPI.openFile();
             button.value = filePath;
         });
-        htmlToAppend = "";
+        htmlToAppend = "<br /><br />";
     } else if (controllableParameter.type == "range") {
         htmlToAppend += "<h4>" + controllableParameter.title + "</h4><input type='range' class='form-range' min='" + controllableParameter.min + "' max='" + controllableParameter.max + "' step='" + controllableParameter.step + "' id='" + controllableParameter.id + "' value='" + controllableParameter.value + "' /><label for='" + controllableParameter.id + "' class='form-label' id='" + controllableParameter.id + "label'>Current value: " + controllableParameter.value +"</label>";
         form.insertAdjacentHTML("beforeend", htmlToAppend);
@@ -130,15 +140,122 @@ function createControllableParameter(controllableParameter) {
         range.addEventListener("input", () => {
             rangeLabel.textContent = "Current value: " + range.value;
         });
-        htmlToAppend = "";
+        htmlToAppend = "<br /><br />";
     } else if (controllableParameter.type == "sensor") {
         appendSensors(controllableParameter);
+    } else if (controllableParameter.type == "text") {
+        htmlToAppend = `
+        <h4>${controllableParameter.title}</h4><input type="text" class="form-control" id="${controllableParameter.id}" placeholder="${controllableParameter.defaultValue}" value="${controllableParameter.value}" />
+        `;
+        form.insertAdjacentHTML("beforeend", htmlToAppend);
+        htmlToAppend = "<br />"
     }
-    htmlToAppend += "<br /><br />";
     parameters.push(controllableParameter);
     form.insertAdjacentHTML("beforeend", htmlToAppend);
 }
 
 function appendSensors(controllableParameter) {
-    window.electronAPI.requestSensorInfoForPath([controllableParameter.value, controllableParameter.id]);
+    const form = document.getElementById("parameterContainer");
+    let sensorObject = [undefined, undefined];
+    let parentObject = [undefined, undefined];
+    let superObject  = [undefined, undefined];
+    sensorinfo.forEach((object) =>{
+        object.sensorTree.forEach((object2) => {
+            object2.sensors.forEach((object3) => {
+                if(object3.path === controllableParameter.value) {
+                    sensorObject[0] = object3;
+                }
+            });
+            if (sensorObject[0] != undefined) {
+                parentObject[0] = object2;
+                sensorObject[1] = sensorObject[0];
+                sensorObject[0] = undefined
+            }
+        });
+        if(parentObject[0] != undefined) {
+            superObject[1] = object;
+            parentObject[1] = parentObject[0];
+            parentObject[0] = undefined;
+        }
+    });
+    sensorObject = sensorObject[1];
+    parentObject = parentObject[1];
+    superObject = superObject[1];
+    let htmlToAppend = `
+    <div class="sensorPicker" id="${controllableParameter.id}container">
+    <h4>${controllableParameter.title}</h4>
+    <label for="${controllableParameter.id}stage1">Pick device</label>
+    <select class="form-select" id="${controllableParameter.id}stage1" onchange="updateStage1('${controllableParameter.id}')">
+    </select>
+    <label for="${controllableParameter.id}stage2">Pick sensor type</label>
+    <select class="form-select" id="${controllableParameter.id}stage2" onchange="updateStage2('${controllableParameter.id}')">
+    </select>
+    <label for="${controllableParameter.id}">Pick sensor</label>
+    <select class="form-select" id="${controllableParameter.id}">
+    </select>
+    </div>
+    `;
+    form.insertAdjacentHTML("beforeend", htmlToAppend);
+    const superPicker = document.getElementById(controllableParameter.id + "stage1");
+    const parentPicker = document.getElementById(controllableParameter.id + "stage2");
+    const sensorPicker = document.getElementById(controllableParameter.id);
+    sensorinfo.forEach((element) => {
+        const newHTML = element == superObject ? `<option value="${element.path}" selected>${element.name}</option>` : `<option value="${element.path}">${element.name}</option>`;
+        superPicker.insertAdjacentHTML("beforeend", newHTML);
+    });
+    updateStage1(controllableParameter.id);
+    updateStage2(controllableParameter.id);
+    parentPicker.value = parentObject.category;
+    sensorPicker.value = sensorObject.path;
+}
+
+function updateStage1(domID){
+    const superPicker = document.getElementById(domID + "stage1");
+    const parentPicker = document.getElementById(domID + "stage2");
+    const sensorPicker = document.getElementById(domID);
+    while(parentPicker.firstChild) {
+        parentPicker.removeChild(parentPicker.lastChild);
+    }
+    while(sensorPicker.firstChild) {
+        sensorPicker.removeChild(sensorPicker.lastChild);
+    }
+    sensorPicker.disabled = true;
+    const pathToLookFor = superPicker.value;
+    const newHTML = [];
+    sensorinfo.forEach((element) => {
+        if(element.path == pathToLookFor) {
+            element.sensorTree.forEach((tree) => {
+                newHTML.push(`<option value="${tree.category}">${tree.category}</option>`);
+            });
+        }
+    });
+    newHTML.forEach((elementDef) => {
+        parentPicker.insertAdjacentHTML("beforeend", elementDef);
+    });
+    updateStage2(domID);
+}
+
+function updateStage2(domID){
+    const superPicker = document.getElementById(domID + "stage1");
+    const parentPicker = document.getElementById(domID + "stage2");
+    const sensorPicker = document.getElementById(domID);
+    while(sensorPicker.firstChild) {
+        sensorPicker.removeChild(sensorPicker.lastChild);
+    }
+    sensorPicker.disabled = false;
+    const newHTML = [];
+    sensorinfo.forEach((element) => {
+        if(element.path == superPicker.value) {
+            element.sensorTree.forEach((tree) => {
+                if(tree.category == parentPicker.value) {
+                    tree.sensors.forEach((sensor) => {
+                        newHTML.push(`<option value="${sensor.path}">${sensor.name}</option>`);
+                    });
+                }
+            });
+        }
+    });
+    newHTML.forEach((elementDef) => {
+        sensorPicker.insertAdjacentHTML("beforeend", elementDef);
+    });
 }

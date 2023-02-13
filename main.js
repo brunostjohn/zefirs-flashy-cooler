@@ -6,6 +6,12 @@ const releaseType = "alpha";
 
 const colors = require("colors");
 
+const gotTheLock = app.requestSingleInstanceLock();
+if(!gotTheLock) {
+    console.log("This is not the only instance. App will quit.".red);
+    app.quit();
+}
+
 console.log("Zefir's Flashy Cooler ver. ".yellow + appVersion.blue + "@" + releaseType.red + " starting...".yellow);
 
 const path = require("path");
@@ -24,10 +30,12 @@ let libreRunning = true;
 
 console.log("Performing init...".cyan);
 
+process.stdout.write("iCUE: ".blue);
 try{execSync("tasklist | findstr \"iCUE.exe\"")} catch {iCueRunning = false}
+process.stdout.write(iCueRunning + "\n");
+process.stdout.write("LibreHardwareMonitor: ".blue);
 try{execSync("tasklist | findstr \"LibreHardwareMonitor.exe\"")} catch {libreRunning = false};
-
-console.log("iCUE: ".blue + iCueRunning + "\nLibreHardwareMonitor: ".blue + libreRunning);
+process.stdout.write(libreRunning + "\n");
 
 //massive behemoth of a thing
 const hardwareTrees = [];
@@ -190,6 +198,7 @@ themeList.sort((a,b) => {
 
 if (activeThemeNeedsSensorsFlag && !libreRunning) {
     themeList[0].isActive = true;
+    config.defaultThemePath = themeList[0].path;
 }
 
 process.stdout.write("[" + "OK".green + "] " + themeList.length + " themes loaded    \n");
@@ -201,7 +210,7 @@ ipcMain.on("themes:themeSelected", selectTheme);
 ipcMain.on("renderer:parameterTransfer", applyParameters);
 ipcMain.handle("renderer:renderStatus", renderStatus);
 ipcMain.handle("global:openFile", handleFileOpen);
-ipcMain.on("renderer:sensorInfoForPath", handleSensorFullInfo);
+ipcMain.handle("renderer:sensorInfo", handleSensorFullInfo);
 ipcMain.handle("settings:requestConfig", requestConfig);
 ipcMain.handle("settings:requestVersion", requestVersion);
 ipcMain.handle("settings:requestHealth", requestHealth);
@@ -219,7 +228,7 @@ const createWindow = () => {
         icon: path.join(__dirname, "assets", "images", "favicon.ico")
     })
     mainWindow.loadFile("assets/ui/themes.html");
-    mainWindow.removeMenu();
+    // mainWindow.removeMenu();
 }
 
 let worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: config.defaultThemePath, fps: fps} });
@@ -335,9 +344,9 @@ async function handleFileOpen() {
     }
 }
 
-function handleSensorFullInfo(_event, pathAndID) {
+function handleSensorFullInfo() {
     if(libreRunning) {
-        console.log(results);
+        mainWindow.webContents.send("renderer:receiveSensorInfo", hardwareTrees);
     }
 }
 
@@ -397,10 +406,10 @@ function applyParameters(_event, parameters) {
             });
             const finalConfig = JSON.stringify(configTheme);
             fs.writeFileSync(item.configPath, finalConfig);
+            worker.postMessage("exit");
+            worker.terminate();
             const theme = require(item.path);
             item.preview = "data:image/jpeg;base64," + theme.renderPreview();
-            worker.postMessage("exit");
-            sleep(300);
             worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: item.path, fps: fps} }); // worker needs to be destroyed for on the fly editing to work
             if(rendering) {
                 startRendering();
