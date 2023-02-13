@@ -228,10 +228,10 @@ const createWindow = () => {
         icon: path.join(__dirname, "assets", "images", "favicon.ico")
     })
     mainWindow.loadFile("assets/ui/themes.html");
-    // mainWindow.removeMenu();
+    mainWindow.removeMenu();
 }
 
-let worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: config.defaultThemePath, fps: fps} });
+let worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), { workerData: {renderPath: config.defaultThemePath, fps: fps} });
 
 worker.on("error", err => {
     console.log(err);
@@ -410,7 +410,7 @@ function applyParameters(_event, parameters) {
             worker.terminate();
             const theme = require(item.path);
             item.preview = "data:image/jpeg;base64," + theme.renderPreview();
-            worker = new Worker("./libraries/renderer.js", { workerData: {renderPath: item.path, fps: fps} }); // worker needs to be destroyed for on the fly editing to work
+            worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), { workerData: {renderPath: item.path, fps: fps} }); // worker needs to be destroyed for on the fly editing to work
             if(rendering) {
                 startRendering();
             }
