@@ -1,4 +1,4 @@
-# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/favicon-32x32.png) Zefir's Flashy Cooler
+# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/favicon-32x32.png) Zefir's Flashy Cooler 
 This is a desktop app that controls the Capellix cooler's LCD instead of iCUE.
 
 ![Screenshot 1](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/screenshot.png)
