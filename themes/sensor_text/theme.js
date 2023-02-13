@@ -29,6 +29,11 @@ let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 //     cputemp = value;
 // });
 
+if(!sensors.checkIfSensorExists(config.sensorPath)) {
+    config.sensorPath = sensors.provideExistingSensor();
+}
+
+
 function wrapUp() {
     sensors.disableSensors();
 }

@@ -15,6 +15,16 @@ GlobalFonts.registerFromPath(path.join(__dirname, "gothamssm.ttf"), "Gotham-SSM"
 
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
+if(!sensors.checkIfSensorExists(config.sensorPath1)) {
+    config.sensorPath1 = sensors.provideExistingSensor();
+}
+
+if(!sensors.checkIfSensorExists(config.sensorPath2)) {
+    config.sensorPath2 = sensors.provideExistingSensor();
+}
+
+fs.writeFileSync(path.join(__dirname, "config.json"), JSON.stringify(config));
+
 function wrapUp() {
     sensors.disableSensors();
 }

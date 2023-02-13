@@ -154,6 +154,20 @@ class Sensors {
         }
         return this.lastValue2;
     }
+
+    checkIfSensorExists(sensorPath) {
+        try{
+            this.getSensorValueByPath(sensorPath, "current");
+            return true;
+        } catch {
+            return false;
+        }
+    }
+
+    provideExistingSensor() {
+        const sensors = this.query("Select Identifier From Sensor Where Identifier Like \"/%cpu%/%/temperature/%\"");
+        return sensors[0].Identifier;
+    }
 }
 
 module.exports = Sensors;
