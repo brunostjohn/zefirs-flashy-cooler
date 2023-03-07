@@ -11,7 +11,7 @@ const {
 } = require("electron");
 if (require("electron-squirrel-startup")) app.quit();
 
-const appVersion = "0.0.2";
+const appVersion = "0.0.3";
 const releaseType = "alpha";
 
 const colors = require("colors");
@@ -273,7 +273,7 @@ const createWindow = () => {
     icon: path.join(__dirname, "assets", "images", "favicon.ico"),
   });
   mainWindow.loadFile("assets/ui/themes.html");
-  // mainWindow.removeMenu();
+  mainWindow.removeMenu();
 };
 
 let worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
