@@ -1,5 +1,5 @@
 const Sensors = require("../../libraries/sensors.js");
-const { createCanvas, GlobalFonts } = require("@napi-rs/canvas");
+const { createCanvas, GlobalFonts, Image } = require("@napi-rs/canvas");
 const fs = require("fs");
 const path = require("path");
 
@@ -15,6 +15,10 @@ GlobalFonts.registerFromPath(
   path.join(__dirname, "gothamssm.ttf"),
   "Gotham-SSM"
 );
+
+const emblem_file = fs.readFileSync(path.join(__dirname, "emblem.png"));
+const emblem = new Image();
+emblem.src = emblem_file;
 
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
@@ -116,6 +120,8 @@ function renderFrame() {
   context.lineCap = "round";
   context.stroke();
 
+  if (config.showEmblem) context.drawImage(emblem, 220, 110, 50, 50);
+
   return canvas.toBuffer("image/jpeg").toString("base64");
 }
 
@@ -180,6 +186,11 @@ module.exports = {
         type: "colour",
         title: "Text Colour",
         defaultValue: "#d318d9",
+      },
+      showEmblem: {
+        type: "bool",
+        title: "Show emblem",
+        defaultValue: true,
       },
     },
   },

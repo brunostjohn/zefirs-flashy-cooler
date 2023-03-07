@@ -91,7 +91,11 @@ apply.addEventListener("click", () => {
     const controllingElement = document.getElementById(
       controllableParameter.id
     );
-    controllableParameter.value = controllingElement.value;
+    if (controllableParameter.type == "bool") {
+      controllableParameter.value = controllingElement.checked;
+    } else {
+      controllableParameter.value = controllingElement.value;
+    }
   });
   window.electronAPI.parametersSendback(parameters);
 
@@ -106,8 +110,13 @@ reset.addEventListener("click", () => {
       const controllingElement = document.getElementById(
         controllableParameter.id
       );
-      controllableParameter.value = controllableParameter.defaultValue;
-      controllingElement.value = controllableParameter.defaultValue;
+      if (controllableParameter.type == "bool") {
+        controllableParameter.value = controllableParameter.defaultValue;
+        controllingElement.checked = controllableParameter.defaultValue;
+      } else {
+        controllableParameter.value = controllableParameter.defaultValue;
+        controllingElement.value = controllableParameter.defaultValue;
+      }
     }
   });
   window.electronAPI.parametersSendback(parameters);
@@ -192,6 +201,16 @@ function createControllableParameter(controllableParameter) {
         `;
     form.insertAdjacentHTML("beforeend", htmlToAppend);
     htmlToAppend = "<br />";
+  } else if (controllableParameter.type == "bool") {
+    const checkedVal = controllableParameter.value ? " checked" : "";
+    htmlToAppend = `
+    <div class="form-check form-switch">
+      <input class="form-check-input" type="checkbox" role="switch" value="" id="${controllableParameter.id}"${checkedVal}>
+      <label class="form-check-label" for="${controllableParameter.id}">
+        ${controllableParameter.title}
+      </label>
+    </div>
+    `;
   }
   parameters.push(controllableParameter);
   form.insertAdjacentHTML("beforeend", htmlToAppend);

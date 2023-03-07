@@ -1,5 +1,5 @@
 const Sensors = require("../../libraries/sensors.js");
-const { createCanvas, GlobalFonts, Path2D } = require("@napi-rs/canvas");
+const { createCanvas, GlobalFonts, Path2D, Image } = require("@napi-rs/canvas");
 const fs = require("fs");
 const path = require("path");
 
@@ -14,6 +14,10 @@ GlobalFonts.registerFromPath(
 );
 
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
+
+const emblem_file = fs.readFileSync(path.join(__dirname, "emblem.png"));
+const emblem = new Image();
+emblem.src = emblem_file;
 
 if (!sensors.checkIfSensorExists(config.sensorPath)) {
   config.sensorPath = sensors.provideExistingSensor();
@@ -113,6 +117,8 @@ function renderFrame() {
   context.font = "60px Gotham-SSM";
   context.fillText("°", 245 + textWidth, 200);
 
+  if (config.showEmblem) context.drawImage(emblem, 220, 110, 50, 50);
+
   return canvas.toBuffer("image/jpeg", 80).toString("base64");
 }
 
@@ -167,6 +173,11 @@ module.exports = {
         type: "colour",
         title: "Text Colour",
         defaultValue: "#ffffff",
+      },
+      showEmblem: {
+        type: "bool",
+        title: "Show emblem",
+        defaultValue: true,
       },
     },
   },
