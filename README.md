@@ -10,6 +10,9 @@ Will it run on Linux or macOS? Maybe. Probably not.
 ## Installation:
 Download the installer from the releases tab and enjoy. There are some bugs to iron out so please submit on issue when you notice one. LibreHardwareMonitor is required for this to be able to use any system sensor input (CPU, GPU etc.).
 
+## I want to make my own theme.
+That's great, the [wiki on themes](https://github.com/brunostjohn/zefirs-flashy-cooler/wiki/Themes) is a great starting point.
+
 ## What it does and what it doesn't do.
 - [x] Display a static image to the LCD.
 - [x] Have theme support.
