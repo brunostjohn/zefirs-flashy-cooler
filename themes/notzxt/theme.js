@@ -120,7 +120,7 @@ function renderFrame() {
   context.lineCap = "round";
   context.stroke();
 
-  if (config.showEmblem) context.drawImage(emblem, 220, 110, 50, 50);
+  if (config.showEmblem) context.drawImage(emblem, 220, 110);
 
   return canvas.toBuffer("image/jpeg").toString("base64");
 }

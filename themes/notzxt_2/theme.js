@@ -117,7 +117,7 @@ function renderFrame() {
   context.font = "60px Gotham-SSM";
   context.fillText("°", 245 + textWidth, 200);
 
-  if (config.showEmblem) context.drawImage(emblem, 220, 110, 50, 50);
+  if (config.showEmblem) context.drawImage(emblem, 220, 110);
 
   return canvas.toBuffer("image/jpeg", 80).toString("base64");
 }
