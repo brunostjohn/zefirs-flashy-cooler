@@ -107,13 +107,13 @@ function renderFrame() {
     context.measureText(Math.round(sensorValue).toString()).width / 2
   );
 
-  context.font = "40px Gotham-SSM";
+  context.font = "30px Gotham-SSM";
   context.fillStyle = config.textColour;
-  context.fillText(config.sensorText, 240, 340);
+  context.fillText(config.sensorText, 240, 330);
   context.font = "60px Gotham-SSM";
   context.fillText("°", 245 + textWidth, 200);
 
-  return canvas.toBuffer("image/jpeg").toString("base64");
+  return canvas.toBuffer("image/jpeg", 80).toString("base64");
 }
 
 function renderPreview() {
