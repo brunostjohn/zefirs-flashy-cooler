@@ -74,7 +74,7 @@ function renderFrame() {
     context.fillText("CPU", 150, 300);
     context.font = "70px Gotham-SSM";
     context.fillStyle = config.textColour;
-    context.fillText(sensorValue1 + "°", 168, 250);
+    context.fillText(Math.round(sensorValue1) + "°", 168, 250);
     context.lineWidth = 40;
     context.lineCap = "round";
     context.stroke();
@@ -87,7 +87,7 @@ function renderFrame() {
     context.fillText("GPU", 330, 300);
     context.font = "70px Gotham-SSM";
     context.fillStyle = config.textColour;
-    context.fillText(sensorValue2 + "°", 348, 250);
+    context.fillText(Math.round(sensorValue2) + "°", 348, 250);
     context.lineWidth = 40;
     context.lineCap = "round";
     context.stroke();
