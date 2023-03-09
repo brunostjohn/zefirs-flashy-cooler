@@ -1,1 +1,1 @@
-{"sensorPath":"/intelcpu/0/temperature/12","sensorText":"CPU Package","colour1":"#6d01e1","colour2":"#e202b9","refreshFrequency":"3000","textColour":"#ffffff","showEmblem":true}
+{"sensorPath":"/intelcpu/0/temperature/12","sensorText":"CPU Package","colour1":"#6d01e1","colour2":"#e202b9","refreshFrequency":"3000","textColour":"#ffffff","showEmblem":true,"smoothAnimation":true}

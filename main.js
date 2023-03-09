@@ -64,6 +64,7 @@ try {
 process.stdout.write(libreRunning + "\n");
 
 //massive behemoth of a thing
+
 const hardwareTrees = [];
 
 if (libreRunning) {
@@ -404,6 +405,7 @@ function exit() {
   // console.log(config);
   worker.postMessage("exit");
   app.exit(0);
+  process.exit(0);
 }
 
 function startRendering() {

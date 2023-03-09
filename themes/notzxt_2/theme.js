@@ -5,7 +5,7 @@ const path = require("path");
 
 const width = 480;
 const height = 480;
-let sensorValue = "45";
+let sensorValue = "20";
 let sensors = new Sensors();
 
 GlobalFonts.registerFromPath(
@@ -45,6 +45,13 @@ let gradient = context.createLinearGradient(480, 480, 0, 0);
 gradient.addColorStop(0, config.colour1);
 gradient.addColorStop(1, config.colour2);
 
+let oldval = 20;
+let transitionState = false;
+const framesUntilDone = Math.round((config.refreshFrequency / 2000) * 25);
+let currentCounter = 0;
+let arcIncrements = { arc1: 0, arc2: 0, dot: 0 };
+let arcVals = { arc1: 0, arc2: 0, dot: 0 };
+
 function renderFrame() {
   sensorValue = sensors.rateLimitedGetSensorValueByPath(
     config.sensorPath,
@@ -60,40 +67,93 @@ function renderFrame() {
     sensorValueCalc = sensorValue;
   }
 
+  if (sensorValueCalc != oldval && !transitionState && config.smoothAnimation) {
+    currentCounter = framesUntilDone;
+    transitionState = true;
+    arcVals.arc1 = scale(oldval, 20, 90, 0.93, 2.25);
+    arcVals.arc2 = scale(oldval, 20, 90, 0.75, 2.09);
+    arcVals.dot = scale(oldval, 20, 90, 0.84, 2.17);
+
+    arcIncrements.arc1 =
+      (scale(sensorValueCalc, 20, 90, 0.93, 2.25) -
+        scale(oldval, 20, 90, 0.93, 2.25)) /
+      framesUntilDone;
+    arcIncrements.arc2 =
+      (scale(sensorValueCalc, 20, 90, 0.75, 2.09) -
+        scale(oldval, 20, 90, 0.75, 2.09)) /
+      framesUntilDone;
+    arcIncrements.dot =
+      (scale(sensorValueCalc, 20, 90, 0.84, 2.17) -
+        scale(oldval, 20, 90, 0.84, 2.17)) /
+      framesUntilDone;
+    oldval = sensorValueCalc;
+  }
   context.clearRect(0, 0, 480, 480);
 
   context.lineWidth = 50;
   context.lineCap = "round";
   context.strokeStyle = "white";
 
-  // min - 2.25, max - 0.89;
-  context.beginPath();
-  context.arc(
-    480 / 2,
-    480 / 2,
-    215,
-    scale(sensorValueCalc, 20, 90, 0.93, 2.25) * Math.PI,
-    2.3 * Math.PI
-  );
-  context.stroke();
-  context.closePath();
-  // min - 0.75, max - 2.11?;
-  context.beginPath();
-  context.arc(
-    480 / 2,
-    480 / 2,
-    215,
-    0.7 * Math.PI,
-    scale(sensorValueCalc, 20, 90, 0.75, 2.09) * Math.PI
-  );
-  context.stroke();
-  context.closePath();
-  // min - 0.82, max - 2.18;
-  context.beginPath();
-  const dot = scale(sensorValueCalc, 20, 90, 0.84, 2.17);
-  context.arc(480 / 2, 480 / 2, 215, dot * Math.PI, (dot + 0.001) * Math.PI);
-  context.stroke();
-  context.closePath();
+  if (transitionState && config.smoothAnimation) {
+    arcVals.arc1 += arcIncrements.arc1;
+    arcVals.arc2 += arcIncrements.arc2;
+    arcVals.dot += arcIncrements.dot;
+    // min - 0.93, max - 2.25;
+    context.beginPath();
+    context.arc(480 / 2, 480 / 2, 215, arcVals.arc1 * Math.PI, 2.3 * Math.PI);
+    context.stroke();
+    context.closePath();
+    // min - 0.75, max - 2.09
+    context.beginPath();
+    context.arc(480 / 2, 480 / 2, 215, 0.7 * Math.PI, arcVals.arc2 * Math.PI);
+    context.stroke();
+    context.closePath();
+    // min - 0.84, max - 2.17
+    context.beginPath();
+    context.arc(
+      480 / 2,
+      480 / 2,
+      215,
+      arcVals.dot * Math.PI,
+      (arcVals.dot + 0.001) * Math.PI
+    );
+    context.stroke();
+    context.closePath();
+    currentCounter--;
+    if (currentCounter == 0) {
+      transitionState = false;
+      arcIncrements = { arc1: 0, arc2: 0, dot: 0 };
+    }
+  } else {
+    // min - 0.93, max - 2.25;
+    context.beginPath();
+    context.arc(
+      480 / 2,
+      480 / 2,
+      215,
+      scale(sensorValueCalc, 20, 90, 0.93, 2.25) * Math.PI,
+      2.3 * Math.PI
+    );
+    context.stroke();
+    context.closePath();
+    // min - 0.75, max - 2.09
+    context.beginPath();
+    context.arc(
+      480 / 2,
+      480 / 2,
+      215,
+      0.7 * Math.PI,
+      scale(sensorValueCalc, 20, 90, 0.75, 2.09) * Math.PI
+    );
+    context.stroke();
+    context.closePath();
+    // min - 0.84, max - 2.17
+    context.beginPath();
+    const dot = scale(sensorValueCalc, 20, 90, 0.84, 2.17);
+    context.arc(480 / 2, 480 / 2, 215, dot * Math.PI, (dot + 0.001) * Math.PI);
+    context.stroke();
+    context.closePath();
+  }
 
   context.globalCompositeOperation = "source-in";
 
@@ -123,6 +183,7 @@ function renderFrame() {
 }
 
 function renderPreview() {
+  currentCounter = 0;
   sensors = new Sensors();
   reloadConfig();
   gradient = context.createLinearGradient(480, 480, 0, 0);
@@ -177,6 +238,12 @@ module.exports = {
       showEmblem: {
         type: "bool",
         title: "Show emblem",
+        defaultValue: true,
+      },
+      smoothAnimation: {
+        type: "bool",
+        title:
+          "Smooth transitions in value indicator (warning: increases CPU usage)",
         defaultValue: true,
       },
     },
