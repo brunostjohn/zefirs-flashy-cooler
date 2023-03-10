@@ -20,6 +20,15 @@ const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
   console.log("This is not the only instance. App will quit.".red);
   app.quit();
+} else {
+  app.on("second-instance", (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    } else {
+      createWindow();
+    }
+  });
 }
 
 console.log(
@@ -32,222 +41,24 @@ console.log(
 
 const path = require("path");
 require("update-electron-app")();
-const ActiveX = require("winax");
-const { Worker } = require("worker_threads");
+const { Worker, workerData } = require("worker_threads");
 const fs = require("fs");
-const { Z_FIXED } = require("zlib");
-const Sensors = require("./libraries/sensors.js");
 let config = JSON.parse(
   fs.readFileSync(path.join(__dirname, "app.config.json"))
 );
-const { exec, execSync } = require("child_process");
 const { stringify } = require("querystring");
 
 let iCueRunning = true;
-let libreRunning = true;
+let libreRunning = false;
 
-console.log("Performing init...".cyan);
-
-process.stdout.write("iCUE: ".blue);
-try {
-  execSync('tasklist | findstr "iCUE.exe"');
-} catch {
-  iCueRunning = false;
-}
-process.stdout.write(iCueRunning + "\n");
-process.stdout.write("LibreHardwareMonitor: ".blue);
-try {
-  execSync('tasklist | findstr "LibreHardwareMonitor.exe"');
-} catch {
-  libreRunning = false;
-}
-process.stdout.write(libreRunning + "\n");
-
-//massive behemoth of a thing
-
-const hardwareTrees = [];
-
-if (libreRunning) {
-  process.stdout.write("[  ] Creating hardware tree...\r".grey);
-  const conn = new ActiveX.Object("WbemScripting.SWbemLocator");
-  const svr = conn.ConnectServer(".", "root\\LibreHardwareMonitor");
-  let queryString = "Select Name, Identifier From Hardware";
-  const results = [];
-  let queryResponse = svr.ExecQuery(queryString);
-  for (let i = 0; i < queryResponse.Count; i += 1) {
-    const properties = queryResponse.ItemIndex(i).Properties_;
-    let count = properties.Count;
-    const propEnum = properties._NewEnum;
-    const obj = {};
-    while (count) {
-      count -= 1;
-      const prop = propEnum.Next(1);
-      obj[prop.Name] = prop.Value;
-    }
-    results.push(obj);
-  }
-  const finalArray = [];
-  results.forEach((result) => {
-    const hardwarePath = result.Identifier;
-    const hardwareName = result.Name;
-    const finalObject = {
-      name: hardwareName,
-      path: hardwarePath,
-      sensorTree: [],
-    };
-    queryString =
-      'Select SensorType From Sensor Where Parent = "' + hardwarePath + '"';
-    const results2 = [];
-    queryResponse = svr.ExecQuery(queryString);
-    for (let i = 0; i < queryResponse.Count; i += 1) {
-      const properties = queryResponse.ItemIndex(i).Properties_;
-      let count = properties.Count;
-      const propEnum = properties._NewEnum;
-      const obj = {};
-      while (count) {
-        count -= 1;
-        const prop = propEnum.Next(1);
-        obj[prop.Name] = prop.Value;
-      }
-      results2.push(obj);
-    }
-    const sensorCats = [];
-    results2.forEach((result) => {
-      if (!sensorCats.includes(result.SensorType)) {
-        sensorCats.push(result.SensorType);
-      }
-    });
-    sensorCats.forEach((sensorCat) => {
-      const treeByCat = { category: sensorCat, sensors: [] };
-      queryString =
-        'Select Identifier, Name From Sensor Where Parent = "' +
-        hardwarePath +
-        '" And SensorType = "' +
-        sensorCat +
-        '"';
-      const results3 = [];
-      queryResponse = svr.ExecQuery(queryString);
-      for (let i = 0; i < queryResponse.Count; i += 1) {
-        const properties = queryResponse.ItemIndex(i).Properties_;
-        let count = properties.Count;
-        const propEnum = properties._NewEnum;
-        const obj = {};
-        while (count) {
-          count -= 1;
-          const prop = propEnum.Next(1);
-          obj[prop.Name] = prop.Value;
-        }
-        results3.push(obj);
-      }
-      results3.forEach((result) => {
-        const sensorObject = { name: result.Name, path: result.Identifier };
-        treeByCat.sensors.push(sensorObject);
-      });
-      finalObject.sensorTree.push(treeByCat);
-    });
-    hardwareTrees.push(finalObject);
-  });
-  ActiveX.release(conn);
-  process.stdout.write("[" + "OK".green + "] Hardware tree created    \n");
-}
+// console.log("Performing init...".cyan);
 
 nativeTheme.themeSource = "dark";
 
 let fps = config.fps;
 let mainWindow;
-let themeList = [];
 let rendering = config.renderAtStartup;
 let activeThemeNeedsSensorsFlag = false;
-
-if (config.defaultThemePath == "") {
-  config.defaultThemePath = path.join(
-    __dirname,
-    "themes",
-    "static_image",
-    "theme.js"
-  );
-}
-
-if (!fs.existsSync(config.defaultThemePath)) {
-  config.defaultThemePath = path.join(
-    __dirname,
-    "themes",
-    "static_image",
-    "theme.js"
-  );
-}
-
-const themeFolder = path.join(__dirname, "themes");
-
-function makeId(length) {
-  var result = "";
-  var characters =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  var charactersLength = characters.length;
-  for (var i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
-  }
-  return result;
-}
-
-process.stdout.write("[  ] Reading themes...\r".grey);
-
-fs.readdirSync(themeFolder).forEach((file) => {
-  const theme = require(path.join(__dirname, "themes", file, "theme.js"));
-  let activeFlag = false;
-  let requiresSensors = false;
-  const themepath = path.join(__dirname, "themes", file, "theme.js");
-  const configpath = path.join(__dirname, "themes", file, "config.json");
-  if (config.defaultThemePath == themepath) {
-    activeFlag = true;
-  }
-  if (theme.info.requiresSensors != undefined) {
-    if (theme.info.requiresSensors) {
-      requiresSensors = true;
-      activeThemeNeedsSensorsFlag =
-        requiresSensors && activeFlag ? true : false;
-    }
-  }
-  if ((requiresSensors && libreRunning) || !requiresSensors) {
-    let entry = {
-      path: themepath,
-      id: makeId(32),
-      title: theme.info.title,
-      description: theme.info.description,
-      preview: "data:image/jpeg;base64," + theme.info.preview,
-      isActive: activeFlag,
-      hasConfig: theme.info.hasConfig,
-      configPath: configpath,
-      controllableParameters: theme.info.controllableParameters,
-      requiresSensors: requiresSensors,
-    };
-    if (theme.info.hasConfig) {
-      const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
-      Object.keys(configTheme).forEach((key) => {
-        entry.controllableParameters[key]["value"] = configTheme[key];
-        entry.controllableParameters[key]["varName"] = key;
-        entry.controllableParameters[key]["id"] = makeId(32);
-      });
-    }
-    themeList.push(entry);
-  }
-});
-
-themeList.sort((a, b) => {
-  const item1 = a.title;
-  const item2 = b.title;
-
-  return item1.localeCompare(item2, undefined, { numeric: true });
-});
-
-if (activeThemeNeedsSensorsFlag && !libreRunning) {
-  themeList[0].isActive = true;
-  config.defaultThemePath = themeList[0].path;
-}
-
-process.stdout.write(
-  "[" + "OK".green + "] " + themeList.length + " themes loaded    \n"
-);
 
 ipcMain.handle("renderer:startRendering", startRendering);
 ipcMain.handle("renderer:stopRendering", stopRendering);
@@ -264,6 +75,8 @@ ipcMain.on("settings:configSendback", configSendback);
 ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
 ipcMain.handle("settings:openThemeFolder", openThemeFolder);
 
+ipcMain.handle("loading:requestVersion", requestVersionLoading);
+
 const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1130,
@@ -275,38 +88,104 @@ const createWindow = () => {
   });
   mainWindow.loadFile("assets/ui/themes.html");
   mainWindow.removeMenu();
+  mainWindow.on("close", () => {
+    mainWindow = null;
+  });
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 };
 
-let worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
-  workerData: { renderPath: config.defaultThemePath, fps: fps },
-});
+let worker;
 
-worker.on("error", (err) => {
-  console.log(err);
-});
+let loadingScreen;
 
-worker.on("message", (msg) => {
-  // mainWindow.webContents.send("fps", msg);
-  console.log(msg);
-});
+const createLoadingScreen = () => {
+  loadingScreen = new BrowserWindow({
+    width: 600,
+    height: 400,
+    // webPreferences: {
+    //   preload: path.join(__dirname, "libraries", "loadingPreload.js"),
+    // },
+    // icon: path.join(__dirname, "assets", "images", "favicon.ico"),
+    // transparent: false,
+    // frame: false,
+    // alwaysOnTop: true,
+  });
+  console.log("here now");
+  loadingScreen.loadFile("assets/ui/loading.html");
+  console.log("here now");
+  // loadingScreen.removeMenu();
+};
 
-worker.on("unhandledRejection", (error) => {
-  throw error;
-});
+let hardwareTrees;
+let themeList;
 
 app.whenReady().then(() => {
-  console.log("Init finished successfully.".green);
-  if (!config.startMinimised) {
-    console.log("Creating window...");
-    createWindow();
-  }
-  console.log("Creating tray...");
-  createTray();
-  if (rendering) {
-    console.log("Autostarting rendering...".blue);
-    startRendering();
-  }
-  console.log("App successfully opened.".green);
+  loadingScreen = new BrowserWindow({
+    width: 750,
+    height: 400,
+    webPreferences: {
+      preload: path.join(__dirname, "libraries", "loadingPreload.js"),
+    },
+    icon: path.join(__dirname, "assets", "images", "favicon.ico"),
+    transparent: false,
+    frame: false,
+    alwaysOnTop: true,
+    center: true,
+  });
+  loadingScreen.loadFile("assets/ui/loading.html");
+  loadingScreen.once("ready-to-show", () => {
+    sendConsole("Initialising app.");
+    const startupWorker = new Worker(path.join(__dirname, "startup.js"), {
+      workerData: { configuration: config },
+    });
+    startupWorker.on("error", (error) => {
+      console.log(error);
+    });
+    startupWorker.on("unhandledRejection", (error) => {
+      throw error;
+    });
+    startupWorker.on("message", (message) => {
+      if (message.type == "console") {
+        sendConsole(message.content);
+      } else if (message.type == "done") {
+        hardwareTrees = message.hardwareList;
+        themeList = message.themeList;
+        libreRunning = message.libreRunning;
+        iCueRunning = message.iCueRunning;
+        worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
+          workerData: { renderPath: config.defaultThemePath, fps: fps },
+        });
+        worker.on("error", (err) => {
+          console.log(err);
+        });
+
+        worker.on("message", (msg) => {
+          // mainWindow.webContents.send("fps", msg);
+          console.log(msg);
+        });
+
+        worker.on("unhandledRejection", (error) => {
+          throw error;
+        });
+        console.log("Init finished successfully.".green);
+        loadingScreen.close();
+        loadingScreen = null;
+        if (!config.startMinimised) {
+          console.log("Creating window...");
+          createWindow();
+        }
+        console.log("Creating tray...");
+        createTray();
+        if (rendering) {
+          console.log("Autostarting rendering...".blue);
+          startRendering();
+        }
+        console.log("App successfully opened.".green);
+      }
+    });
+  });
 });
 
 let tray;
@@ -372,6 +251,17 @@ function requestConfig() {
 function requestVersion() {
   mainWindow.webContents.send(
     "settings:receiveVersion",
+    appVersion + "@" + releaseType
+  );
+}
+
+function sendConsole(content) {
+  loadingScreen.webContents.send("loading:receiveConsole", content);
+}
+
+function requestVersionLoading() {
+  loadingScreen.webContents.send(
+    "loading:receiveVersion",
     appVersion + "@" + releaseType
   );
 }

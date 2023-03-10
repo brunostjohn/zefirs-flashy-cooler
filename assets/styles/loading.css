@@ -1,0 +1,62 @@
+#loadingContainer {
+  /* padding: 2rem; */
+  max-width: 60%;
+  width: 60%;
+}
+
+#scrollContainer {
+  overflow-y: auto;
+  max-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100%;
+  width: 100%;
+  min-width: 100%;
+}
+
+#consoleContainer {
+  padding: 2rem;
+  max-width: 40%;
+  width: 40%;
+  min-width: 40%;
+  outline-style: solid;
+  outline-width: 1px;
+  outline-color: var(--bs-secondary-bg);
+  text-align: left;
+  vertical-align: top;
+}
+
+#loadingContainer,
+#consoleContainer {
+  display: table-cell;
+  min-height: 100%;
+  height: 100%;
+}
+
+#textetc {
+  position: fixed;
+  bottom: 0px;
+  padding: 2rem;
+  max-width: 60%;
+  width: 60%;
+}
+
+#logo {
+  width: 16rem;
+  padding: 2rem;
+}
+
+#everythingContainer {
+  display: table;
+  width: 100%;
+  min-height: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+#spinny {
+  float: right;
+}
