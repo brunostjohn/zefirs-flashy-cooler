@@ -18,7 +18,7 @@
     "start": "npm run build -- && electron-forge start",
     "package": "npm run build -- --release && electron-forge package",
     "make": "npm run build -- --release && electron-forge make",
-    "build": "cargo-cp-artifact -nc index.node -- cargo build --message-format=json-render-diagnostics",
+    "build": "cargo-cp-artifact -nc ./libraries/native-backend.node -- cargo build --message-format=json-render-diagnostics",
     "build-debug": "npm run build --",
     "build-release": "npm run build -- --release"
   },

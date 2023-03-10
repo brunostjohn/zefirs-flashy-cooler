@@ -3,7 +3,7 @@ target
 **/node_modules
 **/.DS_Store
 **/build
-**/index.node
+**/native-backend.node
 **/artifacts.json
 cli/lib
 **/dist
