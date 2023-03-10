@@ -8,7 +8,7 @@ class LCD {
 
   framebufReset() {
     native.reset_fb();
-    this.sleep(100);
+    this.sleep(50);
   }
 
   exit() {

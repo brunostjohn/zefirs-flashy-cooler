@@ -23,9 +23,16 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
     Ok(cx.string("done"))
 }
 
+fn pause_passer(mut cx: FunctionContext) -> JsResult<JsString> {
+    GLOBAL_DATA.with(|hid| {
+        pause_rendering_and_reset_fb(hid);
+    });
+    Ok(cx.string("s"))
+}
+
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("capellix_send_frame", image_passer)?;
-    cx.export_function("reset_fb", pause_rendering_and_reset_fb)?;
+    cx.export_function("reset_fb", pause_passer)?;
     Ok(())
 }

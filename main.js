@@ -42,6 +42,7 @@ console.log(
 const path = require("path");
 require("update-electron-app")();
 const { Worker, workerData } = require("worker_threads");
+const { exec, execSync } = require("child_process");
 const fs = require("fs");
 let config = JSON.parse(
   fs.readFileSync(path.join(__dirname, "app.config.json"))
@@ -50,8 +51,6 @@ const { stringify } = require("querystring");
 
 let iCueRunning = true;
 let libreRunning = false;
-
-// console.log("Performing init...".cyan);
 
 nativeTheme.themeSource = "dark";
 
