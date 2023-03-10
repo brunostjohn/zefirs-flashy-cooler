@@ -11,8 +11,6 @@ const {
 } = require("electron");
 if (require("electron-squirrel-startup")) app.quit();
 
-console.log(require("./libraries/native-backend.node").hello());
-
 const appVersion = "0.0.3";
 const releaseType = "alpha";
 

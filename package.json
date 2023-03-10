@@ -16,6 +16,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "npm run build -- && electron-forge start",
+    "start-release": "npm run build -- --release && electron-forge start",
     "package": "npm run build -- --release && electron-forge package",
     "make": "npm run build -- --release && electron-forge make",
     "build": "cargo-cp-artifact -nc ./libraries/native-backend.node -- cargo build --message-format=json-render-diagnostics",
