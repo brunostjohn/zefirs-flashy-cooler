@@ -1,1 +1,1 @@
-{"sensorPath1":"/intelcpu/0/temperature/12","sensorPath2":"/gpu-amd/0/temperature/0","sensorText1":"CPU","sensorText2":"GPU","colour1":"#084ff7","colour2":"#ff00a4","backgroundColour":"#000000","refreshFrequency":"3000","textColour":"#ffffff","showEmblem":false}
+{"sensorPath1":"/intelcpu/0/temperature/12","sensorPath2":"/gpu-amd/0/temperature/0","sensorText1":"CPU","sensorText2":"GPU","colour1":"#084ff7","colour2":"#ff00a4","backgroundColour":"#000000","refreshFrequency":"3000","textColour":"#ffffff","showEmblem":true,"smoothAnimation":true}
