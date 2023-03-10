@@ -3,6 +3,7 @@ use hidapi::HidDevice;
 use neon::prelude::*;
 
 mod capellix;
+use crate::capellix::capellix::pause_rendering_and_reset_fb;
 use crate::capellix::capellix::send_image;
 extern crate hidapi;
 
@@ -25,5 +26,6 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
 #[neon::main]
 fn main(mut cx: ModuleContext) -> NeonResult<()> {
     cx.export_function("capellix_send_frame", image_passer)?;
+    cx.export_function("reset_fb", pause_rendering_and_reset_fb)?;
     Ok(())
 }
