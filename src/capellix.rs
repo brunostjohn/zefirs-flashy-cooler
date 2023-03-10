@@ -1,8 +1,6 @@
 pub mod capellix {
-    use base64::{engine::general_purpose, Engine as _};
-    use neon::prelude::*;
-    use neon::result::JsResult;
-    use neon::types::JsString;
+    // use neon::result::JsResult;
+    // use neon::types::JsString;
     use std::convert::TryFrom;
     extern crate hidapi;
 
@@ -13,15 +11,9 @@ pub mod capellix {
         return [high_byte, low_byte];
     }
 
-    pub fn send_image(mut cx: FunctionContext, hid: hidapi::HidApi) -> JsResult<JsString> {
-        let base_64 = cx.argument::<JsString>(0)?;
-        let image = general_purpose::STANDARD
-            .decode(base_64.value(&mut cx))
-            .unwrap();
+    pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
         let mut packets_sent = 0;
-        let api = hidapi::HidApi::new_without_enumerate().unwrap();
-        let (vid, pid) = (0x1b1c, 0x0c39);
-        let device = api.open(vid, pid).unwrap();
+        let device = handle;
         for chunk in image.chunks(1016) {
             let mut imgdata: Vec<u8> = Vec::new();
             let signature: u8;
@@ -68,6 +60,5 @@ pub mod capellix {
             device.write(&mut imgdata).unwrap();
             packets_sent += 1;
         }
-        Ok(cx.string("done"))
     }
 }
