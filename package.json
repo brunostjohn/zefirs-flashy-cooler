@@ -7,6 +7,7 @@
     "@electron-forge/maker-rpm": "^6.0.4",
     "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.4",
+    "cargo-cp-artifact": "^0.1.8",
     "electron": "^20.0.0",
     "electron-rebuild": "^3.2.9"
   },
@@ -14,9 +15,12 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "start": "npm run build -- && electron-forge start",
+    "package": "npm run build -- --release && electron-forge package",
+    "make": "npm run build -- --release && electron-forge make",
+    "build": "cargo-cp-artifact -nc ./libraries/native-backend.node -- cargo build --message-format=json-render-diagnostics",
+    "build-debug": "npm run build --",
+    "build-release": "npm run build -- --release"
   },
   "repository": {
     "type": "git",

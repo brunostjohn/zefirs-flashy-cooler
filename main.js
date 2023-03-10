@@ -11,6 +11,8 @@ const {
 } = require("electron");
 if (require("electron-squirrel-startup")) app.quit();
 
+console.log(require("./libraries/native-backend.node").hello());
+
 const appVersion = "0.0.3";
 const releaseType = "alpha";
 
@@ -25,7 +27,7 @@ if (!gotTheLock) {
     if (mainWindow) {
       if (mainWindow.isMinimized()) mainWindow.restore();
       mainWindow.focus();
-    } else {
+    } else if (!mainWindow && !loadingScreen) {
       createWindow();
     }
   });
