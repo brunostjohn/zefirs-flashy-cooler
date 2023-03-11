@@ -279,10 +279,18 @@ const hardwareList = createHwTrees();
 const themeList = loadThemes();
 const availableDevice = findDevice();
 
-if (availableDevice != null) {
+if (availableDevice != undefined) {
   parentPort.postMessage({
     type: "console",
     content: "Found " + availableDevice.deviceName,
+  });
+  parentPort.postMessage({
+    type: "done",
+    hardwareList: hardwareList,
+    themeList: themeList,
+    libreRunning: libreRunning,
+    iCueRunning: iCueRunning,
+    availableDevice: availableDevice,
   });
 } else {
   parentPort.postMessage({
@@ -290,14 +298,5 @@ if (availableDevice != null) {
     content: "noDeviceFound",
   });
 }
-
-parentPort.postMessage({
-  type: "done",
-  hardwareList: hardwareList,
-  themeList: themeList,
-  libreRunning: libreRunning,
-  iCueRunning: iCueRunning,
-  availableDevice: availableDevice,
-});
 
 parentPort.close();

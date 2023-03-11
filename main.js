@@ -60,6 +60,10 @@ let mainWindow;
 let rendering = config.renderAtStartup;
 let activeThemeNeedsSensorsFlag = false;
 
+ipcMain.handle("loading:closeApp", function () {
+  exit(false);
+});
+
 ipcMain.handle("renderer:startRendering", startRendering);
 ipcMain.handle("renderer:stopRendering", stopRendering);
 ipcMain.handle("themes:getThemeList", getThemeList);
@@ -150,6 +154,7 @@ app.whenReady().then(() => {
       if (message.type == "console") {
         sendConsole(message.content);
       } else if (message.type == "error") {
+        loadingScreen.webContents.send("loading:noDevice", "");
       } else if (message.type == "done") {
         hardwareTrees = message.hardwareList;
         themeList = message.themeList;
@@ -290,16 +295,16 @@ function openThemeFolder() {
   exec("start " + path.join(__dirname, "themes"));
 }
 
-function exit() {
-  themeList.forEach((theme) => {
-    if (theme.isActive) {
-      config.defaultThemePath = theme.path;
-    }
-  });
-  const finalConfig = JSON.stringify(config);
-  // fs.writeFileSync(path.join(__dirname, "app.config.json"), config);
-  // console.log(config);
-  worker.postMessage("exit");
+function exit(safe = true) {
+  if (safe) {
+    themeList.forEach((theme) => {
+      if (theme.isActive) {
+        config.defaultThemePath = theme.path;
+      }
+    });
+    const finalConfig = JSON.stringify(config);
+    worker.postMessage("exit");
+  }
   app.exit(0);
   process.exit(0);
 }
