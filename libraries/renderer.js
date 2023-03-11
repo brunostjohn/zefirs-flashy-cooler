@@ -10,15 +10,22 @@ class Renderer {
     this.LCD = LCD;
     this.frametime = 1000 / workerData.fps;
     this.lasttime = Date.now();
+    this.deviceState = false;
   }
 
   startRendering() {
-    this.LCD.openDevice();
+    if (!this.deviceState) {
+      this.LCD.openDevice();
+      this.deviceState = true;
+    }
     this.timer = setInterval(this.render, this.frametime);
   }
 
   stopRendering(shouldBeClosed) {
-    if (shouldBeClosed) this.LCD.closeDevice();
+    if (shouldBeClosed) {
+      this.LCD.closeDevice();
+      this.deviceState = false;
+    }
     clearInterval(this.timer);
   }
 

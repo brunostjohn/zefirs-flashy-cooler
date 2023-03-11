@@ -413,7 +413,11 @@ function applyParameters(_event, parameters) {
       const theme = require(item.path);
       item.preview = "data:image/jpeg;base64," + theme.renderPreview();
       worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
-        workerData: { renderPath: item.path, fps: fps },
+        workerData: {
+          renderPath: item.path,
+          fps: fps,
+          availableDevice: availableDevice,
+        },
       }); // worker needs to be destroyed for on the fly editing to work
       if (rendering) {
         startRendering();
