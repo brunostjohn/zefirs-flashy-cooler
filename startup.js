@@ -255,6 +255,13 @@ function findDevice() {
       file,
       "deviceplugin.node"
     );
+    manifest["deviceImage"] = path.join(
+      __dirname,
+      "devices",
+      file,
+      "resources",
+      "device.image.png"
+    );
     const found = devices.find(function (device) {
       return (
         device.vendorId == manifest.vendorId &&

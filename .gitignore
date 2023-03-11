@@ -6,6 +6,8 @@ target
 **/native-backend.node
 **/artifacts.json
 cli/lib
+**/devices-src
+**/clean-folder
 **/dist
 pkgs/create-neon/create-neon-test-project
 pkgs/create-neon/create-neon-manual-test-project
