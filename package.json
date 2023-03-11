@@ -15,13 +15,14 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build -- && electron-forge start",
-    "start-release": "npm run build -- --release && electron-forge start",
-    "package": "npm run build -- --release && electron-forge package",
-    "make": "npm run build -- --release && electron-forge make",
-    "build": "cargo-cp-artifact -nc ./libraries/native-backend.node -- cargo build --message-format=json-render-diagnostics",
-    "build-debug": "npm run build --",
-    "build-release": "npm run build -- --release"
+    "start": "npm run build-debug && electron-forge start",
+    "start-release": "npm run build-release && electron-forge start",
+    "package": "npm run build-release && electron-forge package",
+    "make": "npm run build-release && powershell ./scripts/create-clean-build.ps1",
+    "create-package": "electron-forge make",
+    "build-debug": "powershell .\\scripts\\build.ps1 -type debug",
+    "build": "npm run build-debug",
+    "build-release": "powershell .\\scripts\\build.ps1"
   },
   "repository": {
     "type": "git",

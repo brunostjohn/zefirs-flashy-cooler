@@ -4,6 +4,7 @@ const path = require("path");
 const { parentPart, workerData, parentPort } = require("worker_threads");
 const colors = require("colors");
 const { exec, execSync } = require("child_process");
+const HID = require("node-hid");
 
 let iCueRunning = true;
 let libreRunning = true;
@@ -225,8 +226,63 @@ const loadThemes = () => {
   return themeLst;
 };
 
+function findDevice() {
+  parentPort.postMessage({
+    type: "console",
+    content: "Enumerating HID devices...",
+  });
+  const devices = HID.devices();
+  parentPort.postMessage({
+    type: "console",
+    content: "Done.",
+  });
+  parentPort.postMessage({
+    type: "console",
+    content: "Searching for supported device...",
+  });
+  let persistent;
+  fs.readdirSync(path.join(__dirname, "devices")).forEach((file) => {
+    let manifest = require(path.join(
+      __dirname,
+      "devices",
+      file,
+      "resources",
+      "device.manifest.js"
+    )).manifest;
+    manifest["devicePlugin"] = path.join(
+      __dirname,
+      "devices",
+      file,
+      "deviceplugin.node"
+    );
+    const found = devices.find(function (device) {
+      return (
+        device.vendorId == manifest.vendorId &&
+        device.productId == manifest.productId
+      );
+    });
+    if (found != undefined) {
+      persistent = manifest;
+    }
+  });
+  return persistent;
+}
+
 const hardwareList = createHwTrees();
 const themeList = loadThemes();
+const availableDevice = findDevice();
+
+if (availableDevice != null) {
+  parentPort.postMessage({
+    type: "console",
+    content: "Found " + availableDevice.deviceName,
+  });
+} else {
+  parentPort.postMessage({
+    type: "error",
+    content: "noDeviceFound",
+  });
+}
 
 parentPort.postMessage({
   type: "done",
@@ -234,6 +290,7 @@ parentPort.postMessage({
   themeList: themeList,
   libreRunning: libreRunning,
   iCueRunning: iCueRunning,
+  availableDevice: availableDevice,
 });
 
 parentPort.close();

@@ -55,6 +55,7 @@ let libreRunning = false;
 nativeTheme.themeSource = "dark";
 
 let fps = config.fps;
+let availableDevice;
 let mainWindow;
 let rendering = config.renderAtStartup;
 let activeThemeNeedsSensorsFlag = false;
@@ -148,13 +149,19 @@ app.whenReady().then(() => {
     startupWorker.on("message", (message) => {
       if (message.type == "console") {
         sendConsole(message.content);
+      } else if (message.type == "error") {
       } else if (message.type == "done") {
         hardwareTrees = message.hardwareList;
         themeList = message.themeList;
         libreRunning = message.libreRunning;
         iCueRunning = message.iCueRunning;
+        availableDevice = message.availableDevice;
         worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
-          workerData: { renderPath: config.defaultThemePath, fps: fps },
+          workerData: {
+            renderPath: config.defaultThemePath,
+            fps: fps,
+            availableDevice: availableDevice,
+          },
         });
         worker.on("error", (err) => {
           console.log(err);
