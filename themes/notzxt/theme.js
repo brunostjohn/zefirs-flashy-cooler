@@ -252,7 +252,7 @@ module.exports = {
   info: {
     title: "NotZXT",
     description:
-      "Displays data from system sensors without violating copyrights.",
+      "Displays data from system sensors without violating copyrights. Featuring a guest to the show - Carlotta. I think she also loves treats.",
     preview: renderPreview(),
     requiresSensors: true,
     hasConfig: true,

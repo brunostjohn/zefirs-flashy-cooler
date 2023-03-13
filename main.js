@@ -79,8 +79,17 @@ ipcMain.on("settings:configSendback", configSendback);
 ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
 ipcMain.handle("settings:openThemeFolder", openThemeFolder);
 ipcMain.handle("device:requestDeviceInfo", requestDeviceInfo);
+ipcMain.handle("renderer:updatePreview", sendFreshPreview);
 
 ipcMain.handle("loading:requestVersion", requestVersionLoading);
+
+function sendFreshPreview() {
+  themeList.forEach((item) => {
+    if (item.isActive) {
+      mainWindow.webContents.send("renderer:receiveFreshPreview", item.preview);
+    }
+  });
+}
 
 const createWindow = () => {
   mainWindow = new BrowserWindow({

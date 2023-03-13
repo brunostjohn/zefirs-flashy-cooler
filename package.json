@@ -15,7 +15,7 @@
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build-debug && electron-forge start",
+    "start": "npm run build-debug && electron-forge start --inspect-electron",
     "start-release": "npm run build-release && electron-forge start",
     "package": "npm run build-release && electron-forge package",
     "make": "npm run build-release && powershell ./scripts/create-clean-build.ps1",

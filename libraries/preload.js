@@ -33,4 +33,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   requestDeviceInfo: () => ipcRenderer.invoke("device:requestDeviceInfo"),
   receiveDeviceInfo: (callback) =>
     ipcRenderer.on("device:receiveDeviceInfo", callback),
+  updatePreview: () => ipcRenderer.invoke("renderer:updatePreview"),
+  receiveFreshPreview: (callback) =>
+    ipcRenderer.on("renderer:receiveFreshPreview", callback),
 });

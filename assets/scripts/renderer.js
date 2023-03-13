@@ -39,7 +39,6 @@ let sensorinfo;
 
 window.electronAPI.receiveSensorInfo((_event, value) => {
   sensorinfo = value;
-  // console.log(value);
 });
 
 window.electronAPI.updateRenderStatus((_event, value) => {
@@ -86,44 +85,56 @@ const apply = document.getElementById("apply");
 
 let parameters = [];
 
+let lasttime = Date.now();
+
 apply.addEventListener("click", () => {
-  parameters.forEach((controllableParameter) => {
-    const controllingElement = document.getElementById(
-      controllableParameter.id
-    );
-    if (controllableParameter.type == "bool") {
-      controllableParameter.value = controllingElement.checked;
-    } else {
-      controllableParameter.value = controllingElement.value;
-    }
-  });
-  window.electronAPI.parametersSendback(parameters);
-
-  window.location.reload();
-});
-
-const reset = document.getElementById("reset");
-
-reset.addEventListener("click", () => {
-  parameters.forEach((controllableParameter) => {
-    if (controllableParameter.type != "sensor") {
+  if (Date.now() - 2000 > lasttime) {
+    // fuck you chromium
+    parameters.forEach((controllableParameter) => {
       const controllingElement = document.getElementById(
         controllableParameter.id
       );
       if (controllableParameter.type == "bool") {
-        controllableParameter.value = controllableParameter.defaultValue;
-        controllingElement.checked = controllableParameter.defaultValue;
+        controllableParameter.value = controllingElement.checked;
       } else {
-        controllableParameter.value = controllableParameter.defaultValue;
-        controllingElement.value = controllableParameter.defaultValue;
+        controllableParameter.value = controllingElement.value;
       }
-    }
-  });
-  window.electronAPI.parametersSendback(parameters);
+    });
+    window.electronAPI.parametersSendback(parameters);
 
-  window.location.reload();
+    window.location.reload();
+  }
 });
 
+window.electronAPI.receiveFreshPreview((_event, value) => {
+  document.getElementById("preview").src = value;
+});
+
+const reset = document.getElementById("reset");
+
+let lasttimevol2 = Date.now();
+
+reset.addEventListener("click", () => {
+  if (Date.now() - 2000 > lasttimevol2) {
+    parameters.forEach((controllableParameter) => {
+      if (controllableParameter.type != "sensor") {
+        const controllingElement = document.getElementById(
+          controllableParameter.id
+        );
+        if (controllableParameter.type == "bool") {
+          controllableParameter.value = controllableParameter.defaultValue;
+          controllingElement.checked = controllableParameter.defaultValue;
+        } else {
+          controllableParameter.value = controllableParameter.defaultValue;
+          controllingElement.value = controllableParameter.defaultValue;
+        }
+      }
+    });
+    window.electronAPI.parametersSendback(parameters);
+
+    window.location.reload();
+  }
+});
 function createControllableParameter(controllableParameter) {
   const form = document.getElementById("parameterContainer");
   let htmlToAppend = "";

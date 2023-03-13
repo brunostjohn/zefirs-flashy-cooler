@@ -70,8 +70,8 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
                 signature,
                 packets_sent,
                 0x00,
-                shift_verbose_split_u16(chunktrans)[1],
                 shift_verbose_split_u16(chunkand)[1],
+                shift_verbose_split_u16(chunktrans)[1],
             ];
             let data = Vec::try_from(chunk).unwrap();
             imgdata.append(&mut imgtemp.to_vec());
@@ -85,7 +85,7 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
             imgdata.extend(data.to_vec());
             last_image = data.to_vec();
         }
-        let result = device.write(&mut imgdata);
+        let result = device.write(&mut imgdata).expect("Failed to send packet!");
         let rehandle: bool;
         if result.is_err() {
             rehandle = true;
@@ -93,7 +93,7 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
             rehandle = false;
         }
         if signature == 0x01 && !rehandle {
-            if result.as_ref().unwrap() != &usize::try_from(1024).unwrap() {
+            if result != &usize::try_from(1024).unwrap() {
                 let chunklen: u16 = u16::try_from(chunk.len()).unwrap();
                 let chunktrans_temp = chunklen >> 8 & 0xff;
                 let chunkand_temp = chunklen & 0xff;
@@ -104,8 +104,8 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
                     signature,
                     packets_sent,
                     0x00,
-                    shift_verbose_split_u16(chunktrans_temp)[1],
                     shift_verbose_split_u16(chunkand_temp)[1],
+                    shift_verbose_split_u16(chunktrans_temp)[1],
                 ]
                 .to_vec();
                 unfuck_packet.extend(chunk[0..24].to_vec());
