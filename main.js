@@ -311,7 +311,7 @@ function exit(safe = true) {
 
 function startRendering() {
   tray.setContextMenu(contextMenuActive);
-  mainWindow.webContents.send("rendering", 1);
+  if (mainWindow != null) mainWindow.webContents.send("rendering", 1);
   worker.postMessage("start");
   rendering = true;
 }

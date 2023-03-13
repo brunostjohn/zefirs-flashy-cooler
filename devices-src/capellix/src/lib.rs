@@ -74,7 +74,7 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
             let data = Vec::try_from(chunk).unwrap();
             imgdata.append(&mut imgtemp.to_vec());
             imgdata.extend(data.to_vec());
-            imgdata.append(&mut last_image[(usize::try_from(1016 - chunklen).unwrap())..].to_vec());
+            imgdata.append(&mut last_image[(usize::try_from(chunklen).unwrap())..].to_vec());
         } else {
             signature = 0x00;
             let imgtemp = [0x02, 0x05, 0x40, signature, packets_sent, 0x00, 0xf8, 0x03];
