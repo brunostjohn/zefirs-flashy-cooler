@@ -5,7 +5,7 @@ description = "A native driver for the Kraken Z LCD coolers."
 authors = ["Bruno St. John"]
 license = "Apache-2.0"
 edition = "2018"
-exclude = ["index.node"]
+exclude = ["kraken.node"]
 
 [lib]
 crate-type = ["cdylib"]
