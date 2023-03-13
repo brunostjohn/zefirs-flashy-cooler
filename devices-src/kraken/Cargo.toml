@@ -1,0 +1,23 @@
+[package]
+name = "kraken"
+version = "0.1.0"
+description = "A native driver for the Kraken Z LCD coolers."
+authors = ["Bruno St. John"]
+license = "Apache-2.0"
+edition = "2018"
+exclude = ["index.node"]
+
+[lib]
+crate-type = ["cdylib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+hidapi = "2.2.0"
+base64 = "0.21.0"
+image = "0.24.5"
+
+[dependencies.neon]
+version = "0.10"
+default-features = false
+features = ["napi-6"]

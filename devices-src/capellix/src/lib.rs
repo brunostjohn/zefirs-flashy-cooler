@@ -1,6 +1,5 @@
 extern crate hidapi;
 use base64::{engine::general_purpose, Engine as _};
-use core::time;
 use hidapi::HidDevice;
 use neon::prelude::*;
 use std::convert::TryFrom;
