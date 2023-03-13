@@ -1,6 +1,5 @@
 extern crate hidapi;
 use base64::{engine::general_purpose, Engine as _};
-use core::time;
 use hidapi::HidDevice;
 use neon::prelude::*;
 use std::convert::TryFrom;
@@ -19,33 +18,20 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("s"))
-}
-
-fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    Ok(cx.string("s"))
-}
-
-// PAUSE RENDERING
-fn pause_passer(mut cx: FunctionContext) -> JsResult<JsString> {
     GLOBAL_DATA.with(|hid| {
-        pause_rendering_and_reset_fb(hid);
+        hid.send_feature_report(&[0x03, 0x19, 0x40, 0x01, 0x3b, 0x00, 0x77, 0x03])
+            .expect("Failed to open LCD!");
     });
     Ok(cx.string("s"))
 }
 
-pub fn pause_rendering_and_reset_fb(handle: &hidapi::HidDevice) {
-    let _result1 = handle.send_feature_report(&[
-        0x03, 0x0d, 0x01, 0x01, 0x78, 0x00, 0xc0, 0x03, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f,
-        0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f,
-        0x2f, 0xff,
-    ]);
-    let _result2 = handle.send_feature_report(&[
-        0x03, 0x01, 0x64, 0x01, 0x78, 0x00, 0xc0, 0x03, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f,
-        0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f, 0x2f, 0xff, 0x2f, 0x2f,
-        0x2f, 0xff,
-    ]);
-    std::thread::sleep(time::Duration::from_millis(50));
+fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
+    GLOBAL_DATA.with(|hid| {
+        hid.send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
+            .expect("Failed to close LCD!");
+        drop(hid);
+    });
+    Ok(cx.string("s"))
 }
 
 // SEND IMAGE
@@ -63,6 +49,7 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
 pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
     let device = handle;
     let mut packets_sent = 0;
+    let mut last_image: Vec<u8> = Vec::new();
     for chunk in image.chunks(1016) {
         let mut imgdata: Vec<u8> = Vec::new();
         let signature: u8;
@@ -84,55 +71,47 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>) {
                 shift_verbose_split_u16(chunktrans)[1],
                 shift_verbose_split_u16(chunkand)[1],
             ];
-            let mut data = Vec::try_from(chunk).unwrap();
-            imgdata.append(&mut imgtemp.to_vec());
-            Vec::resize(&mut data, 1016, u8::try_from(0x00).unwrap());
-            imgdata.extend(data.to_vec());
-        } else {
-            signature = 0x00;
-            let eight: u8 = 8;
-            let chunklen: u16 = u16::try_from(chunk.len()).unwrap();
-            chunktrans = chunklen >> eight & 0xff;
-            chunkand = chunklen & 0xff;
-            let imgtemp = [
-                0x02,
-                0x05,
-                0x40,
-                signature,
-                packets_sent,
-                0x00,
-                shift_verbose_split_u16(chunktrans)[1],
-                shift_verbose_split_u16(chunkand)[1],
-            ];
             let data = Vec::try_from(chunk).unwrap();
             imgdata.append(&mut imgtemp.to_vec());
             imgdata.extend(data.to_vec());
+            imgdata.append(&mut last_image[(usize::try_from(1016 - chunklen).unwrap())..].to_vec());
+        } else {
+            signature = 0x00;
+            let imgtemp = [0x02, 0x05, 0x40, signature, packets_sent, 0x00, 0xf8, 0x03];
+            let data = Vec::try_from(chunk).unwrap();
+            imgdata.append(&mut imgtemp.to_vec());
+            imgdata.extend(data.to_vec());
+            last_image = data.to_vec();
         }
         let result = device.write(&mut imgdata);
-        //     let rehandle: bool;
-        //     match result {
-        //         _ => rehandle = true,
-        //     }
-        //     if result.as_ref().unwrap() != &usize::try_from(1024).unwrap()
-        //         && signature == 0x01
-        //         && !rehandle
-        //     {
-        //         let mut unfuck_packet = [
-        //             0x03,
-        //             0x19,
-        //             0x40,
-        //             signature,
-        //             packets_sent,
-        //             0x00,
-        //             shift_verbose_split_u16(chunktrans)[1],
-        //             shift_verbose_split_u16(chunkand)[1],
-        //         ]
-        //         .to_vec();
-        //         unfuck_packet.extend(chunk[0..24].to_vec());
-        //         let _result = device.send_feature_report(&mut unfuck_packet);
-        //     } else if result.as_ref().is_err() {
-        //         std::thread::sleep(std::time::Duration::from_millis(6000));
-        //     }
+        let rehandle: bool;
+        if result.is_err() {
+            rehandle = true;
+        } else {
+            rehandle = false;
+        }
+        if signature == 0x01 && !rehandle {
+            if result.as_ref().unwrap() != &usize::try_from(1024).unwrap() {
+                let chunklen: u16 = u16::try_from(chunk.len()).unwrap();
+                let chunktrans_temp = chunklen >> 8 & 0xff;
+                let chunkand_temp = chunklen & 0xff;
+                let mut unfuck_packet = [
+                    0x03,
+                    0x19,
+                    0x40,
+                    signature,
+                    packets_sent,
+                    0x00,
+                    shift_verbose_split_u16(chunktrans_temp)[1],
+                    shift_verbose_split_u16(chunkand_temp)[1],
+                ]
+                .to_vec();
+                unfuck_packet.extend(chunk[0..24].to_vec());
+                let _result = device.send_feature_report(&mut unfuck_packet);
+            }
+        } else if rehandle == true {
+            std::thread::sleep(std::time::Duration::from_millis(6000));
+        }
         packets_sent += 1;
     }
 }

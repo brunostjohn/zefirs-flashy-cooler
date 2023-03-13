@@ -318,7 +318,7 @@ function startRendering() {
 
 function stopRendering() {
   tray.setContextMenu(contextMenuInactive);
-  mainWindow.webContents.send("rendering", 0);
+  if (mainWindow != null) mainWindow.webContents.send("rendering", 0);
   worker.postMessage("stop");
   rendering = false;
 }
