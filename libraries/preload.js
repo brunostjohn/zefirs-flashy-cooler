@@ -30,4 +30,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
   openThemeFolder: () => ipcRenderer.invoke("settings:openThemeFolder"),
   receiveSensorInfo: (callback) =>
     ipcRenderer.on("renderer:receiveSensorInfo", callback),
+  requestDeviceInfo: () => ipcRenderer.invoke("device:requestDeviceInfo"),
+  receiveDeviceInfo: (callback) =>
+    ipcRenderer.on("device:receiveDeviceInfo", callback),
 });

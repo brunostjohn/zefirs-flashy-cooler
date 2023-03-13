@@ -78,6 +78,7 @@ ipcMain.handle("settings:requestHealth", requestHealth);
 ipcMain.on("settings:configSendback", configSendback);
 ipcMain.handle("settings:requestThemeFolder", requestThemeFolder);
 ipcMain.handle("settings:openThemeFolder", openThemeFolder);
+ipcMain.handle("device:requestDeviceInfo", requestDeviceInfo);
 
 ipcMain.handle("loading:requestVersion", requestVersionLoading);
 
@@ -103,24 +104,6 @@ const createWindow = () => {
 let worker;
 
 let loadingScreen;
-
-const createLoadingScreen = () => {
-  loadingScreen = new BrowserWindow({
-    width: 600,
-    height: 400,
-    // webPreferences: {
-    //   preload: path.join(__dirname, "libraries", "loadingPreload.js"),
-    // },
-    // icon: path.join(__dirname, "assets", "images", "favicon.ico"),
-    // transparent: false,
-    // frame: false,
-    // alwaysOnTop: true,
-  });
-  console.log("here now");
-  loadingScreen.loadFile("assets/ui/loading.html");
-  console.log("here now");
-  // loadingScreen.removeMenu();
-};
 
 let hardwareTrees;
 let themeList;
@@ -289,6 +272,10 @@ function requestThemeFolder() {
     "settings:receiveThemeFolder",
     path.join(__dirname, "themes")
   );
+}
+
+function requestDeviceInfo() {
+  mainWindow.webContents.send("device:receiveDeviceInfo", availableDevice);
 }
 
 function openThemeFolder() {

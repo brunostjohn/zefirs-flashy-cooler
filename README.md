@@ -12,6 +12,18 @@ Will it run on Linux or macOS? Maybe. Probably not.
 
 Download the installer from the releases tab and enjoy. There are some bugs to iron out so please submit on issue when you notice one. LibreHardwareMonitor is required for this to be able to use any system sensor input (CPU, GPU etc.).
 
+## Building:
+
+To build this app from source, you will need an up-to-date Rust toolchain in your PATH. Once that requirement is satisfied, open a terminal in this project's directory and run `npm i`. This will download all dependencies. After that, build the native modules with `npx electron-rebuild`. Now, onto the build options/scripts.
+
+- `npm start` will compile all native device drivers with target debug and start the app in debug mode.
+- `npm run start-release` will compile all native device drivers with target release and start the app in debug mode.
+- `npm run make` will compile all native device drivers with target release and create an installable app bundle.
+- `npm run build-debug` will compile all native device drivers with target debug.
+- `npm run build` is a shorthand for the command above.
+- `npm run build-release` will compile all native device drivers with target release.
+- `npm start-no-recompile` will start the app in debug mode.
+
 ## I want to make my own theme.
 
 That's great, the [wiki on themes](https://github.com/brunostjohn/zefirs-flashy-cooler/wiki/Themes) is a great starting point.

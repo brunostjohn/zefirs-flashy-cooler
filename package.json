@@ -22,7 +22,8 @@
     "create-package": "electron-forge make",
     "build-debug": "powershell .\\scripts\\build.ps1 -type debug",
     "build": "npm run build-debug",
-    "build-release": "powershell .\\scripts\\build.ps1"
+    "build-release": "powershell .\\scripts\\build.ps1",
+    "start-no-recompile": "electron-forge start"
   },
   "repository": {
     "type": "git",

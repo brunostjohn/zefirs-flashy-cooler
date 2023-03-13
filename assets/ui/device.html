@@ -8,9 +8,48 @@
         <title>Zefir's Flashy Cooler - Device</title>
     </head>
     <body>
-        <main>
-            <h1>Under construction</h1>
-        </main>
+        <div class="col-container">
+            <div class="col" id="larger">
+                <div id="scrollContainer">
+                    <h1>Device options</h1>
+                    <hr />
+                    <h2>IDs</h2>
+                    <p id="vid">Vendor ID: </p>
+                    <p id="pid">Product ID: </p>
+                    <div id="parameters">
+                        <hr id="separator"/>
+                        <h2>Settings</h2>
+                        <form id="parameterContainer">
+                            <div id="brightness">
+                                <h3>Brightness</h3>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-secondary">Darker (-)</button>
+                                    <button type="button" class="btn btn-outline-primary">Brighter (+)</button>
+                                </div>
+                            </div>
+                            <div id="hardwareImage">
+                                <h3>Set hardware image</h3>
+                            </div>
+                        </form>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-primary" id="apply">Apply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col" id="smaller">
+                <div id="rendering">
+                        <div class="card">
+                            <img src="" class="card-img-top" id="preview" />
+                            <div class="card-body">
+                                <h5 class="card-title" id="title">
+                                    Device Name
+                                </h5>
+                            </div>
+                        </div>
+                </div>
+            </div>
+        </div>
 
         <nav class="nav nav-pills nav-fill" id="controlbar">
             <a class="nav-link" aria-current="page" href="themes.html">Themes</a>
@@ -18,5 +57,6 @@
             <a class="nav-link" href="renderer.html">Renderer</a>
             <a class="nav-link" href="settings.html">Settings</a>
         </nav>
+        <script src="../scripts/device.js"></script>
     </body>
 </html>

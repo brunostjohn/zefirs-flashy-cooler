@@ -8,5 +8,6 @@ module.exports = {
     maxFps: 30,
     supportsStaticHardwareImage: true,
     supportHardwareGif: true,
+    supportBrightnessControl: true,
   },
 };
