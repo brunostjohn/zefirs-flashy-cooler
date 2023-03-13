@@ -18,10 +18,10 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    GLOBAL_DATA.with(|hid| {
-        // hid.send_feature_report(&[0x03, 0x19, 0x40, 0x01, 0x3b, 0x00, 0x77, 0x03])
-        //     .expect("Failed to open LCD!");
-    });
+    // GLOBAL_DATA.with(|hid| {
+    // hid.send_feature_report(&[0x03, 0x19, 0x40, 0x01, 0x3b, 0x00, 0x77, 0x03])
+    //     .expect("Failed to open LCD!");
+    // });
     std::thread::sleep(std::time::Duration::from_millis(5));
     Ok(cx.string("s"))
 }
@@ -38,7 +38,10 @@ fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
 
 // SEND IMAGE
 fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
-    let image = std::fs::read("./image.jpeg").unwrap();
+    let base_64 = cx.argument::<JsString>(0)?;
+    let image = general_purpose::STANDARD
+        .decode(base_64.value(&mut cx))
+        .unwrap();
     let convert = DynamicImage::ImageRgb8(image::load_from_memory(&image).unwrap().into_rgb8())
         .resize_exact(320, 320, image::imageops::FilterType::Triangle)
         .as_bytes()
