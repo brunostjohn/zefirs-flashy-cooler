@@ -1,12 +1,12 @@
 # ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/favicon-32x32.png) Zefir's Flashy Cooler
 
-This is a desktop app that controls the Capellix cooler's LCD instead of iCUE.
+This is a desktop app that controls the Capellix cooler's LCD instead of iCUE with support for more coolers on the way. Most of the app is just Electron living its best life but the device handling code is written in Rust. This and an RGB control app (like [SignalRGB](https://signalrgb.com/)) will use literally less CPU than your manufacturers app while looking cooler. Oh and also my cat's in it. So there's that.
 
 ![Screenshot 1](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/screenshot.png)
 ![Screenshot 2](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/screenshot2.png)
 
 This is designed explicitly for use with Windows.
-Will it run on Linux or macOS? Maybe. Probably not.
+Will it run on Linux or macOS? Maybe. Probably not. Linux support is something I frequently think about. I actually might make that a thing once I get all the basic functionality down.
 
 ## Installation:
 
