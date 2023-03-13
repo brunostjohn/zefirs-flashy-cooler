@@ -1,5 +1,6 @@
 extern crate hidapi;
 use base64::{engine::general_purpose, Engine as _};
+use core::time;
 use hidapi::HidDevice;
 use neon::prelude::*;
 use std::convert::TryFrom;
@@ -22,10 +23,12 @@ fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
         hid.send_feature_report(&[0x03, 0x19, 0x40, 0x01, 0x3b, 0x00, 0x77, 0x03])
             .expect("Failed to open LCD!");
     });
+    std::thread::sleep(std::time::Duration::from_millis(5));
     Ok(cx.string("s"))
 }
 
 fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
+    std::thread::sleep(std::time::Duration::from_millis(5));
     GLOBAL_DATA.with(|hid| {
         hid.send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
             .expect("Failed to close LCD!");
