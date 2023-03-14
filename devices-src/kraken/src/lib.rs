@@ -28,7 +28,7 @@ static SWITCHY: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| {
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let mut device = open_device_with_vid_pid(0x1e71, 0x3008).unwrap();
     device
-        .claim_interface(BULK_ENDPOINT)
+        .claim_interface(0x00)
         .expect("Failed to claim interface!");
     return device;
 });
