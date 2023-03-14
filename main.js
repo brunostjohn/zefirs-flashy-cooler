@@ -47,6 +47,25 @@ const fs = require("fs");
 let config = JSON.parse(
   fs.readFileSync(path.join(__dirname, "app.config.json"))
 );
+
+if (config.defaultThemePath == "") {
+  config.defaultThemePath = path.join(
+    __dirname,
+    "themes",
+    "static_image",
+    "theme.js"
+  );
+}
+
+if (!fs.existsSync(config.defaultThemePath)) {
+  config.defaultThemePath = path.join(
+    __dirname,
+    "themes",
+    "static_image",
+    "theme.js"
+  );
+}
+
 const { stringify } = require("querystring");
 
 let iCueRunning = true;
