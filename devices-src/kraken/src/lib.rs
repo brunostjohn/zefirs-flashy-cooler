@@ -19,6 +19,12 @@ static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
     Mutex::new(frames)
 });
 
+static SWITCHY: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| {
+    let mut switchy = Vec::new();
+    switchy.push(0x00 as u8);
+    Mutex::new(switchy)
+});
+
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let mut device = open_device_with_vid_pid(0x1e71, 0x3008).unwrap();
     device
@@ -100,7 +106,15 @@ pub fn send_image_thread() {
             let img = image.clone().unwrap();
             let index: u8 = 0;
             let apply_after_set = true;
-            // let mImageIndex: u8 = if index == 0 { 1 } else { 0 };
+            let index: u8;
+            let switchy = SWITCHY.lock().expect("Failed to acquire switchy");
+            if (switchy == &(0 as u8)) {
+                index = 1;
+                switchy.remove(0);
+                switchy.push(1);
+            } else {
+                index = 0;
+            }
             query_buckets(index);
             send_delete_bucket(index);
             send_setup_bucket(index, index + 1, calculate_memory_start(index), 400);
