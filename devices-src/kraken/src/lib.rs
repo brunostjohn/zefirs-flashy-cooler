@@ -160,6 +160,10 @@ pub fn send_image_thread() {
                         // HERE IM MAKING A BAD ASSUMPTION, THIS IS JUST A POC
                         if packet_count <= bucket_size as usize {
                             can_we_proceed = true;
+                        } else {
+                            print!("Rejected because: ");
+                            print!("{:?} ", packet_count);
+                            print!("{:?}", bucket_size);
                         }
                         if can_we_proceed {
                             let _reponse2 = hid
@@ -185,7 +189,7 @@ pub fn send_image_thread() {
                                     0x00,
                                     &[
                                         0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54,
-                                        0x32, 0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x06,
+                                        0x32, 0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x96,
                                     ],
                                     Duration::from_millis(10),
                                 )
