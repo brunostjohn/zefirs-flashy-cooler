@@ -117,7 +117,6 @@ pub fn send_image_thread() {
                     let _result = hid.read(&mut buf);
                     buckets.push(Vec::try_from(buf).expect("Failed to convert into u8!"));
                 }
-                println!("{:?}", buckets);
                 let _init1 = hid
                     .write(&[0x20, 0x03])
                     .expect("Failed to send unknown packet 1.");
@@ -142,14 +141,12 @@ pub fn send_image_thread() {
                         break;
                     }
                 }
-                println!("{:?}", free_bucket);
                 if free_bucket != 16 {
                     // no free bucket = dropped frame
                     // PREPARE BUCKET
-                    let _response = hid.write(&[0x32, 0x02, free_bucket]);
+                    let _response = hid.write(&[0x32, 0x02, free_bucket]).unwrap();
                     let mut buf = [0u8; READ_LENGTH];
-                    let _result = hid.read(&mut buf);
-                    println!("{:?}", buf);
+                    let _result = hid.read(&mut buf).unwrap();
                     // check for 0x01 on i = 14
                     if buf.get(14).unwrap().clone() == 0x01 as u8 {
                         // TODO, fix this shitty temp solution, for now it drops frames every time something goes wrong. this is a fucking joke and cannot stay like this.
@@ -165,36 +162,41 @@ pub fn send_image_thread() {
                             can_we_proceed = true;
                         }
                         if can_we_proceed {
-                            let _reponse2 = hid.write(&[
-                                0x32,
-                                0x01,
-                                free_bucket,
-                                free_bucket + 1,
-                                shift_verbose_split_u16(bucket_offset)[1],
-                                shift_verbose_split_u16(bucket_offset)[0],
-                                shift_verbose_split_u16(total_size as u16)[1],
-                                shift_verbose_split_u16(total_size as u16)[1],
-                                0x01,
-                            ]);
-                            let _response3 = hid.write(&[0x36, 0x01, free_bucket]);
+                            let _reponse2 = hid
+                                .write(&[
+                                    0x32,
+                                    0x01,
+                                    free_bucket,
+                                    free_bucket + 1,
+                                    shift_verbose_split_u16(bucket_offset)[1],
+                                    shift_verbose_split_u16(bucket_offset)[0],
+                                    shift_verbose_split_u16(total_size as u16)[1],
+                                    shift_verbose_split_u16(total_size as u16)[1],
+                                    0x01,
+                                ])
+                                .unwrap();
+                            let _response3 = hid.write(&[0x36, 0x01, free_bucket]).unwrap();
                             // let _reponse4 = hid.write(&[
                             //     0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54, 0x32,
                             //     0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x06,
                             // ]);
-                            let handle2res = BULK_HANDLE.write_bulk(
-                                0x00,
-                                &[
-                                    0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54,
-                                    0x32, 0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x06,
-                                ],
-                                Duration::from_millis(10),
-                            );
+                            let _handle2res = BULK_HANDLE
+                                .write_bulk(
+                                    0x00,
+                                    &[
+                                        0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54,
+                                        0x32, 0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x06,
+                                    ],
+                                    Duration::from_millis(10),
+                                )
+                                .unwrap();
                             for chunk in img.chunks(BULK_WRITE_LENGTH) {
-                                let _result5 =
-                                    BULK_HANDLE.write_bulk(0x00, chunk, Duration::from_millis(10));
+                                let _result5 = BULK_HANDLE
+                                    .write_bulk(0x00, chunk, Duration::from_millis(10))
+                                    .unwrap();
                             }
-                            let _finalres = hid.write(&[0x36, 0x02]);
-                            let _switch = hid.write(&[0x38, 0x01, 0x04, free_bucket]);
+                            let _finalres = hid.write(&[0x36, 0x02]).unwrap();
+                            let _switch = hid.write(&[0x38, 0x01, 0x04, free_bucket]).unwrap();
                         }
                     }
                 }
