@@ -11,7 +11,7 @@ use std::{convert::TryFrom, sync::Mutex};
 
 thread_local! {static GLOBAL_DATA: HidDevice = hidapi::HidApi::new_without_enumerate()
 .unwrap()
-.open(0x1e71, 0x3008)
+.open(VENDOR_ID, PRODUCT_ID)
 .unwrap();}
 
 static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
@@ -26,7 +26,7 @@ static SWITCHY: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| {
 });
 
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
-    let mut device = open_device_with_vid_pid(0x1e71, 0x3008).unwrap();
+    let mut device = open_device_with_vid_pid(VENDOR_ID, PRODUCT_ID).unwrap();
     device
         .claim_interface(BULK_INTERFACE)
         .expect("Failed to claim interface!");
