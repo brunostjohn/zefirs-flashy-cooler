@@ -104,11 +104,10 @@ pub fn send_image_thread() {
             img_vec.remove(0);
             drop(img_vec);
             let img = image.clone().unwrap();
-            let index: u8 = 0;
             let apply_after_set = true;
             let index: u8;
-            let switchy = SWITCHY.lock().expect("Failed to acquire switchy");
-            if (switchy == &(0 as u8)) {
+            let mut switchy = SWITCHY.lock().expect("Failed to acquire switchy");
+            if switchy.get(0).unwrap() == &(0 as u8) {
                 index = 1;
                 switchy.remove(0);
                 switchy.push(1);
