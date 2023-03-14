@@ -7,8 +7,8 @@ use once_cell::sync::Lazy;
 use rusb::{open_device_with_vid_pid, DeviceHandle, GlobalContext};
 use std::{convert::TryFrom, sync::Mutex, time::Duration};
 
-static vendor_id: u16 = 0x1e71;
-static product_id: u16 = 0x3008;
+static VENDOR_ID: u16 = 0x1e71;
+static PRODUCT_ID: u16 = 0x3008;
 
 thread_local! {static GLOBAL_DATA: HidDevice = hidapi::HidApi::new_without_enumerate()
 .unwrap()
@@ -27,7 +27,7 @@ static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
 });
 
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
-    let mut device = open_device_with_vid_pid(vendor_id, product_id).unwrap();
+    let mut device = open_device_with_vid_pid(VENDOR_ID, PRODUCT_ID).unwrap();
     // device.claim_interface(0x01);
     device.claim_interface(0x00);
     return device;
@@ -117,6 +117,7 @@ pub fn send_image_thread() {
                     let _result = hid.read(&mut buf);
                     buckets.push(Vec::try_from(buf).expect("Failed to convert into u8!"));
                 }
+                println!("{:?}", buckets);
                 let _init1 = hid
                     .write(&[0x20, 0x03])
                     .expect("Failed to send unknown packet 1.");
@@ -141,12 +142,14 @@ pub fn send_image_thread() {
                         break;
                     }
                 }
+                println!("{:?}", free_bucket);
                 if free_bucket != 16 {
                     // no free bucket = dropped frame
                     // PREPARE BUCKET
                     let _response = hid.write(&[0x32, 0x02, free_bucket]);
                     let mut buf = [0u8; READ_LENGTH];
                     let _result = hid.read(&mut buf);
+                    println!("{:?}", buf);
                     // check for 0x01 on i = 14
                     if buf.get(14).unwrap().clone() == 0x01 as u8 {
                         // TODO, fix this shitty temp solution, for now it drops frames every time something goes wrong. this is a fucking joke and cannot stay like this.

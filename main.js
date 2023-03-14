@@ -44,9 +44,12 @@ require("update-electron-app")();
 const { Worker, workerData } = require("worker_threads");
 const { exec, execSync } = require("child_process");
 const fs = require("fs");
-let config = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "app.config.json"))
-);
+
+let config;
+
+try {
+  config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
+} catch {}
 
 if (config.defaultThemePath == "") {
   config.defaultThemePath = path.join(
@@ -318,6 +321,7 @@ function exit(safe = true) {
       }
     });
     const finalConfig = JSON.stringify(config);
+    fs.writeFileSync(path.join(__dirname, "app.config.json"), finalConfig);
     worker.postMessage("exit");
   }
   app.exit(0);
