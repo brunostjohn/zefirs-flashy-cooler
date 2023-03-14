@@ -6,8 +6,8 @@ module.exports = {
     width: 320,
     height: 320,
     maxFps: 30,
-    supportsStaticHardwareImage: true,
-    supportHardwareGif: true,
-    supportBrightnessControl: true,
+    supportsStaticHardwareImage: false,
+    supportHardwareGif: false,
+    supportBrightnessControl: false,
   },
 };
