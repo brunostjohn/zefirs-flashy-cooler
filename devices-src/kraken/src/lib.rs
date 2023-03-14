@@ -100,11 +100,11 @@ pub fn send_image_thread() {
         let mut img_vec = FRAME_CACHE.lock().expect("Failed to get lock!");
         let vec_copy = img_vec.clone();
         let mut image = vec_copy.get(0).clone();
-        img_vec.remove(0);
-        drop(img_vec);
         if vec_copy.len() == 0 {
             std::thread::sleep(std::time::Duration::from_millis(10));
         } else {
+            img_vec.remove(0);
+            drop(img_vec);
             let img = image.clone().unwrap();
             GLOBAL_DATA.with(|hid| {
                 // SAY HELLO
