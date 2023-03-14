@@ -191,6 +191,7 @@ pub fn send_image_thread() {
                                 )
                                 .unwrap();
                             for chunk in img.chunks(BULK_WRITE_LENGTH) {
+                                println!("I AM ACTUALLY WRITING THE IMAGE");
                                 let _result5 = BULK_HANDLE
                                     .write_bulk(0x00, chunk, Duration::from_millis(10))
                                     .unwrap();
