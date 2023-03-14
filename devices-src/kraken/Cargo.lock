@@ -282,6 +282,8 @@ dependencies = [
  "image",
  "neon",
  "once_cell",
+ "queues",
+ "rusb",
 ]
 
 [[package]]
@@ -304,6 +306,18 @@ checksum = "351a32417a12d5f7e82c368a66781e307834dae04c6ce0cd4456d52989229883"
 dependencies = [
  "cfg-if",
  "winapi",
+]
+
+[[package]]
+name = "libusb1-sys"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f9d0e2afce4245f2c9a418511e5af8718bcaf2fa408aefb259504d1a9cb25f27"
+dependencies = [
+ "cc",
+ "libc",
+ "pkg-config",
+ "vcpkg",
 ]
 
 [[package]]
@@ -487,6 +501,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "queues"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1475abae4f8ad4998590fe3acfe20104f0a5d48fc420c817cd2c09c3f56151f0"
+
+[[package]]
 name = "quote"
 version = "1.0.25"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -515,6 +535,16 @@ dependencies = [
  "crossbeam-deque",
  "crossbeam-utils",
  "num_cpus",
+]
+
+[[package]]
+name = "rusb"
+version = "0.9.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "703aa035c21c589b34fb5136b12e68fc8dcf7ea46486861381361dd8ebf5cee0"
+dependencies = [
+ "libc",
+ "libusb1-sys",
 ]
 
 [[package]]
@@ -603,6 +633,12 @@ name = "unicode-ident"
 version = "1.0.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5464a87b239f13a63a501f2701565754bae92d243d4bb7eb12f6d57d2269bf4"
+
+[[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "wasi"

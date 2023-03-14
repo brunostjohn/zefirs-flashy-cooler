@@ -118,6 +118,9 @@ function renderFrame() {
     currentCounter2 = framesUntilDone;
     transitionState2 = true;
 
+    arcVals2.part1 = scale(oldVal2, 30, 85, 1.9, 1.6);
+    arcVals2.part2 = scale(oldVal2, 30, 85, 2.1, 2.4);
+
     arcIncrements2.part1 =
       (scale(sensorValueCalc2, 30, 85, 1.9, 1.6) -
         scale(oldVal2, 30, 85, 1.9, 1.6)) /

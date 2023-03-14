@@ -114,7 +114,12 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>, please_unfuck: boo
             imgdata.extend(data.to_vec());
             last_image = data.to_vec();
         }
-        let result = device.write(&mut imgdata).expect("Failed to send packet!");
+        let unhandled_result = device.write(&mut imgdata);
+        let result;
+        match unhandled_result {
+            Ok(we_did_it) => result = we_did_it,
+            Err(_nope) => result = 1023,
+        }
         if signature == 0x01 && result != usize::try_from(1024).unwrap()
             || signature == 0x01 && please_unfuck
         {
@@ -132,7 +137,6 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>, please_unfuck: boo
                 shift_verbose_split_u16(chunktrans_temp)[1],
             ]
             .to_vec();
-            // unfuck_packet.extend(chunk[0..24].to_vec());
             let _result = device.send_feature_report(&mut unfuck_packet);
         }
         packets_sent += 1;
