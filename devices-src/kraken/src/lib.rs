@@ -5,21 +5,14 @@ use image::DynamicImage;
 use neon::prelude::*;
 use once_cell::sync::Lazy;
 use rusb::{open_device_with_vid_pid, DeviceHandle, GlobalContext};
-use std::{convert::TryFrom, sync::Mutex, time::Duration};
-
-static VENDOR_ID: u16 = 0x1e71;
-static PRODUCT_ID: u16 = 0x3008;
+mod statics;
+use crate::statics::statics::*;
+use std::{convert::TryFrom, sync::Mutex};
 
 thread_local! {static GLOBAL_DATA: HidDevice = hidapi::HidApi::new_without_enumerate()
 .unwrap()
-.open(0x1e71, 0x3008)
+.open(VENDOR_ID, PRODUCT_ID)
 .unwrap();}
-
-const READ_LENGTH: usize = 64;
-const WRITE_LENGTH: usize = 64;
-static MAX_READ_ATTEMPTS: usize = 12;
-static BULK_WRITE_LENGTH: usize = 512;
-static LCD_TOTAL_MEMORY: usize = 24320;
 
 static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
     let frames = Vec::new();
@@ -28,8 +21,9 @@ static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
 
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let mut device = open_device_with_vid_pid(VENDOR_ID, PRODUCT_ID).unwrap();
-    // device.claim_interface(0x01);
-    device.claim_interface(0x00);
+    device
+        .claim_interface(BULK_ENDPOINT)
+        .expect("Failed to claim interface!");
     return device;
 });
 
@@ -48,10 +42,6 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    GLOBAL_DATA.with(|hid| {
-        // do io ops
-    });
-    std::thread::sleep(std::time::Duration::from_millis(5));
     let mut send_bool = SHOULD_SEND.lock().expect("Failed to get lock!");
     send_bool.remove(0);
     send_bool.push(true);
@@ -64,9 +54,6 @@ fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
     send_bool.remove(0);
     send_bool.push(false);
     std::thread::sleep(std::time::Duration::from_millis(5));
-    GLOBAL_DATA.with(|hid| {
-        // do io ops
-    });
     Ok(cx.string("s"))
 }
 
@@ -92,129 +79,173 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
 }
 
 pub fn send_image_thread() {
-    while (SHOULD_SEND.lock().expect("Failed to get lock!").get(0))
-        .unwrap()
-        .to_owned()
+    while (SHOULD_SEND
+        .lock()
+        .expect("Failed to get lock for should send!")
+        .get(0))
+    .unwrap()
+    .to_owned()
         == true
     {
-        let mut img_vec = FRAME_CACHE.lock().expect("Failed to get lock!");
+        let mut img_vec = FRAME_CACHE
+            .lock()
+            .expect("Failed to get lock for image vector!");
         let vec_copy = img_vec.clone();
-        let mut image = vec_copy.get(0).clone();
+        let image = vec_copy.get(0).clone();
         if vec_copy.len() == 0 {
             std::thread::sleep(std::time::Duration::from_millis(10));
         } else {
             img_vec.remove(0);
             drop(img_vec);
             let img = image.clone().unwrap();
-            GLOBAL_DATA.with(|hid| {
-                // SAY HELLO
-                let _hello = hid.write(&[0x36, 0x03]).expect("Failed to say hello.");
-                // READ BUCKET INFO
-                let mut buckets: Vec<Vec<u8>> = Vec::new();
-                for i in 0..15 as u8 {
-                    hid.write(&[0x30, 0x04, i]).unwrap();
-                    let mut buf = [0u8; READ_LENGTH];
-                    let _result = hid.read(&mut buf);
-                    buckets.push(Vec::try_from(buf).expect("Failed to convert into u8!"));
-                }
-                let _init1 = hid
-                    .write(&[0x20, 0x03])
-                    .expect("Failed to send unknown packet 1.");
-                let _keepalive1 = hid
-                    .write(&[0x74, 0x01])
-                    .expect("Failed to send keepalive 1!");
-                let _init2 = hid
-                    .write(&[0x70, 0x01])
-                    .expect("Failed to send unknown packet 2!");
-                let _keepalive2 = hid
-                    .write(&[0x74, 0x01])
-                    .expect("Failed to send keepalive 2!");
-                // FIND FREE BUCKET
-                let mut free_bucket = 16;
-                for i in 0..15 as u8 {
-                    if buckets.get(i as usize).unwrap()[15..]
-                        .to_vec()
-                        .iter()
-                        .all(|byte| byte.clone() == 0x00 as u8)
-                    {
-                        free_bucket = i;
-                        println!("Found bucket {:?}", i);
-                        break;
-                    }
-                }
-                if free_bucket != 16 {
-                    // no free bucket = dropped frame
-                    // PREPARE BUCKET
-                    let _response = hid.write(&[0x32, 0x02, free_bucket]).unwrap();
-                    let mut buf = [0u8; READ_LENGTH];
-                    let _result = hid.read(&mut buf).unwrap();
-                    // check for 0x01 on i = 14
-                    if buf.get(14).unwrap().clone() == 0x01 as u8 {
-                        // TODO, fix this shitty temp solution, for now it drops frames every time something goes wrong. this is a fucking joke and cannot stay like this.
-                        // if we're lucky, now we should have a bucket that can actually b used
-                        let total_size = img.len();
-                        let packet_count = img.chunks(BULK_WRITE_LENGTH).len();
-                        let cur_bucket = buckets.get(free_bucket as usize).unwrap();
-                        let bucket_offset = ((cur_bucket[18] as u16) << 8) | cur_bucket[17] as u16;
-                        let bucket_size = ((cur_bucket[18] as u16) << 8) | cur_bucket[17] as u16;
-                        let mut can_we_proceed = false;
-                        // HERE IM MAKING A BAD ASSUMPTION, THIS IS JUST A POC
-                        if packet_count <= bucket_size as usize {
-                            can_we_proceed = true;
-                        } else {
-                            print!("Rejected because: ");
-                            print!("{:?} ", packet_count);
-                            print!("{:?}", bucket_size);
-                        }
-                        if can_we_proceed {
-                            let _reponse2 = hid
-                                .write(&[
-                                    0x32,
-                                    0x01,
-                                    free_bucket,
-                                    free_bucket + 1,
-                                    shift_verbose_split_u16(bucket_offset)[1],
-                                    shift_verbose_split_u16(bucket_offset)[0],
-                                    shift_verbose_split_u16(total_size as u16)[1],
-                                    shift_verbose_split_u16(total_size as u16)[0],
-                                    0x01,
-                                ])
-                                .unwrap();
-                            let _response3 = hid.write(&[0x36, 0x01, free_bucket]).unwrap();
-                            // let _reponse4 = hid.write(&[
-                            //     0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54, 0x32,
-                            //     0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x06,
-                            // ]);
-                            let _handle2res = BULK_HANDLE
-                                .write_bulk(
-                                    0x00,
-                                    &[
-                                        0x12, 0xFA, 0x01, 0xE8, 0xAB, 0xCD, 0xEF, 0x98, 0x76, 0x54,
-                                        0x32, 0x10, 0x02, 0x0, 0x0, 0x0, 0x0, 0x40, 0x96,
-                                    ],
-                                    Duration::from_millis(10),
-                                )
-                                .unwrap();
-                            for chunk in img.chunks(BULK_WRITE_LENGTH) {
-                                println!("I AM ACTUALLY WRITING THE IMAGE");
-                                let _result5 = BULK_HANDLE
-                                    .write_bulk(0x00, chunk, Duration::from_millis(10))
-                                    .unwrap();
-                            }
-                            let _finalres = hid.write(&[0x36, 0x02]).unwrap();
-                            let _switch = hid.write(&[0x38, 0x01, 0x04, free_bucket]).unwrap();
-                        }
-                    }
-                }
-            });
+            let index: u8 = 0;
+            let apply_after_set = true;
+            // let mImageIndex: u8 = if index == 0 { 1 } else { 0 };
+            query_buckets(index);
+            send_delete_bucket(index);
+            send_setup_bucket(index, index + 1, calculate_memory_start(index), 400);
+            send_write_start_bucket(index);
+            send_bulk_data_info(0x02, &BULK_HANDLE);
+            for chunk in img.chunks(BULK_WRITE_LENGTH) {
+                BULK_HANDLE
+                    .write_bulk(BULK_ENDPOINT, chunk, TEN_MS)
+                    .expect("Failed to write bulk data!");
+            }
+            send_write_finish_bucket(index);
+            if apply_after_set {
+                send_switch_bucket(index, 2);
+            }
         }
     }
-    return;
 }
 
-fn shift_verbose_split_u16(short_16: u16) -> [u8; 2] {
-    let high_byte: u8 = (short_16 >> 8) as u8;
-    let low_byte: u8 = (short_16 & 0xff) as u8;
+fn zeropad_vector(mut to_pad: Vec<u8>, intended_length: usize) -> Vec<u8> {
+    to_pad.resize(intended_length, 0x00);
+    to_pad
+}
 
-    return [high_byte, low_byte];
+fn send_bulk_data_info(
+    mode: u8,
+    bulk_handle: &once_cell::sync::Lazy<DeviceHandle<GlobalContext>>,
+) -> usize {
+    let mut initial_data: Vec<u8> = Vec::try_from([
+        0x12, 0xfa, 0x01, 0xe8, 0xab, 0xcd, 0xef, 0x98, 0x76, 0x54, 0x32, 0x10,
+    ])
+    .unwrap();
+    initial_data.push(mode);
+    initial_data = zeropad_vector(initial_data, 17);
+    initial_data.extend([0x40, 0x96]);
+    initial_data = zeropad_vector(initial_data, BULK_WRITE_LENGTH);
+    let result = bulk_handle.write_bulk(BULK_ENDPOINT, &initial_data, TEN_MS);
+    match result {
+        Ok(wrote) => return wrote,
+        Err(_err) => return 0 as usize,
+    }
+}
+
+fn query_buckets(index: u8) -> usize {
+    if index < 15 {
+        let mut query_bucket: Vec<u8> = Vec::new();
+        query_bucket.extend([0x30, 0x04, 0x00, index]);
+        query_bucket = zeropad_vector(query_bucket, WRITE_LENGTH);
+        GLOBAL_DATA.with(|hid| {
+            let result = hid.write(&query_bucket);
+            match result {
+                Ok(ok) => return ok,
+                Err(_err) => return 0,
+            }
+        });
+    }
+    0
+}
+
+fn send_delete_bucket(index: u8) -> usize {
+    if index < 15 {
+        let mut del_bucket: Vec<u8> = Vec::new();
+        del_bucket.extend([0x32, 0x02, index]);
+        del_bucket = zeropad_vector(del_bucket, WRITE_LENGTH);
+        GLOBAL_DATA.with(|hid| {
+            let result = hid.write(&del_bucket);
+            match result {
+                Ok(ok) => return ok,
+                Err(_err) => return 0,
+            }
+        });
+    }
+    0
+}
+fn send_setup_bucket(index: u8, id: u8, memory_slot: u16, memory_slot_count: u16) -> usize {
+    let mut setup_bucket: Vec<u8> = Vec::new();
+    setup_bucket.extend([
+        0x32,
+        0x01,
+        index,
+        id,
+        (memory_slot >> 8) as u8,
+        memory_slot as u8,
+        memory_slot_count as u8,
+        (memory_slot_count >> 8) as u8,
+        0x01,
+    ]);
+    setup_bucket = zeropad_vector(setup_bucket, WRITE_LENGTH);
+    GLOBAL_DATA.with(|hid| {
+        let result = hid.write(&setup_bucket);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
+    });
+    0
+}
+
+fn calculate_memory_start(index: u8) -> u16 {
+    800 * index as u16
+}
+
+fn send_write_start_bucket(index: u8) -> usize {
+    if index < 15 {
+        let mut start_bucket: Vec<u8> = Vec::new();
+        start_bucket.extend([0x36, 0x01, index]);
+        start_bucket = zeropad_vector(start_bucket, WRITE_LENGTH);
+        GLOBAL_DATA.with(|hid| {
+            let result = hid.write(&start_bucket);
+            match result {
+                Ok(ok) => return ok,
+                Err(_err) => return 0,
+            }
+        });
+    }
+    0
+}
+
+fn send_write_finish_bucket(index: u8) -> usize {
+    if index < 15 {
+        let mut finish_bucket: Vec<u8> = Vec::new();
+        finish_bucket.extend([0x36, 0x02, index]);
+        finish_bucket = zeropad_vector(finish_bucket, WRITE_LENGTH);
+        GLOBAL_DATA.with(|hid| {
+            let result = hid.write(&finish_bucket);
+            match result {
+                Ok(ok) => return ok,
+                Err(_err) => return 0,
+            }
+        });
+    }
+    0
+}
+
+fn send_switch_bucket(index: u8, mode: u8) -> usize {
+    if index < 15 {
+        let mut switch_bucket: Vec<u8> = Vec::new();
+        switch_bucket.extend([0x38, 0x01, mode, index]);
+        switch_bucket = zeropad_vector(switch_bucket, WRITE_LENGTH);
+        GLOBAL_DATA.with(|hid| {
+            let result = hid.write(&switch_bucket);
+            match result {
+                Ok(ok) => return ok,
+                Err(_err) => return 0,
+            }
+        });
+    }
+    0
 }
