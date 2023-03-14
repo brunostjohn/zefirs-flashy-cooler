@@ -25,12 +25,20 @@ static SWITCHY: Lazy<Mutex<Vec<u8>>> = Lazy::new(|| {
     Mutex::new(switchy)
 });
 
+fn dissect_error(error: rusb::Error) {
+    let reason = error.to_string();
+    println!("{:?}", reason);
+}
+
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let mut device = open_device_with_vid_pid(VENDOR_ID, PRODUCT_ID).unwrap();
+    let whathappened = device.claim_interface(BULK_INTERFACE);
+    match whathappened {
+        Ok(_ok) => println!("weregood"),
+        Err(err) => dissect_error(err),
+    }
+
     device
-        .claim_interface(BULK_INTERFACE)
-        .expect("Failed to claim interface!");
-    return device;
 });
 
 static SHOULD_SEND: Lazy<Mutex<Vec<bool>>> = Lazy::new(|| {

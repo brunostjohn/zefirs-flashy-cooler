@@ -49,7 +49,16 @@ let config;
 
 try {
   config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
-} catch {}
+} catch {
+  config = {
+    defaultThemePath: "",
+    fps: 25,
+    renderAtStartup: false,
+    startMinimised: false,
+    startAtLogin: false,
+    showWarningAlert: true,
+  };
+}
 
 if (config.defaultThemePath == "") {
   config.defaultThemePath = path.join(
@@ -122,7 +131,9 @@ const createWindow = () => {
     },
     icon: path.join(__dirname, "assets", "images", "favicon.ico"),
   });
-  mainWindow.loadFile("assets/ui/themes.html");
+  mainWindow.loadFile(
+    firstRun ? "assets/ui/onboarding.html" : "assets/ui/themes.html"
+  );
   mainWindow.removeMenu();
   mainWindow.on("close", () => {
     mainWindow = null;
@@ -138,6 +149,8 @@ let loadingScreen;
 
 let hardwareTrees;
 let themeList;
+
+const firstRun = process.argv[1] == "--squirrel-firstrun" ? true : false;
 
 app.whenReady().then(() => {
   loadingScreen = new BrowserWindow({
