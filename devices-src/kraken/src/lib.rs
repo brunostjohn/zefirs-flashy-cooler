@@ -138,6 +138,7 @@ pub fn send_image_thread() {
                         .all(|byte| byte.clone() == 0x00 as u8)
                     {
                         free_bucket = i;
+                        println!("Found bucket {:?}", i);
                         break;
                     }
                 }
