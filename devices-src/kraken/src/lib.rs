@@ -171,7 +171,7 @@ pub fn send_image_thread() {
                                     shift_verbose_split_u16(bucket_offset)[1],
                                     shift_verbose_split_u16(bucket_offset)[0],
                                     shift_verbose_split_u16(total_size as u16)[1],
-                                    shift_verbose_split_u16(total_size as u16)[1],
+                                    shift_verbose_split_u16(total_size as u16)[0],
                                     0x01,
                                 ])
                                 .unwrap();
