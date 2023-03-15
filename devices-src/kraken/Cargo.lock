@@ -225,18 +225,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "hidapi"
-version = "2.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4255d387f1961f1d469ef24acc5620d4b1b15a7b763b759d9b29f095164ee27"
-dependencies = [
- "cc",
- "libc",
- "pkg-config",
- "winapi",
-]
-
-[[package]]
 name = "image"
 version = "0.24.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -278,7 +266,6 @@ name = "kraken"
 version = "0.1.0"
 dependencies = [
  "base64",
- "hidapi",
  "image",
  "neon",
  "once_cell",

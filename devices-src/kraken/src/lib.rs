@@ -1,6 +1,4 @@
-extern crate hidapi;
 use base64::{engine::general_purpose, Engine as _};
-use hidapi::HidDevice;
 use image::DynamicImage;
 use neon::prelude::*;
 use once_cell::sync::Lazy;
@@ -8,11 +6,6 @@ use rusb::{open_device_with_vid_pid, DeviceHandle, GlobalContext};
 mod statics;
 use crate::statics::statics::*;
 use std::{convert::TryFrom, sync::Mutex};
-
-thread_local! {static GLOBAL_DATA: HidDevice = hidapi::HidApi::new_without_enumerate()
-.unwrap()
-.open(VENDOR_ID, PRODUCT_ID)
-.unwrap();}
 
 static FRAME_CACHE: Lazy<Mutex<Vec<Vec<u8>>>> = Lazy::new(|| {
     let frames = Vec::new();
@@ -33,6 +26,7 @@ fn dissect_error(error: rusb::Error) {
 static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let mut device = open_device_with_vid_pid(VENDOR_ID, PRODUCT_ID).unwrap();
     let whathappened = device.claim_interface(BULK_INTERFACE);
+    let _whathappened2 = device.claim_interface(HID_INTERFACE);
     match whathappened {
         Ok(_ok) => println!("weregood"),
         Err(err) => dissect_error(err),
@@ -169,13 +163,11 @@ fn query_buckets(index: u8) -> usize {
         let mut query_bucket: Vec<u8> = Vec::new();
         query_bucket.extend([0x30, 0x04, 0x00, index]);
         query_bucket = zeropad_vector(query_bucket, WRITE_LENGTH);
-        GLOBAL_DATA.with(|hid| {
-            let result = hid.write(&query_bucket);
-            match result {
-                Ok(ok) => return ok,
-                Err(_err) => return 0,
-            }
-        });
+        let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &query_bucket, TEN_MS);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
     }
     0
 }
@@ -185,13 +177,11 @@ fn send_delete_bucket(index: u8) -> usize {
         let mut del_bucket: Vec<u8> = Vec::new();
         del_bucket.extend([0x32, 0x02, index]);
         del_bucket = zeropad_vector(del_bucket, WRITE_LENGTH);
-        GLOBAL_DATA.with(|hid| {
-            let result = hid.write(&del_bucket);
-            match result {
-                Ok(ok) => return ok,
-                Err(_err) => return 0,
-            }
-        });
+        let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &del_bucket, TEN_MS);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
     }
     0
 }
@@ -209,14 +199,11 @@ fn send_setup_bucket(index: u8, id: u8, memory_slot: u16, memory_slot_count: u16
         0x01,
     ]);
     setup_bucket = zeropad_vector(setup_bucket, WRITE_LENGTH);
-    GLOBAL_DATA.with(|hid| {
-        let result = hid.write(&setup_bucket);
-        match result {
-            Ok(ok) => return ok,
-            Err(_err) => return 0,
-        }
-    });
-    0
+    let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &setup_bucket, TEN_MS);
+    match result {
+        Ok(ok) => return ok,
+        Err(_err) => return 0,
+    }
 }
 
 fn calculate_memory_start(index: u8) -> u16 {
@@ -228,13 +215,11 @@ fn send_write_start_bucket(index: u8) -> usize {
         let mut start_bucket: Vec<u8> = Vec::new();
         start_bucket.extend([0x36, 0x01, index]);
         start_bucket = zeropad_vector(start_bucket, WRITE_LENGTH);
-        GLOBAL_DATA.with(|hid| {
-            let result = hid.write(&start_bucket);
-            match result {
-                Ok(ok) => return ok,
-                Err(_err) => return 0,
-            }
-        });
+        let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &start_bucket, TEN_MS);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
     }
     0
 }
@@ -244,13 +229,11 @@ fn send_write_finish_bucket(index: u8) -> usize {
         let mut finish_bucket: Vec<u8> = Vec::new();
         finish_bucket.extend([0x36, 0x02, index]);
         finish_bucket = zeropad_vector(finish_bucket, WRITE_LENGTH);
-        GLOBAL_DATA.with(|hid| {
-            let result = hid.write(&finish_bucket);
-            match result {
-                Ok(ok) => return ok,
-                Err(_err) => return 0,
-            }
-        });
+        let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &finish_bucket, TEN_MS);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
     }
     0
 }
@@ -260,13 +243,11 @@ fn send_switch_bucket(index: u8, mode: u8) -> usize {
         let mut switch_bucket: Vec<u8> = Vec::new();
         switch_bucket.extend([0x38, 0x01, mode, index]);
         switch_bucket = zeropad_vector(switch_bucket, WRITE_LENGTH);
-        GLOBAL_DATA.with(|hid| {
-            let result = hid.write(&switch_bucket);
-            match result {
-                Ok(ok) => return ok,
-                Err(_err) => return 0,
-            }
-        });
+        let result = BULK_HANDLE.write_interrupt(INTERRUPT_ENDPOINT, &switch_bucket, TEN_MS);
+        match result {
+            Ok(ok) => return ok,
+            Err(_err) => return 0,
+        }
     }
     0
 }
