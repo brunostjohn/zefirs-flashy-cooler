@@ -27,37 +27,37 @@ function renderPreview() {
 }
 
 function reloadConfig() {
-  dissectGif();
+  // dissectGif();
   config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 }
 
-function dissectGif() {
-  let notCompleted = true;
+// function dissectGif() {
+//   let notCompleted = true;
 
-  let gif = fs.existsSync(config.gifPath)
-    ? config.gifPath
-    : path.join(__dirname, "image.gif");
+//   let gif = fs.existsSync(config.gifPath)
+//     ? config.gifPath
+//     : path.join(__dirname, "image.gif");
 
-  if (fs.existsSync(path.join(__dirname, "extracted"))) {
-    try {
-      // fs.rmdirSync(path.join(__dirname, "extracted"), {
-      //   recursive: true,
-      //   force: true,
-      // });
-    } catch (err) {
-      console.log(err);
-    }
-  }
+//   if (fs.existsSync(path.join(__dirname, "extracted"))) {
+//     try {
+//       // fs.rmdirSync(path.join(__dirname, "extracted"), {
+//       //   recursive: true,
+//       //   force: true,
+//       // });
+//     } catch (err) {
+//       console.log(err);
+//     }
+//   }
 
-  fs.mkdirSync(path.join(__dirname, "extracted"));
+//   fs.mkdirSync(path.join(__dirname, "extracted"));
 
-  extractFrames({
-    input: gif,
-    output: path.join(__dirname, "extracted", "%d.png"),
-  }).then(() => {
-    notCompleted = false;
-  });
-}
+//   extractFrames({
+//     input: gif,
+//     output: path.join(__dirname, "extracted", "%d.png"),
+//   }).then(() => {
+//     notCompleted = false;
+//   });
+// }
 
 module.exports = {
   renderFrame,
