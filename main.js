@@ -181,7 +181,10 @@ app.whenReady().then(() => {
       if (message.type == "console") {
         sendConsole(message.content);
       } else if (message.type == "error") {
-        loadingScreen.webContents.send("loading:noDevice", "");
+        loadingScreen.webContents.send("loading:error", [
+          message.content,
+          message.exText,
+        ]);
       } else if (message.type == "done") {
         hardwareTrees = message.hardwareList;
         themeList = message.themeList;

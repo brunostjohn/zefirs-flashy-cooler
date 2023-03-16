@@ -36,12 +36,20 @@
         <div class="modal-dialog">
           <div class="modal-content">
             <div class="modal-header">
-              <h1 class="modal-title fs-5" id="staticBackdropLabel">No supported devices found!</h1>
+              <h1 class="modal-title fs-5" id="staticBackdropLabel">Error!</h1>
             </div>
             <div class="modal-body">
-              No devices supported by this app have been found. Please check whether your device is supported.
+              <p id="error">
+                No devices supported by this app have been found. Please check whether your device is supported.
+              </p>
+              <pre id="houdini" style="display: none;">
+                <code id="ex">
+
+                </code>
+              </pre>
             </div>
             <div class="modal-footer">
+              <button type="button" class="btn btn-primary" onclick="showTraceback()" id="trace">Traceback</button>
               <button type="button" class="btn btn-danger" onclick="window.electronAPI.closeApp()">Close app</button>
             </div>
           </div>

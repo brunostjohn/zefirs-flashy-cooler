@@ -11,6 +11,10 @@ let libreRunning = true;
 
 let config = workerData.configuration;
 
+let errorContent;
+let problemTheme;
+let exceptionText;
+
 function makeId(length) {
   var result = "";
   var characters =
@@ -66,42 +70,18 @@ parentPort.postMessage({
 });
 
 const createHwTrees = () => {
-  if (libreRunning) {
-    let hwTrees = [];
-    parentPort.postMessage({
-      type: "console",
-      content: "Generating hardware tree...",
-    });
-    const conn = new ActiveX.Object("WbemScripting.SWbemLocator");
-    const svr = conn.ConnectServer(".", "root\\LibreHardwareMonitor");
-    let queryString = "Select Name, Identifier From Hardware";
-    const results = [];
-    let queryResponse = svr.ExecQuery(queryString);
-    for (let i = 0; i < queryResponse.Count; i += 1) {
-      const properties = queryResponse.ItemIndex(i).Properties_;
-      let count = properties.Count;
-      const propEnum = properties._NewEnum;
-      const obj = {};
-      while (count) {
-        count -= 1;
-        const prop = propEnum.Next(1);
-        obj[prop.Name] = prop.Value;
-      }
-      results.push(obj);
-    }
-    const finalArray = [];
-    results.forEach((result) => {
-      const hardwarePath = result.Identifier;
-      const hardwareName = result.Name;
-      const finalObject = {
-        name: hardwareName,
-        path: hardwarePath,
-        sensorTree: [],
-      };
-      queryString =
-        'Select SensorType From Sensor Where Parent = "' + hardwarePath + '"';
-      const results2 = [];
-      queryResponse = svr.ExecQuery(queryString);
+  try {
+    if (libreRunning) {
+      let hwTrees = [];
+      parentPort.postMessage({
+        type: "console",
+        content: "Generating hardware tree...",
+      });
+      const conn = new ActiveX.Object("WbemScripting.SWbemLocator");
+      const svr = conn.ConnectServer(".", "root\\LibreHardwareMonitor");
+      let queryString = "Select Name, Identifier From Hardware";
+      const results = [];
+      let queryResponse = svr.ExecQuery(queryString);
       for (let i = 0; i < queryResponse.Count; i += 1) {
         const properties = queryResponse.ItemIndex(i).Properties_;
         let count = properties.Count;
@@ -112,23 +92,20 @@ const createHwTrees = () => {
           const prop = propEnum.Next(1);
           obj[prop.Name] = prop.Value;
         }
-        results2.push(obj);
+        results.push(obj);
       }
-      const sensorCats = [];
-      results2.forEach((result) => {
-        if (!sensorCats.includes(result.SensorType)) {
-          sensorCats.push(result.SensorType);
-        }
-      });
-      sensorCats.forEach((sensorCat) => {
-        const treeByCat = { category: sensorCat, sensors: [] };
+      const finalArray = [];
+      results.forEach((result) => {
+        const hardwarePath = result.Identifier;
+        const hardwareName = result.Name;
+        const finalObject = {
+          name: hardwareName,
+          path: hardwarePath,
+          sensorTree: [],
+        };
         queryString =
-          'Select Identifier, Name From Sensor Where Parent = "' +
-          hardwarePath +
-          '" And SensorType = "' +
-          sensorCat +
-          '"';
-        const results3 = [];
+          'Select SensorType From Sensor Where Parent = "' + hardwarePath + '"';
+        const results2 = [];
         queryResponse = svr.ExecQuery(queryString);
         for (let i = 0; i < queryResponse.Count; i += 1) {
           const properties = queryResponse.ItemIndex(i).Properties_;
@@ -140,90 +117,131 @@ const createHwTrees = () => {
             const prop = propEnum.Next(1);
             obj[prop.Name] = prop.Value;
           }
-          results3.push(obj);
+          results2.push(obj);
         }
-        results3.forEach((result) => {
-          const sensorObject = { name: result.Name, path: result.Identifier };
-          treeByCat.sensors.push(sensorObject);
+        const sensorCats = [];
+        results2.forEach((result) => {
+          if (!sensorCats.includes(result.SensorType)) {
+            sensorCats.push(result.SensorType);
+          }
         });
-        finalObject.sensorTree.push(treeByCat);
+        sensorCats.forEach((sensorCat) => {
+          const treeByCat = { category: sensorCat, sensors: [] };
+          queryString =
+            'Select Identifier, Name From Sensor Where Parent = "' +
+            hardwarePath +
+            '" And SensorType = "' +
+            sensorCat +
+            '"';
+          const results3 = [];
+          queryResponse = svr.ExecQuery(queryString);
+          for (let i = 0; i < queryResponse.Count; i += 1) {
+            const properties = queryResponse.ItemIndex(i).Properties_;
+            let count = properties.Count;
+            const propEnum = properties._NewEnum;
+            const obj = {};
+            while (count) {
+              count -= 1;
+              const prop = propEnum.Next(1);
+              obj[prop.Name] = prop.Value;
+            }
+            results3.push(obj);
+          }
+          results3.forEach((result) => {
+            const sensorObject = { name: result.Name, path: result.Identifier };
+            treeByCat.sensors.push(sensorObject);
+          });
+          finalObject.sensorTree.push(treeByCat);
+        });
+        hwTrees.push(finalObject);
       });
-      hwTrees.push(finalObject);
-    });
-    ActiveX.release(conn);
-    parentPort.postMessage({
-      type: "console",
-      content: "Done!",
-    });
-    return hwTrees;
+      ActiveX.release(conn);
+      parentPort.postMessage({
+        type: "console",
+        content: "Done!",
+      });
+      return hwTrees;
+    }
+  } catch (err) {
+    errorless = false;
+    errorContent =
+      "There was an error while reading system sensors. Please check your configuration.";
+    exceptionText = err.message;
   }
 };
 
 const loadThemes = () => {
-  let themeLst = [];
-  parentPort.postMessage({
-    type: "console",
-    content: "Reading themes...",
-  });
+  try {
+    let themeLst = [];
+    parentPort.postMessage({
+      type: "console",
+      content: "Reading themes...",
+    });
 
-  fs.readdirSync(themeFolder).forEach((file) => {
-    const theme = require(path.join(__dirname, "themes", file, "theme.js"));
-    let activeFlag = false;
-    let requiresSensors = false;
-    const themepath = path.join(__dirname, "themes", file, "theme.js");
-    const configpath = path.join(__dirname, "themes", file, "config.json");
-    if (config.defaultThemePath == themepath) {
-      activeFlag = true;
-    }
-    if (theme.info.requiresSensors != undefined) {
-      if (theme.info.requiresSensors) {
-        requiresSensors = true;
-        activeThemeNeedsSensorsFlag =
-          requiresSensors && activeFlag ? true : false;
+    fs.readdirSync(themeFolder).forEach((file) => {
+      const theme = require(path.join(__dirname, "themes", file, "theme.js"));
+      let activeFlag = false;
+      let requiresSensors = false;
+      const themepath = path.join(__dirname, "themes", file, "theme.js");
+      problemTheme = themepath;
+      const configpath = path.join(__dirname, "themes", file, "config.json");
+      if (config.defaultThemePath == themepath) {
+        activeFlag = true;
       }
-    }
-    if ((requiresSensors && libreRunning) || !requiresSensors) {
-      let entry = {
-        path: themepath,
-        id: makeId(32),
-        title: theme.info.title,
-        description: theme.info.description,
-        preview: "data:image/jpeg;base64," + theme.info.preview,
-        isActive: activeFlag,
-        hasConfig: theme.info.hasConfig,
-        configPath: configpath,
-        controllableParameters: theme.info.controllableParameters,
-        requiresSensors: requiresSensors,
-      };
-      if (theme.info.hasConfig) {
-        const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
-        Object.keys(configTheme).forEach((key) => {
-          entry.controllableParameters[key]["value"] = configTheme[key];
-          entry.controllableParameters[key]["varName"] = key;
-          entry.controllableParameters[key]["id"] = makeId(32);
-        });
+      if (theme.info.requiresSensors != undefined) {
+        if (theme.info.requiresSensors) {
+          requiresSensors = true;
+          activeThemeNeedsSensorsFlag =
+            requiresSensors && activeFlag ? true : false;
+        }
       }
-      themeLst.push(entry);
+      if ((requiresSensors && libreRunning) || !requiresSensors) {
+        let entry = {
+          path: themepath,
+          id: makeId(32),
+          title: theme.info.title,
+          description: theme.info.description,
+          preview: "data:image/jpeg;base64," + theme.info.preview,
+          isActive: activeFlag,
+          hasConfig: theme.info.hasConfig,
+          configPath: configpath,
+          controllableParameters: theme.info.controllableParameters,
+          requiresSensors: requiresSensors,
+        };
+        if (theme.info.hasConfig) {
+          const configTheme = JSON.parse(fs.readFileSync(entry.configPath));
+          Object.keys(configTheme).forEach((key) => {
+            entry.controllableParameters[key]["value"] = configTheme[key];
+            entry.controllableParameters[key]["varName"] = key;
+            entry.controllableParameters[key]["id"] = makeId(32);
+          });
+        }
+        themeLst.push(entry);
+      }
+    });
+
+    themeLst.sort((a, b) => {
+      const item1 = a.title;
+      const item2 = b.title;
+
+      return item1.localeCompare(item2, undefined, { numeric: true });
+    });
+
+    if (activeThemeNeedsSensorsFlag && !libreRunning) {
+      themeLst[0].isActive = true;
+      config.defaultThemePath = themeLst[0].path;
     }
-  });
 
-  themeLst.sort((a, b) => {
-    const item1 = a.title;
-    const item2 = b.title;
-
-    return item1.localeCompare(item2, undefined, { numeric: true });
-  });
-
-  if (activeThemeNeedsSensorsFlag && !libreRunning) {
-    themeLst[0].isActive = true;
-    config.defaultThemePath = themeLst[0].path;
+    parentPort.postMessage({
+      type: "console",
+      content: "Done!",
+    });
+    return themeLst;
+  } catch (err) {
+    errorless = false;
+    errorContent = "Failed to load themes! Problematic theme: " + problemTheme;
+    exceptionText = err.message;
   }
-
-  parentPort.postMessage({
-    type: "console",
-    content: "Done!",
-  });
-  return themeLst;
 };
 
 function findDevice() {
@@ -275,6 +293,8 @@ function findDevice() {
   return persistent;
 }
 
+let errorless;
+
 const hardwareList = createHwTrees();
 const themeList = loadThemes();
 const availableDevice = findDevice();
@@ -284,6 +304,20 @@ if (availableDevice != undefined) {
     type: "console",
     content: "Found " + availableDevice.deviceName,
   });
+} else {
+  errorContent =
+    "No devices supported by this app have been found. Please check whether your device is supported.";
+  exceptionText =
+    "No devices supported found by VID/PID. If you're a plugin dev, make sure your values are correct and that the device is connected.";
+}
+
+if (!errorless) {
+  parentPort.postMessage({
+    type: "error",
+    content: errorContent,
+    exText: exceptionText,
+  });
+} else {
   parentPort.postMessage({
     type: "done",
     hardwareList: hardwareList,
@@ -291,11 +325,6 @@ if (availableDevice != undefined) {
     libreRunning: libreRunning,
     iCueRunning: iCueRunning,
     availableDevice: availableDevice,
-  });
-} else {
-  parentPort.postMessage({
-    type: "error",
-    content: "noDeviceFound",
   });
 }
 
