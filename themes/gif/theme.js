@@ -5,7 +5,7 @@ const extractFrames = require("gif-extract-frames");
 
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
-dissectGif();
+// dissectGif();
 
 const width = 480;
 const height = 480;
