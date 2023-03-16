@@ -181,6 +181,8 @@ app.whenReady().then(() => {
       if (message.type == "console") {
         sendConsole(message.content);
       } else if (message.type == "error") {
+        console.log("received error");
+        console.log("message");
         loadingScreen.webContents.send("loading:error", [
           message.content,
           message.exText,

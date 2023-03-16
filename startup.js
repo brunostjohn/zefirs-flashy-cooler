@@ -14,6 +14,7 @@ let config = workerData.configuration;
 let errorContent;
 let problemTheme;
 let exceptionText;
+let errorless = true;
 
 function makeId(length) {
   var result = "";
@@ -70,8 +71,8 @@ parentPort.postMessage({
 });
 
 const createHwTrees = () => {
-  try {
-    if (libreRunning) {
+  if (libreRunning) {
+    try {
       let hwTrees = [];
       parentPort.postMessage({
         type: "console",
@@ -161,12 +162,13 @@ const createHwTrees = () => {
         content: "Done!",
       });
       return hwTrees;
+    } catch (err) {
+      errorless = false;
+      errorContent =
+        "There was an error while reading system sensors. Please check your configuration.";
+      exceptionText = err.message;
+      console.log(err);
     }
-  } catch (err) {
-    errorless = false;
-    errorContent =
-      "There was an error while reading system sensors. Please check your configuration.";
-    exceptionText = err.message;
   }
 };
 
@@ -241,6 +243,7 @@ const loadThemes = () => {
     errorless = false;
     errorContent = "Failed to load themes! Problematic theme: " + problemTheme;
     exceptionText = err.message;
+    console.log(err);
   }
 };
 
@@ -292,8 +295,6 @@ function findDevice() {
   });
   return persistent;
 }
-
-let errorless;
 
 const hardwareList = createHwTrees();
 const themeList = loadThemes();
