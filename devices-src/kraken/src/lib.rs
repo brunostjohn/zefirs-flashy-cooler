@@ -28,7 +28,7 @@ static BULK_HANDLE: Lazy<DeviceHandle<GlobalContext>> = Lazy::new(|| {
     let whathappened = device.claim_interface(BULK_INTERFACE);
     let _whathappened2 = device.claim_interface(HID_INTERFACE);
     match whathappened {
-        Ok(_ok) => println!("weregood"),
+        Ok(_ok) => print!(""),
         Err(err) => dissect_error(err),
     }
     device
@@ -91,8 +91,8 @@ fn convert_image(image: Vec<u8>) -> Vec<u8> {
         .to_vec();
     let mut product: Vec<u8> = Vec::new();
     for chunk in convert.chunks(3) {
-        product.push(0x00 as u8);
         product.extend(chunk);
+        product.push(0x00 as u8);
     }
     product
 }
@@ -313,7 +313,7 @@ fn send_frame(handle: &DeviceHandle<GlobalContext>, frame: &[u8], lastone: &u8) 
         )
         .expect("Failed to complete transfer!");
 
-    let resp = switch_bucket(index, 0x4, &handle);
+    let _resp = switch_bucket(index, 0x4, &handle);
 
     index
 }
