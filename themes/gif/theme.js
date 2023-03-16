@@ -40,10 +40,10 @@ function dissectGif() {
 
   if (fs.existsSync(path.join(__dirname, "extracted"))) {
     try {
-      fs.rmdirSync(path.join(__dirname, "extracted"), {
-        recursive: true,
-        force: true,
-      });
+      // fs.rmdirSync(path.join(__dirname, "extracted"), {
+      //   recursive: true,
+      //   force: true,
+      // });
     } catch (err) {
       console.log(err);
     }
