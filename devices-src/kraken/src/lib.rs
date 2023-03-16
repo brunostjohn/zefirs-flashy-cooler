@@ -129,19 +129,16 @@ fn find_free_bucket(buckets: &Vec<Vec<u8>>, lastone: &u8) -> u8 {
             .all(|item| item.to_owned() == 0x00 as u8)
         {
             if i != lastone.to_owned() as usize {
-                println!("Found {:?}", i as u8);
                 return i as u8;
             }
         }
     }
-    println!("Found nothing. What the fuck.");
     0xFF
 }
 
 fn prepare_bucket(index: u8, filled: bool, handle: &DeviceHandle<GlobalContext>) -> u8 {
     let delete_response = delete_bucket(index, handle);
     if !delete_response {
-        println!("Failed to del. Attempting at {:?}", index);
         return prepare_bucket(index + 1, true, handle);
     } else {
         if filled {
@@ -202,13 +199,11 @@ fn switch_bucket(index: u8, mut mode: u8, handle: &DeviceHandle<GlobalContext>) 
         mode = 0x4;
     }
     let reponse = write_read(handle, &[0x38, 0x1, mode, index]);
-    println!("switch resp: {:?}", reponse);
     reponse[14] == 0x1
 }
 
 fn delete_all_buckets(handle: &DeviceHandle<GlobalContext>) {
     switch_bucket(0, 0xFF, handle);
-    println!("all buckets fucked, nuking");
     for i in 0..16 {
         delete_bucket(i, handle);
     }
@@ -216,8 +211,6 @@ fn delete_all_buckets(handle: &DeviceHandle<GlobalContext>) {
 
 fn delete_bucket(index: u8, handle: &DeviceHandle<GlobalContext>) -> bool {
     let response = write_read(handle, &[0x32, 0x02, index]);
-    println!("deletion resp: {:?}", response);
-    println!("evals to {:?}", response[14] == 0x01);
     response[14] == 0x01
 }
 
@@ -241,7 +234,6 @@ fn setup_bucket(
             0x1,
         ],
     );
-    println!("{:?}", response);
     response[14] == 0x01
 }
 
@@ -286,21 +278,14 @@ fn send_frame(handle: &DeviceHandle<GlobalContext>, frame: &[u8], lastone: &u8) 
     );
 
     let packet_count = frame.chunks(BULK_WRITE_LENGTH).count();
-    println!("packet cnt: {:?}", packet_count);
 
     let mut bucket_memory_start = get_bucket_memory_offset(&buckets, index, packet_count);
-    println!("memstrt: {:?}", bucket_memory_start);
 
     if bucket_memory_start == 0xFFF {
         delete_all_buckets(&handle);
         index = 0;
         bucket_memory_start = 0x0000;
     }
-
-    println!("index: {:?}", index);
-    println!("end index: {:?}", index + 1);
-    println!("mem start: {:?}", bucket_memory_start);
-    println!("pkt cnt: {:?}", packet_count);
 
     if !setup_bucket(index, bucket_memory_start, packet_count as u16, &handle) {
         println!("Failed to setup bucket for data transfer!");
@@ -329,10 +314,6 @@ fn send_frame(handle: &DeviceHandle<GlobalContext>, frame: &[u8], lastone: &u8) 
         .expect("Failed to complete transfer!");
 
     let resp = switch_bucket(index, 0x4, &handle);
-
-    println!("switch bucket resp: {:?}", resp);
-
-    println!("switch bucket resp: {:?}", resp);
 
     index
 }
