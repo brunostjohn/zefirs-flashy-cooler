@@ -14,6 +14,8 @@ pkgs/create-neon/create-neon-manual-test-project
 test/cli/lib
 npm-debug.log
 rls*.log
+themes/gif/extraced/**
+
 
 # Logs
 logs
@@ -146,3 +148,19 @@ dist
 .yarn/install-state.gz
 .pnp.*
 *.node
+themes/gif/extracted/1.png
+themes/gif/extracted/10.png
+themes/gif/extracted/11.png
+themes/gif/extracted/12.png
+themes/gif/extracted/13.png
+themes/gif/extracted/14.png
+themes/gif/extracted/15.png
+themes/gif/extracted/2.png
+themes/gif/extracted/3.png
+themes/gif/extracted/4.png
+themes/gif/extracted/5.png
+themes/gif/extracted/6.png
+themes/gif/extracted/7.png
+themes/gif/extracted/8.png
+themes/gif/extracted/9.png
+themes/gif/extracted/0.png
