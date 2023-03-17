@@ -39,33 +39,33 @@ function dissectGif() {
     ? config.gifPath
     : path.join(__dirname, "image.gif");
 
-  if (fs.existsSync(path.join(__dirname, "extracted"))) {
-    try {
-      fs.rmdirSync(path.join(__dirname, "extracted"), {
-        recursive: true,
-        force: true,
-      });
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  // if (fs.existsSync(path.join(__dirname, "extracted"))) {
+  //   try {
+  //     fs.rmdirSync(path.join(__dirname, "extracted"), {
+  //       recursive: true,
+  //       force: true,
+  //     });
+  //   } catch (err) {
+  //     console.log(err);
+  //   }
+  // }
 
-  fs.mkdirSync(path.join(__dirname, "extracted"));
+  // fs.mkdirSync(path.join(__dirname, "extracted"));
 
-  let sync = sp(
-    extractFrames({
-      input: gif,
-      output: path.join(__dirname, "extracted", "%d.png"),
-    })
-  );
+  // // let sync = sp(
+  // //   extractFrames({
+  // //     input: gif,
+  // //     output: path.join(__dirname, "extracted", "%d.png"),
+  // //   })
+  // // );
 
-  const result = sync();
+  // // const result = sync();
 
-  fs.readdirSync(path.join(__dirname, "extracted")).forEach((file) => {
-    const img = new Image();
-    img.src = fs.readFileSync(file);
-    frames.push(img);
-  });
+  // fs.readdirSync(path.join(__dirname, "extracted")).forEach((file) => {
+  //   const img = new Image();
+  //   img.src = fs.readFileSync(file);
+  //   frames.push(img);
+  // });
 }
 
 module.exports = {
