@@ -2,6 +2,7 @@ const { createCanvas, Image } = require("@napi-rs/canvas");
 const fs = require("fs");
 const path = require("path");
 const extractFrames = require("gif-extract-frames");
+const deasync = require("deasync");
 
 let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
