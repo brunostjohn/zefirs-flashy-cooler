@@ -277,9 +277,7 @@ fn send_frame(handle: &DeviceHandle<GlobalContext>, frame: &[u8], lastone: &u8) 
         &handle,
     );
 
-    let packet_count = frame.chunks(BULK_WRITE_LENGTH).count();
-
-    let mut bucket_memory_start = get_bucket_memory_offset(&buckets, index, packet_count);
+    let mut bucket_memory_start = get_bucket_memory_offset(&buckets, index, 400);
 
     if bucket_memory_start == 0xFFF {
         delete_all_buckets(&handle);
@@ -287,7 +285,7 @@ fn send_frame(handle: &DeviceHandle<GlobalContext>, frame: &[u8], lastone: &u8) 
         bucket_memory_start = 0x0000;
     }
 
-    if !setup_bucket(index, bucket_memory_start, packet_count as u16, &handle) {
+    if !setup_bucket(index, bucket_memory_start, 400 as u16, &handle) {
         println!("Failed to setup bucket for data transfer!");
     }
 
