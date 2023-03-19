@@ -12,7 +12,7 @@ html {
   overflow-y: auto;
   max-height: 100vh;
   padding: 15px;
-  padding-bottom: 4.5rem;
+  padding-top: 4.5rem;
 }
 
 #scrollContainer::-webkit-scrollbar {

@@ -1,19 +1,93 @@
 #controlbar {
-    padding: 5px;
-    background-color: rgba(52, 58, 64, 0.3);
-    position: fixed;
-    bottom: 0;
-    overflow: hidden;
-    width: 70%;
-    left: 50%;
-    transform: translateX(-50%);
-    margin: 5px;
-    margin-bottom: 8px;
-    border-radius: 10px;
-    backdrop-filter: blur(6px);
+  padding: 5px;
+  background-color: rgba(44, 58, 71, 0.3);
+  width: 60%;
+  margin: 7px;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  backdrop-filter: blur(50px);
+  -webkit-app-region: no-drag;
 }
 
 #controlbar .active {
-    background-color: rgba(13, 110, 253, 0.8);
-    backdrop-filter: blur(6px);
+  background-color: rgba(13, 110, 253, 0.8);
+  backdrop-filter: blur(6px);
+}
+
+body {
+  background-color: #080d1400;
+}
+
+#topbar {
+  background-color: #060a0f3f;
+  backdrop-filter: blur(50px);
+  width: 100%;
+  position: fixed;
+  top: 0;
+  overflow: hidden;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  z-index: 100;
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
+  -webkit-app-region: drag;
+}
+
+#spacerTitle {
+  width: 0.5rem;
+}
+
+#titlebarlogo {
+  max-width: 3rem;
+  max-height: 3rem;
+  position: absolute;
+  left: 0;
+  margin: 1rem;
+}
+
+#titlebarcontrols {
+  display: flex;
+  flex-direction: row;
+  -webkit-app-region: no-drag;
+}
+
+#minimisewindowimage {
+  width: 2rem;
+  filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg)
+    brightness(99%) contrast(100%);
+}
+
+#minimisewindowimage:hover {
+  filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg)
+    brightness(108%) contrast(99%);
+  transition: filter ease-in-out 0.2s;
+}
+
+#closewindowimage {
+  width: 2.5rem;
+  color: rgb(13, 71, 158);
+  filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg)
+    brightness(99%) contrast(100%);
+  padding: 0.5rem;
+  transition: filter ease-in-out 0.2s;
+}
+
+#closewindowimage:hover {
+  filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg)
+    brightness(108%) contrast(99%);
+}
+
+#titlebarcontrols {
+  right: 0;
+  position: absolute;
+  padding: 1rem;
+}
+
+.card,
+.form-control {
+  background-color: #060a0f3f;
 }

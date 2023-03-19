@@ -1,16 +1,20 @@
-extern crate hidapi;
+use crate::constants::constants::*;
+mod constants;
 use base64::{engine::general_purpose, Engine as _};
-use hidapi::HidDevice;
+use hidapi_rusb::HidDevice;
 use neon::prelude::*;
 use once_cell::sync::Lazy;
 use std::convert::TryFrom;
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard};
 use std::time::SystemTime;
+extern crate hidapi_rusb;
 
-thread_local! {static GLOBAL_DATA: HidDevice = hidapi::HidApi::new_without_enumerate()
-.unwrap()
-.open(0x1b1c, 0x0c39)
-.unwrap();}
+static HID: Lazy<Mutex<HidDevice>> = Lazy::new(|| {
+    let api = hidapi_rusb::HidApi::new().expect("failed to create api!");
+    let device = api.open(VENDOR_ID, PRODUCT_ID).unwrap();
+    let muta = Mutex::new(device);
+    muta
+});
 
 static UNFUCK_TIME: Lazy<Mutex<Vec<SystemTime>>> = Lazy::new(|| {
     let mut cur_time = Vec::new();
@@ -27,27 +31,25 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    GLOBAL_DATA.with(|hid| {
-        hid.send_feature_report(&[0x03, 0x1d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00])
-            .expect("Failed to say hello!");
-        hid.send_feature_report(&[0x03, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-            .expect("Failed to issue request 0x19!");
-        hid.send_feature_report(&[0x03, 0x20, 0x00, 0x19, 0x79, 0xe7, 0x32, 0x2e])
-            .expect("Failed to issue request 0x20!");
-        hid.send_feature_report(&[0x03, 0x0b, 0x40, 0x01, 0x79, 0xe7, 0x32, 0x2e])
-            .expect("Failed to set interface!");
-    });
+    let hid = HID.lock().unwrap();
+    hid.send_feature_report(&[0x03, 0x1d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00])
+        .expect("Failed to say hello!");
+    hid.send_feature_report(&[0x03, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+        .expect("Failed to issue request 0x19!");
+    hid.send_feature_report(&[0x03, 0x20, 0x00, 0x19, 0x79, 0xe7, 0x32, 0x2e])
+        .expect("Failed to issue request 0x20!");
+    hid.send_feature_report(&[0x03, 0x0b, 0x40, 0x01, 0x79, 0xe7, 0x32, 0x2e])
+        .expect("Failed to set interface!");
     std::thread::sleep(std::time::Duration::from_millis(5));
     Ok(cx.string("s"))
 }
 
 fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
     std::thread::sleep(std::time::Duration::from_millis(5));
-    GLOBAL_DATA.with(|hid| {
-        hid.send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
-            .expect("Failed to close LCD!");
-        drop(hid);
-    });
+    HID.lock()
+        .unwrap()
+        .send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
+        .expect("Failed to close LCD!");
     Ok(cx.string("s"))
 }
 
@@ -63,7 +65,7 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
         Ok(ok) => dur = ok,
         Err(_error) => failed = true,
     }
-    if !failed && dur > std::time::Duration::from_secs(25) {
+    if !failed && (dur > std::time::Duration::from_secs(25)) {
         please_unfuck = true;
         timevec.remove(0);
         timevec.push(SystemTime::now());
@@ -71,13 +73,11 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
     let image = general_purpose::STANDARD
         .decode(base_64.value(&mut cx))
         .unwrap();
-    GLOBAL_DATA.with(|hid| {
-        send_image(hid, image, please_unfuck);
-    });
+    send_image(HID.lock().unwrap(), image, please_unfuck);
     Ok(cx.string("done"))
 }
 
-pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>, please_unfuck: bool) {
+pub fn send_image(handle: MutexGuard<HidDevice>, image: Vec<u8>, please_unfuck: bool) {
     let device = handle;
     let mut packets_sent = 0;
     let mut last_image: Vec<u8> = Vec::new();
@@ -114,12 +114,12 @@ pub fn send_image(handle: &hidapi::HidDevice, image: Vec<u8>, please_unfuck: boo
             imgdata.extend(data.to_vec());
             last_image = data.to_vec();
         }
-        let unhandled_result = device.write(&mut imgdata);
-        let result;
-        match unhandled_result {
-            Ok(we_did_it) => result = we_did_it,
-            Err(_nope) => result = 1023,
-        }
+        let _unhandled_result = device.write(&mut imgdata).expect("Failed to write frame!");
+        let result = 1024;
+        // match unhandled_result {
+        //     Ok(we_did_it) => result = we_did_it,
+        //     Err(_nope) => result = 1023,
+        // }
         if signature == 0x01 && result != usize::try_from(1024).unwrap()
             || signature == 0x01 && please_unfuck
         {

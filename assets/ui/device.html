@@ -8,6 +8,27 @@
         <title>Zefir's Flashy Cooler - Device</title>
     </head>
     <body>
+        <div id="topbar">
+            <img src="../images/android-chrome-192x192.png" id="titlebarlogo" />
+            <nav class="nav nav-pills nav-fill" id="controlbar">
+                <a class="nav-link" aria-current="page" href="themes.html">Themes</a>
+                <a class="nav-link active" href="device.html">Device</a>
+                <a class="nav-link" href="renderer.html">Renderer</a>
+                <a class="nav-link" href="settings.html">Settings</a>
+            </nav>
+            <div id="titlebarcontrols">
+                <a id="minimise" onclick="window.electronAPI.minimiseWindow()">
+                    <img src="../images/window-minimize-solid.svg" id="minimisewindowimage" />
+                </a>
+                <div id="spacerTitle">
+
+                </div>
+                <a id="closewindow" onclick="window.electronAPI.closeWindow()">
+                    <img src="../images/closewindow.svg" id="closewindowimage"/>
+                </a>
+            </div>
+        </div>
+
         <div class="col-container">
             <div class="col" id="larger">
                 <div id="scrollContainer">
@@ -51,12 +72,6 @@
             </div>
         </div>
 
-        <nav class="nav nav-pills nav-fill" id="controlbar">
-            <a class="nav-link" aria-current="page" href="themes.html">Themes</a>
-            <a class="nav-link active" href="device.html">Device</a>
-            <a class="nav-link" href="renderer.html">Renderer</a>
-            <a class="nav-link" href="settings.html">Settings</a>
-        </nav>
         <script src="../scripts/device.js"></script>
     </body>
 </html>

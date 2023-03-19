@@ -3,12 +3,12 @@ const {
   Tray,
   Menu,
   nativeImage,
-  BrowserWindow,
   nativeTheme,
   systemPreferences,
   ipcMain,
   dialog,
 } = require("electron");
+const { BrowserWindow } = require("electron-acrylic-window");
 if (require("electron-squirrel-startup")) app.quit();
 
 const appVersion = "0.0.3";
@@ -112,7 +112,19 @@ ipcMain.handle("settings:openThemeFolder", openThemeFolder);
 ipcMain.handle("device:requestDeviceInfo", requestDeviceInfo);
 ipcMain.handle("renderer:updatePreview", sendFreshPreview);
 
+ipcMain.handle("main:closeWindow", closeMainWindow);
+ipcMain.handle("main:minimiseWindow", minimiseMainWindow);
+
 ipcMain.handle("loading:requestVersion", requestVersionLoading);
+
+function closeMainWindow() {
+  mainWindow.close();
+  mainWindow = null;
+}
+
+function minimiseMainWindow() {
+  mainWindow.minimize();
+}
 
 function sendFreshPreview() {
   themeList.forEach((item) => {
@@ -130,11 +142,16 @@ const createWindow = () => {
       preload: path.join(__dirname, "libraries/preload.js"),
     },
     icon: path.join(__dirname, "assets", "images", "favicon.ico"),
+    titleBarStyle: "hidden",
+    vibrancy: {
+      theme: "#080d1499",
+      disableOnBlur: false,
+      maximumRefreshRate: 120,
+    },
   });
   mainWindow.loadFile(
     firstRun ? "assets/ui/onboarding.html" : "assets/ui/themes.html"
   );
-  mainWindow.removeMenu();
   mainWindow.on("close", () => {
     mainWindow = null;
   });
@@ -364,6 +381,7 @@ function getThemeList() {
   themeList.forEach((theme) => {
     mainWindow.webContents.send("theme", theme);
   });
+  mainWindow.webContents.send("themes:addAdjust");
 }
 
 async function handleFileOpen() {
