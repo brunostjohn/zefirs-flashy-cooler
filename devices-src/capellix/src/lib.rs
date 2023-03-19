@@ -1,7 +1,7 @@
 use crate::constants::constants::*;
 mod constants;
 use base64::{engine::general_purpose, Engine as _};
-use hidapi_rusb::HidDevice;
+use hidapi_rusb::{HidApi, HidDevice};
 use neon::prelude::*;
 use once_cell::sync::Lazy;
 use std::convert::TryFrom;
@@ -9,10 +9,17 @@ use std::sync::{Mutex, MutexGuard};
 use std::time::SystemTime;
 extern crate hidapi_rusb;
 
-static HID: Lazy<Mutex<HidDevice>> = Lazy::new(|| {
+static HIDAPI: Lazy<Mutex<HidApi>> = Lazy::new(|| {
     let api = hidapi_rusb::HidApi::new().expect("failed to create api!");
-    let device = api.open(VENDOR_ID, PRODUCT_ID).unwrap();
-    let muta = Mutex::new(device);
+    let muta = Mutex::new(api);
+    muta
+});
+
+static HID: Lazy<Mutex<Vec<HidDevice>>> = Lazy::new(|| {
+    let device = HIDAPI.lock().unwrap().open(VENDOR_ID, PRODUCT_ID).unwrap();
+    let mut ve = Vec::new();
+    ve.push(device);
+    let muta = Mutex::new(ve);
     muta
 });
 
@@ -31,7 +38,8 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 }
 
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
-    let hid = HID.lock().unwrap();
+    let hidt = HID.lock().unwrap();
+    let hid = hidt.get(0).unwrap();
     hid.send_feature_report(&[0x03, 0x1d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00])
         .expect("Failed to say hello!");
     hid.send_feature_report(&[0x03, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
@@ -46,9 +54,9 @@ fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
 
 fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
     std::thread::sleep(std::time::Duration::from_millis(5));
-    HID.lock()
-        .unwrap()
-        .send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
+    let hidt = HID.lock().unwrap();
+    let hid = hidt.get(0).unwrap();
+    hid.send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
         .expect("Failed to close LCD!");
     Ok(cx.string("s"))
 }
@@ -73,14 +81,25 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
     let image = general_purpose::STANDARD
         .decode(base_64.value(&mut cx))
         .unwrap();
-    send_image(HID.lock().unwrap(), image, please_unfuck);
+    let mut dev = HID.lock().unwrap();
+    let retval = send_image(&dev, image, please_unfuck);
+    if !retval {
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+        dev.remove(0);
+        dev.push(HIDAPI.lock().unwrap().open(VENDOR_ID, PRODUCT_ID).unwrap());
+    }
     Ok(cx.string("done"))
 }
 
-pub fn send_image(handle: MutexGuard<HidDevice>, image: Vec<u8>, please_unfuck: bool) {
-    let device = handle;
+pub fn send_image(
+    handle: &MutexGuard<Vec<HidDevice>>,
+    image: Vec<u8>,
+    please_unfuck: bool,
+) -> bool {
+    let device = handle.get(0).unwrap();
     let mut packets_sent = 0;
     let mut last_image: Vec<u8> = Vec::new();
+    let mut retval = false;
     for chunk in image.chunks(1016) {
         let mut imgdata: Vec<u8> = Vec::new();
         let signature: u8;
@@ -114,15 +133,12 @@ pub fn send_image(handle: MutexGuard<HidDevice>, image: Vec<u8>, please_unfuck: 
             imgdata.extend(data.to_vec());
             last_image = data.to_vec();
         }
-        let _unhandled_result = device.write(&mut imgdata).expect("Failed to write frame!");
-        let result = 1024;
-        // match unhandled_result {
-        //     Ok(we_did_it) => result = we_did_it,
-        //     Err(_nope) => result = 1023,
-        // }
-        if signature == 0x01 && result != usize::try_from(1024).unwrap()
-            || signature == 0x01 && please_unfuck
-        {
+        let unhandled_result = device.write(&mut imgdata);
+        match unhandled_result {
+            Ok(_we_did_it) => retval = true,
+            Err(_nope) => retval = false,
+        }
+        if signature == 0x01 && please_unfuck {
             let chunklen: u16 = u16::try_from(chunk.len()).unwrap();
             let chunktrans_temp = chunklen >> 8 & 0xff;
             let chunkand_temp = chunklen & 0xff;
@@ -141,6 +157,7 @@ pub fn send_image(handle: MutexGuard<HidDevice>, image: Vec<u8>, please_unfuck: 
         }
         packets_sent += 1;
     }
+    retval
 }
 
 fn shift_verbose_split_u16(short_16: u16) -> [u8; 2] {

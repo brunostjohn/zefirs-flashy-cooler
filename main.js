@@ -177,8 +177,12 @@ app.whenReady().then(() => {
       preload: path.join(__dirname, "libraries", "loadingPreload.js"),
     },
     icon: path.join(__dirname, "assets", "images", "favicon.ico"),
-    transparent: false,
-    frame: false,
+    titleBarStyle: "hidden",
+    vibrancy: {
+      theme: "#080d1499",
+      disableOnBlur: false,
+      maximumRefreshRate: 120,
+    },
     alwaysOnTop: true,
     center: true,
   });

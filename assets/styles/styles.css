@@ -88,6 +88,7 @@ body {
 }
 
 .card,
-.form-control {
+.form-control,
+.form-select {
   background-color: #060a0f3f;
 }

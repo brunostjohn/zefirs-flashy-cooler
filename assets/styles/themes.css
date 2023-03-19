@@ -52,7 +52,7 @@ body::-webkit-scrollbar-thumb {
   bottom: 0;
   left: 0;
   transform: translate(5px, 9px);
-  transition: all ease-in-out 0.05s;
+  transition: visibility ease-in-out 0.05s;
 }
 
 .theme-img {
