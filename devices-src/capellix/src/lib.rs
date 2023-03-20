@@ -84,7 +84,7 @@ fn image_passer(mut cx: FunctionContext) -> JsResult<JsString> {
     let mut dev = HID.lock().unwrap();
     let retval = send_image(&dev, image, please_unfuck);
     if !retval {
-        std::thread::sleep(std::time::Duration::from_millis(1000));
+        std::thread::sleep(std::time::Duration::from_millis(7000));
         dev.remove(0);
         dev.push(HIDAPI.lock().unwrap().open(VENDOR_ID, PRODUCT_ID).unwrap());
     }
