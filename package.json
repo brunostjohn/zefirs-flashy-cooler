@@ -48,7 +48,9 @@
     "nan": "^2.14.0",
     "node-base64-image": "^2.0.4",
     "node-hid": "^2.1.2",
+    "screenshot-desktop": "^0.0.0-development",
     "update-electron-app": "^2.0.1",
-    "winax": "^3.3.4"
+    "winax": "^3.3.4",
+    "winplayer-node": "github:NyaomiDEV/WinPlayer-Node#d2197b5"
   }
 }
