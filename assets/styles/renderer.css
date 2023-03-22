@@ -4,6 +4,10 @@ html {
   overflow: hidden;
 }
 
+option {
+  background-color: #080d14;
+}
+
 .btn {
   margin: 4px;
 }

@@ -306,8 +306,7 @@ if (availableDevice != undefined) {
     content: "Found " + availableDevice.deviceName,
   });
 } else {
-  errorContent =
-    "No devices supported by this app have been found. Please check whether your device is supported.";
+  errorless = false;
   exceptionText =
     "No devices supported found by VID/PID. If you're a plugin dev, make sure your values are correct and that the device is connected.";
 }

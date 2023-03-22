@@ -38,5 +38,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("renderer:receiveFreshPreview", callback),
   closeWindow: () => ipcRenderer.invoke("main:closeWindow"),
   minimiseWindow: () => ipcRenderer.invoke("main:minimiseWindow"),
+  closeApp: () => ipcRenderer.invoke("main:killApp"),
   threeDivs: (callback) => ipcRenderer.on("themes:addAdjust", callback),
 });

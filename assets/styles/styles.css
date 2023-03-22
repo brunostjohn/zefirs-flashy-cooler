@@ -18,6 +18,33 @@ body {
   background-color: #080d1400;
 }
 
+:not(input):not(textarea),
+:not(input):not(textarea)::after,
+:not(input):not(textarea)::before {
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+input,
+button,
+textarea,
+:focus {
+  outline: none;
+}
+
+a:not([draggable="true"]),
+img:not([draggable="true"]) {
+  -webkit-user-drag: none;
+  user-drag: none;
+}
+a[href^="http://"],
+a[href^="https://"],
+a[href^="ftp://"]
+{
+  -webkit-user-drag: auto;
+  user-drag: auto;
+}
+
 #topbar {
   background-color: #060a0f3f;
   backdrop-filter: blur(50px);
@@ -53,6 +80,9 @@ body {
   display: flex;
   flex-direction: row;
   -webkit-app-region: no-drag;
+  justify-content: center;
+  justify-items: center;
+  align-items: center;
 }
 
 #minimisewindowimage {
@@ -74,6 +104,21 @@ body {
     brightness(99%) contrast(100%);
   padding: 0.5rem;
   transition: filter ease-in-out 0.2s;
+}
+
+#killAppImage {
+  width: 2rem;
+  color: rgb(13, 71, 158);
+  filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg)
+    brightness(99%) contrast(100%);
+  padding: 0.05rem;
+  margin-left: 7px;
+  transition: filter ease-in-out 0.2s;
+}
+
+#killAppImage:hover {
+  filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg)
+    brightness(108%) contrast(99%);
 }
 
 #closewindowimage:hover {

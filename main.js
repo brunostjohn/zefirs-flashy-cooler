@@ -114,6 +114,7 @@ ipcMain.handle("renderer:updatePreview", sendFreshPreview);
 
 ipcMain.handle("main:closeWindow", closeMainWindow);
 ipcMain.handle("main:minimiseWindow", minimiseMainWindow);
+ipcMain.handle("main:killApp", exit);
 
 ipcMain.handle("loading:requestVersion", requestVersionLoading);
 
@@ -138,6 +139,8 @@ const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 1130,
     height: 800,
+    minWidth: 1130,
+    minHeight: 800,
     webPreferences: {
       preload: path.join(__dirname, "libraries/preload.js"),
     },
@@ -362,6 +365,8 @@ function exit(safe = true) {
     const finalConfig = JSON.stringify(config);
     fs.writeFileSync(path.join(__dirname, "app.config.json"), finalConfig);
     worker.postMessage("exit");
+  } else {
+    worker.postMessage("exit");
   }
   app.exit(0);
   process.exit(0);
@@ -492,3 +497,29 @@ function sleep(milliseconds) {
     currentDate = Date.now();
   } while (currentDate - date < milliseconds);
 }
+
+//do something when app is closing
+process.on("exit", function () {
+  exit(false);
+});
+
+//catches ctrl+c event
+process.on("SIGINT", function () {
+  exit(false);
+});
+
+// catches "kill pid" (for example: nodemon restart)
+process.on("SIGUSR1", function () {
+  exit(false);
+});
+process.on("SIGUSR2", function () {
+  exit(false);
+});
+
+//catches uncaught exceptions
+process.on("uncaughtException", function () {
+  exit(false);
+});
+
+// Start reading from stdin so we don't exit.
+process.stdin.resume();

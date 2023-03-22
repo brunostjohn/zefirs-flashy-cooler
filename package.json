@@ -8,8 +8,9 @@
     "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.4",
     "cargo-cp-artifact": "^0.1.8",
-    "electron": "^20.0.0",
-    "electron-rebuild": "^3.2.9"
+    "electron": "^20.3.12",
+    "electron-rebuild": "^3.2.9",
+    "@electron-forge/publisher-github": "^6.0.5"
   },
   "description": "An iCue replacement for the Capellix LCD lineup.",
   "main": "main.js",
@@ -19,6 +20,7 @@
     "start-release": "npm run build-release && electron-forge start",
     "package": "npm run build-release && electron-forge package",
     "make": "npm run build-release && powershell ./scripts/create-clean-build.ps1",
+    "publish": "npm run build-release && powershell ./scripts/create-clean-build-publish.ps1",
     "create-package": "electron-forge make",
     "build-debug": "powershell .\\scripts\\build.ps1 -type debug",
     "build": "npm run build-debug",
@@ -30,13 +32,12 @@
     "url": "git+https://github.com/brunostjohn/zefirs-flashy-cooler.git"
   },
   "author": "Bruno St. John",
-  "license": "Apache-2.0",
+  "license": "AGPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/brunostjohn/zefirs-flashy-cooler/issues"
   },
   "homepage": "https://github.com/brunostjohn/zefirs-flashy-cooler#readme",
   "dependencies": {
-    "@electron-forge/publisher-github": "^6.0.5",
     "@melloware/coloris": "^0.16.1",
     "@napi-rs/canvas": "^0.1.37",
     "bootstrap": "^5.3.0-alpha1",
@@ -50,7 +51,6 @@
     "node-hid": "^2.1.2",
     "screenshot-desktop": "^0.0.0-development",
     "update-electron-app": "^2.0.1",
-    "winax": "^3.3.4",
-    "winplayer-node": "github:NyaomiDEV/WinPlayer-Node#d2197b5"
+    "winax": "^3.3.4"
   }
 }

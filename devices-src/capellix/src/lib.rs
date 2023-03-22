@@ -40,14 +40,41 @@ fn main(mut cx: ModuleContext) -> NeonResult<()> {
 fn open_device(mut cx: FunctionContext) -> JsResult<JsString> {
     let hidt = HID.lock().unwrap();
     let hid = hidt.get(0).unwrap();
-    hid.send_feature_report(&[0x03, 0x1d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00])
-        .expect("Failed to say hello!");
-    hid.send_feature_report(&[0x03, 0x19, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-        .expect("Failed to issue request 0x19!");
-    hid.send_feature_report(&[0x03, 0x20, 0x00, 0x19, 0x79, 0xe7, 0x32, 0x2e])
+    hid.send_feature_report(&[
+        CONTROL_REQUEST,
+        DEVICE_STAT,
+        0x01,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+    ])
+    .expect("Failed to say hello!");
+    hid.send_feature_report(&[
+        CONTROL_REQUEST,
+        DEVICE_ALIVE,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+    ])
+    .expect("Failed to issue request 0x19!");
+    hid.send_feature_report(&[CONTROL_REQUEST, 0x20, 0x00, 0x19, 0x79, 0xe7, 0x32, 0x2e])
         .expect("Failed to issue request 0x20!");
-    hid.send_feature_report(&[0x03, 0x0b, 0x40, 0x01, 0x79, 0xe7, 0x32, 0x2e])
-        .expect("Failed to set interface!");
+    hid.send_feature_report(&[
+        CONTROL_REQUEST,
+        SET_INTERFACE,
+        0x40,
+        0x01,
+        0x79,
+        0xe7,
+        0x32,
+        0x2e,
+    ])
+    .expect("Failed to set interface!");
     std::thread::sleep(std::time::Duration::from_millis(5));
     Ok(cx.string("s"))
 }
@@ -56,7 +83,7 @@ fn close_device(mut cx: FunctionContext) -> JsResult<JsString> {
     std::thread::sleep(std::time::Duration::from_millis(5));
     let hidt = HID.lock().unwrap();
     let hid = hidt.get(0).unwrap();
-    hid.send_feature_report(&[0x03, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
+    hid.send_feature_report(&[CONTROL_REQUEST, 0x1e, 0x40, 0x01, 0x43, 0x00, 0x69, 0x00])
         .expect("Failed to close LCD!");
     Ok(cx.string("s"))
 }
@@ -112,7 +139,7 @@ pub fn send_image(
             chunktrans = chunklen >> eight & 0xff;
             chunkand = chunklen & 0xff;
             let imgtemp = [
-                0x02,
+                IMG_TX,
                 0x05,
                 0x40,
                 signature,
@@ -143,8 +170,8 @@ pub fn send_image(
             let chunktrans_temp = chunklen >> 8 & 0xff;
             let chunkand_temp = chunklen & 0xff;
             let mut unfuck_packet = [
-                0x03,
-                0x19,
+                CONTROL_REQUEST,
+                DEVICE_ALIVE,
                 0x40,
                 signature,
                 packets_sent,
