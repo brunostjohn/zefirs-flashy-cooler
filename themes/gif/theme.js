@@ -7,7 +7,6 @@ let config = JSON.parse(fs.readFileSync(path.join(__dirname, "config.json")));
 
 let maxIndex = -1;
 let frames = [];
-dissectGif();
 
 const width = 480;
 const height = 480;
@@ -23,14 +22,14 @@ function renderFrame() {
   context.clearRect(0, 0, 480, 480);
 
   if (maxIndex != -1) {
-    context.drawImage(frames[currentIndex], 0, 0);
-    currentIndex++;
+    context.drawImage(frames[currentIndex], 0, 0, 480, 480);
+    if (Date.now() - ms > lasttime) currentIndex++;
     if (currentIndex > maxIndex) {
       currentIndex = 0;
     }
   }
 
-  return canvas.toBuffer("image/jpeg", 100).toString("base64");
+  return canvas.toBuffer("image/jpeg", 100);
 }
 
 function renderPreview() {
@@ -68,15 +67,15 @@ function dissectGif() {
   extractFrames({
     input: gif,
     output: path.join(__dirname, "extracted", "%d.png"),
-  }).then(() => {});
+  });
 
   fs.readdirSync(path.join(__dirname, "extracted")).forEach((file) => {
     const img = new Image();
-    img.src = fs.readFileSync(file);
+    img.src = fs.readFileSync(path.join(__dirname, "extracted", file));
     frames.push(img);
     maxIndex++;
   });
-  console.log(maxIndex);
+  maxIndex--;
 }
 
 module.exports = {
@@ -95,7 +94,7 @@ module.exports = {
       },
       refreshFrequency: {
         type: "range",
-        title: "Gif FPS",
+        title: "GIF FPS",
         defaultValue: 20,
         min: 1,
         max: 25,

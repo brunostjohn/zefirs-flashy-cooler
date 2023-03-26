@@ -35,47 +35,47 @@
             </div>
         </div>
 
-        <div class="col-container">
-            <div class="col" id="larger">
-                <div id="scrollContainer">
-                    <h1>Device options</h1>
+        <div id="literallyEverything">
+            <div id="coolerImg">
+                <img id="preview" src="" />
+            </div>
+            <h2 id="title">Your LCD</h2>
+            <p id="title"></p>
+            <p id="vid">Vendor ID: </p>
+            <p id="pid">Product ID: </p>
+            <form id="parameterContainer">
+                <div id="rotate">
                     <hr />
-                    <h2>IDs</h2>
-                    <p id="vid">Vendor ID: </p>
-                    <p id="pid">Product ID: </p>
-                    <div id="parameters">
-                        <hr id="separator"/>
-                        <h2>Settings</h2>
-                        <form id="parameterContainer">
-                            <div id="brightness">
-                                <h3>Brightness</h3>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-outline-secondary">Darker (-)</button>
-                                    <button type="button" class="btn btn-outline-primary">Brighter (+)</button>
-                                </div>
-                            </div>
-                            <div id="hardwareImage">
-                                <h3>Set hardware image</h3>
-                            </div>
-                        </form>
-                        <div class="btn-group">
-                            <button type="button" class="btn btn-primary" id="apply">Apply</button>
-                        </div>
+                    <h3>Rotate</h3>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.electronAPI.rotateLeft()">&#8592;Left</button>
+                        <button type="button" class="btn btn-outline-primary" onclick="window.electronAPI.rotateRight()">Right&#8594;</button>
                     </div>
                 </div>
-            </div>
-            <div class="col" id="smaller">
-                <div id="rendering">
-                        <div class="card">
-                            <img src="" class="card-img-top" id="preview" />
-                            <div class="card-body">
-                                <h5 class="card-title" id="title">
-                                    Device Name
-                                </h5>
-                            </div>
-                        </div>
+                <div id="brightness" style="visibility: hidden;">
+                    <h3>Brightness</h3>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary">Darker (-)</button>
+                        <button type="button" class="btn btn-outline-primary">Brighter (+)</button>
+                    </div>
+                    <hr />
                 </div>
-            </div>
+                <div id="fpsControls" style="visibility: hidden;">
+                    <h3>FPS</h3>
+                    <input type="range" class="form-range" min="1" max="30" step="1" value="25" id="fpsInput" oninput="changeFPSThing()" />
+                    <label for="fpsInput" class="form-label" id="fpsLabel">
+                        Current value: 
+                    </label>
+                    <button type="button" class="btn btn-outline-primary" id="applyFps">Apply</button>
+                    <hr />
+                </div>
+                <div id="hardwareImage" style="visibility: hidden;">
+                    <h3>Set hardware image</h3>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary" id="apply">Apply</button>
+                    </div>
+                </div>
+            </form>
         </div>
 
         <script src="../scripts/device.js"></script>

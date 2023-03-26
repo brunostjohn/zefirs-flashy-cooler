@@ -238,7 +238,7 @@ function renderFrame() {
 
   if (config.showEmblem) context.drawImage(emblem, 220, 110);
 
-  return canvas.toBuffer("image/jpeg").toString("base64");
+  return canvas.toBuffer("image/jpeg");
 }
 
 function renderPreview() {

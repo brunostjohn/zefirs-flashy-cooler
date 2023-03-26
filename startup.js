@@ -203,7 +203,8 @@ const loadThemes = () => {
           id: makeId(32),
           title: theme.info.title,
           description: theme.info.description,
-          preview: "data:image/jpeg;base64," + theme.info.preview,
+          preview:
+            "data:image/jpeg;base64," + theme.info.preview.toString("base64"),
           isActive: activeFlag,
           hasConfig: theme.info.hasConfig,
           configPath: configpath,

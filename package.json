@@ -1,16 +1,16 @@
 {
   "name": "zefirs-flashy-cooler",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.4",
     "@electron-forge/maker-rpm": "^6.0.4",
     "@electron-forge/maker-squirrel": "^6.0.5",
     "@electron-forge/maker-zip": "^6.0.4",
+    "@electron-forge/publisher-github": "^6.0.5",
     "cargo-cp-artifact": "^0.1.8",
     "electron": "^20.3.12",
-    "electron-rebuild": "^3.2.9",
-    "@electron-forge/publisher-github": "^6.0.5"
+    "electron-rebuild": "^3.2.9"
   },
   "description": "An iCue replacement for the Capellix LCD lineup.",
   "main": "main.js",
@@ -39,7 +39,7 @@
   "homepage": "https://github.com/brunostjohn/zefirs-flashy-cooler#readme",
   "dependencies": {
     "@melloware/coloris": "^0.16.1",
-    "@napi-rs/canvas": "^0.1.37",
+    "@napi-rs/canvas": "^0.1.39",
     "bootstrap": "^5.3.0-alpha1",
     "colors": "^1.4.0",
     "electron-acrylic-window": "^0.5.11",

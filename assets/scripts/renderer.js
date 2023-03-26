@@ -101,7 +101,7 @@ apply.addEventListener("click", () => {
       }
     });
     window.electronAPI.parametersSendback(parameters);
-
+    lasttime = Date.now();
     window.location.reload();
   }
 });
@@ -131,7 +131,7 @@ reset.addEventListener("click", () => {
       }
     });
     window.electronAPI.parametersSendback(parameters);
-
+    lasttimevol2 = Date.now();
     window.location.reload();
   }
 });

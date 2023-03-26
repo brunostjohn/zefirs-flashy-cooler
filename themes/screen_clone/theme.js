@@ -21,7 +21,7 @@ function renderFrame() {
       console.log(err);
     });
   context.drawImage(shot, 0, 0);
-  return canvas.toBuffer("image/jpeg", 100).toString("base64");
+  return canvas.toBuffer("image/jpeg", 100);
 }
 
 function renderPreview() {

@@ -1,5 +1,6 @@
 window.addEventListener("load", (event) => {
   window.electronAPI.requestDeviceInfo();
+  changeFPSThing();
 });
 
 window.electronAPI.receiveDeviceInfo((_event, value) => {
@@ -12,3 +13,9 @@ window.electronAPI.receiveDeviceInfo((_event, value) => {
   const name = document.getElementById("title");
   name.textContent = value.deviceName;
 });
+
+function changeFPSThing() {
+  const slideyThing = document.getElementById("fpsInput");
+  const labelThing = document.getElementById("fpsLabel");
+  labelThing.textContent = "Current value: " + slideyThing.value;
+}

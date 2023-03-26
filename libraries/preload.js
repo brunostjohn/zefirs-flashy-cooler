@@ -40,4 +40,6 @@ contextBridge.exposeInMainWorld("electronAPI", {
   minimiseWindow: () => ipcRenderer.invoke("main:minimiseWindow"),
   closeApp: () => ipcRenderer.invoke("main:killApp"),
   threeDivs: (callback) => ipcRenderer.on("themes:addAdjust", callback),
+  rotateLeft: () => ipcRenderer.invoke("device:rotateLeft"),
+  rotateRight: () => ipcRenderer.invoke("device:rotateRight"),
 });

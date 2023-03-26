@@ -18,7 +18,7 @@ context.textAlign = "center";
 function renderFrame() {
   context.clearRect(0, 0, 480, 480);
   console.log(trackTitle, trackArtist, elapsed, appName);
-  return canvas.toBuffer("image/jpeg", 100).toString("base64");
+  return canvas.toBuffer("image/jpeg", 100);
 }
 
 function renderPreview() {

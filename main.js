@@ -11,7 +11,7 @@ const {
 const { BrowserWindow } = require("electron-acrylic-window");
 if (require("electron-squirrel-startup")) app.quit();
 
-const appVersion = "0.0.3";
+const appVersion = "0.0.4";
 const releaseType = "alpha";
 
 const colors = require("colors");
@@ -57,6 +57,7 @@ try {
     startMinimised: false,
     startAtLogin: false,
     showWarningAlert: true,
+    rotation: 0,
   };
 }
 
@@ -117,6 +118,13 @@ ipcMain.handle("main:minimiseWindow", minimiseMainWindow);
 ipcMain.handle("main:killApp", exit);
 
 ipcMain.handle("loading:requestVersion", requestVersionLoading);
+
+ipcMain.handle("device:rotateLeft", function () {
+  rotate("left");
+});
+ipcMain.handle("device:rotateRight", function () {
+  rotate("right");
+});
 
 function closeMainWindow() {
   mainWindow.close();
@@ -222,6 +230,7 @@ app.whenReady().then(() => {
             renderPath: config.defaultThemePath,
             fps: fps,
             availableDevice: availableDevice,
+            rotation: config.rotation,
           },
         });
         worker.on("error", (err) => {
@@ -366,7 +375,7 @@ function exit(safe = true) {
     fs.writeFileSync(path.join(__dirname, "app.config.json"), finalConfig);
     worker.postMessage("exit");
   } else {
-    worker.postMessage("exit");
+    if (worker != undefined) worker.postMessage("exit");
   }
   app.exit(0);
   process.exit(0);
@@ -448,46 +457,101 @@ function renderStatus() {
   }
 }
 
+let applyLastTime = Date.now();
+
+function rotate(direction) {
+  const toIncrement = direction == "right" ? 90 : -90;
+  let newAngle = config.rotation + toIncrement;
+  if (newAngle >= 360 || newAngle <= -360) newAngle = 0;
+  config.rotation = newAngle;
+  const toWrite = JSON.stringify(config);
+  fs.writeFileSync(path.join(__dirname, "app.config.json"), toWrite);
+  config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
+  worker.postMessage("exit");
+  worker.terminate();
+  worker = null;
+  worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
+    workerData: {
+      renderPath: config.defaultThemePath,
+      fps: fps,
+      availableDevice: availableDevice,
+      rotation: config.rotation,
+    },
+  }); // worker needs to be destroyed for on the fly editing to work
+  worker.on("error", (err) => {
+    console.log(err);
+  });
+
+  worker.on("message", (msg) => {
+    // mainWindow.webContents.send("fps", msg);
+    console.log(msg);
+  });
+
+  worker.on("unhandledRejection", (error) => {
+    throw error;
+  });
+  if (rendering) {
+    startRendering();
+  }
+}
+
 function applyParameters(_event, parameters) {
-  themeList.forEach((item) => {
-    if (item.isActive) {
-      const configTheme = JSON.parse(fs.readFileSync(item.configPath));
-      Object.keys(configTheme).forEach((key) => {
-        parameters.forEach((parameter) => {
-          if (parameter.varName == key) {
-            configTheme[key] = parameter.value;
-          }
-        });
-        Object.keys(item.controllableParameters).forEach((localParameter) => {
+  if (Date.now() - 2 * 1000 > applyLastTime) {
+    worker.postMessage("exit");
+    worker.terminate();
+    worker = null;
+    themeList.forEach((item) => {
+      if (item.isActive) {
+        const configTheme = JSON.parse(fs.readFileSync(item.configPath));
+        Object.keys(configTheme).forEach((key) => {
           parameters.forEach((parameter) => {
-            if (
-              item.controllableParameters[localParameter]["varName"] ==
-              parameter.varName
-            ) {
-              item.controllableParameters[localParameter]["value"] =
-                parameter.value;
+            if (parameter.varName == key) {
+              configTheme[key] = parameter.value;
             }
           });
+          Object.keys(item.controllableParameters).forEach((localParameter) => {
+            parameters.forEach((parameter) => {
+              if (
+                item.controllableParameters[localParameter]["varName"] ==
+                parameter.varName
+              ) {
+                item.controllableParameters[localParameter]["value"] =
+                  parameter.value;
+              }
+            });
+          });
         });
-      });
-      const finalConfig = JSON.stringify(configTheme);
-      fs.writeFileSync(item.configPath, finalConfig);
-      worker.postMessage("exit");
-      worker.terminate();
-      const theme = require(item.path);
-      item.preview = "data:image/jpeg;base64," + theme.renderPreview();
-      worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
-        workerData: {
-          renderPath: item.path,
-          fps: fps,
-          availableDevice: availableDevice,
-        },
-      }); // worker needs to be destroyed for on the fly editing to work
-      if (rendering) {
-        startRendering();
+        const finalConfig = JSON.stringify(configTheme);
+        fs.writeFileSync(item.configPath, finalConfig);
+        const theme = require(item.path);
+        item.preview = "data:image/jpeg;base64," + theme.renderPreview();
+        worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
+          workerData: {
+            renderPath: item.path,
+            fps: fps,
+            availableDevice: availableDevice,
+            rotation: config.rotation,
+          },
+        }); // worker needs to be destroyed for on the fly editing to work
+        worker.on("error", (err) => {
+          console.log(err);
+        });
+
+        worker.on("message", (msg) => {
+          // mainWindow.webContents.send("fps", msg);
+          console.log(msg);
+        });
+
+        worker.on("unhandledRejection", (error) => {
+          throw error;
+        });
+        if (rendering) {
+          startRendering();
+        }
       }
-    }
-  });
+    });
+    applyLastTime = Date.now();
+  }
 }
 
 function sleep(milliseconds) {
