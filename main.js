@@ -138,7 +138,10 @@ function minimiseMainWindow() {
 function sendFreshPreview() {
   themeList.forEach((item) => {
     if (item.isActive) {
-      mainWindow.webContents.send("renderer:receiveFreshPreview", item.preview);
+      mainWindow.webContents.send(
+        "renderer:receiveFreshPreview",
+        "data:image/jpeg;base64," + item.preview.toString("base64")
+      );
     }
   });
 }
@@ -361,7 +364,7 @@ function requestDeviceInfo() {
 }
 
 function openThemeFolder() {
-  exec("start " + path.join(__dirname, "themes"));
+  exec('start "' + path.join(__dirname, "themes") + '"');
 }
 
 function exit(safe = true) {
@@ -524,7 +527,8 @@ function applyParameters(_event, parameters) {
         const finalConfig = JSON.stringify(configTheme);
         fs.writeFileSync(item.configPath, finalConfig);
         const theme = require(item.path);
-        item.preview = "data:image/jpeg;base64," + theme.renderPreview();
+        item.preview =
+          "data:image/jpeg;base64," + theme.renderPreview().toString("base64");
         worker = new Worker(path.join(__dirname, "libraries", "renderer.js"), {
           workerData: {
             renderPath: item.path,

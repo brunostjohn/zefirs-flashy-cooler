@@ -18,6 +18,8 @@ window.electronAPI.threeDivs((_event) => {
     <div class="fillspace"></div>
     <div class="fillspace"></div>
     <div class="fillspace"></div>
+    <div class="fillspace"></div>
+    <div class="fillspace"></div>
     `;
   body.insertAdjacentHTML("beforeend", htmlToAppend);
 });

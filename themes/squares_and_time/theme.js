@@ -35,6 +35,10 @@ function addZero(i) {
 const canvas = createCanvas(width, height);
 const context = canvas.getContext("2d");
 
+context.font = "70px Arial";
+context.textAlign = "center";
+context.textBaseline = "middle";
+
 function renderFrame() {
   context.clearRect(0, 0, 480, 480);
   context.filter = "blur(10px)";
@@ -61,8 +65,6 @@ function renderFrame() {
     addZero(today.getMinutes()) +
     ":" +
     addZero(today.getSeconds());
-  context.font = "bold 40pt Menlo";
-  context.textAlign = "center";
   context.fillStyle = "white";
   context.fillText(time, 240, 240);
   return canvas.toBuffer("image/jpeg", 70);

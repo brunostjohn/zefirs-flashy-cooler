@@ -308,6 +308,8 @@ if (availableDevice != undefined) {
   });
 } else {
   errorless = false;
+  errorContent =
+    "No devices supported found by VID/PID. If you're a plugin dev, make sure your values are correct and that the device is connected.";
   exceptionText =
     "No devices supported found by VID/PID. If you're a plugin dev, make sure your values are correct and that the device is connected.";
 }
