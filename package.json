@@ -1,6 +1,6 @@
 {
   "name": "zefirs-flashy-cooler",
-  "version": "0.0.4",
+  "version": "0.1.0",
   "devDependencies": {
     "@electron-forge/cli": "^6.0.5",
     "@electron-forge/maker-deb": "^6.0.4",
@@ -39,7 +39,7 @@
   "homepage": "https://github.com/brunostjohn/zefirs-flashy-cooler#readme",
   "dependencies": {
     "@melloware/coloris": "^0.16.1",
-    "@napi-rs/canvas": "^0.1.39",
+    "@napi-rs/canvas": "^0.1.40",
     "bootstrap": "^5.3.0-alpha1",
     "colors": "^1.4.0",
     "electron-acrylic-window": "^0.5.11",
@@ -51,6 +51,7 @@
     "node-hid": "^2.1.2",
     "screenshot-desktop": "^0.0.0-development",
     "update-electron-app": "^2.0.1",
-    "winax": "^3.3.4"
+    "winax": "^3.3.4",
+    "winplayer-node": "github:brunostjohn/WinPlayer-Node"
   }
 }

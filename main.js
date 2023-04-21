@@ -11,8 +11,8 @@ const {
 const { BrowserWindow } = require("electron-acrylic-window");
 if (require("electron-squirrel-startup")) app.quit();
 
-const appVersion = "0.0.4";
-const releaseType = "alpha";
+const appVersion = "0.1.0";
+const releaseType = "beta";
 
 const colors = require("colors");
 
@@ -447,9 +447,16 @@ function configSendback(_event, config) {
   const toWrite = JSON.stringify(config);
   fs.writeFileSync(path.join(__dirname, "app.config.json"), toWrite);
   app.setLoginItemSettings({
-    openAtLogin: true,
-    path: path.basename(process.execPath),
+    openAtLogin: config.renderAtStartup,
+    path: path.resolve(
+      path.dirname(process.execPath),
+      "..",
+      "Zefir's Flashy Cooler.exe"
+    ),
+    args: ["--processStart", `${path.basename(process.execPath)}`],
+    name: "Zefir's Flashy Cooler",
   });
+  config = JSON.parse(fs.readFileSync(path.join(__dirname, "app.config.json")));
 }
 
 function renderStatus() {

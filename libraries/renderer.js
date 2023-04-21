@@ -1,8 +1,8 @@
 const { workerData, parentPort } = require("worker_threads");
 const lcd = require("./display.js");
-let themeScript = require(workerData.renderPath);
 const { createCanvas, Image } = require("@napi-rs/canvas");
 
+let themeScript = require(workerData.renderPath);
 LCD = new lcd.LCD(workerData.availableDevice.devicePlugin);
 
 class Renderer {

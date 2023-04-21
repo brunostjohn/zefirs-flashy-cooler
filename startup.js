@@ -181,11 +181,11 @@ const loadThemes = () => {
     });
 
     fs.readdirSync(themeFolder).forEach((file) => {
-      const theme = require(path.join(__dirname, "themes", file, "theme.js"));
-      let activeFlag = false;
-      let requiresSensors = false;
       const themepath = path.join(__dirname, "themes", file, "theme.js");
       problemTheme = themepath;
+      let theme = require(path.join(__dirname, "themes", file, "theme.js"));
+      let activeFlag = false;
+      let requiresSensors = false;
       const configpath = path.join(__dirname, "themes", file, "config.json");
       if (config.defaultThemePath == themepath) {
         activeFlag = true;
