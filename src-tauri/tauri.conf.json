@@ -1,0 +1,83 @@
+{
+	"build": {
+		"beforeBuildCommand": "npm run build",
+		"beforeDevCommand": "npm run dev",
+		"devPath": "http://localhost:5173",
+		"distDir": "../build"
+	},
+	"package": {
+		"productName": "zefirs-flashy-cooler",
+		"version": "0.1.0"
+	},
+	"tauri": {
+    "systemTray": {
+      "iconPath": "icons/favicon-32x32.png"
+    },
+		"allowlist": {
+			"all": false,
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "startDragging": true
+      }
+		},
+		"bundle": {
+			"active": true,
+			"category": "DeveloperTool",
+			"copyright": "",
+			"deb": {
+				"depends": []
+			},
+			"externalBin": [],
+			"icon": [
+				"icons/favicon-32x32.png",
+				"icons/android-chrome-128x128.png",
+        "icons/favicon.ico"
+			],
+			"identifier": "com.brunostjohn.zefirsflashycooler",
+			"longDescription": "",
+			"macOS": {
+				"entitlements": null,
+				"exceptionDomain": "",
+				"frameworks": [],
+				"providerShortName": null,
+				"signingIdentity": null
+			},
+			"resources": [],
+			"shortDescription": "",
+			"targets": "all",
+			"windows": {
+				"certificateThumbprint": null,
+				"digestAlgorithm": "sha256",
+				"timestampUrl": ""
+			}
+		},
+		"security": {
+			"csp": null
+		},
+		"updater": {
+			"active": false
+		},
+		"windows": [
+			{
+				"fullscreen": false,
+				"height": 800,
+        "label": "main",
+        "minHeight": 800,
+				"resizable": true,
+				"title": "Zefir's Flashy Cooler",
+				"width": 1130,
+        "minWidth": 1130,
+				"transparent": true,
+        "theme": "Dark",
+        "decorations": false
+			}
+		]
+	}
+}

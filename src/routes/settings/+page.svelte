@@ -1,0 +1,108 @@
+<script lang="ts">
+</script>
+
+<div class="actualSettings">
+	<div id="about">
+		<div class="card" style="width: 18rem;" id="zefirCard">
+			<img src="../images/about_card.jpg" class="card-img-top" alt="Zefir" />
+			<div class="card-body">
+				<h5 class="card-title">Meet Zefir</h5>
+				<p class="card-text">
+					He's my cat. He supported me emotionally while making this app. I hope you enjoy this
+					picture of him.
+				</p>
+			</div>
+		</div>
+		<h2>
+			<img src="/images/android-chrome-192x192.png" id="logo" alt="Zefir's Flashy Cooler logo" /> Zefir's
+			Flashy Cooler
+		</h2>
+		<p>Made with &#10084;&#65039; in Cork, Ireland.</p>
+		<small
+			>This software comes AS IS with no warranties or guaranties of ANY kind. If you feel it's
+			shady, please check its source out on GitHub. Remember, this is third party software based on
+			a reverse-engineering effort. If something breaks, sorry but I'm not responsible. I do my best
+			so that this app works as intended and use it myself but I can't promise anything.</small
+		>
+		<small id="version" />
+	</div>
+	<hr />
+	<div id="appSettings">
+		<h3>App Settings</h3>
+	</div>
+	<div id="startAtLogin">
+		<div class="form-check form-switch">
+			<input class="form-check-input" type="checkbox" role="switch" id="loginSwitch" />
+			<label class="form-check-label" for="loginSwitch">Start at login.</label>
+			<br /><small
+				>If checked, the app will start when you login to your user account on this system.</small
+			>
+		</div>
+	</div>
+	<div id="renderAtStartup">
+		<div class="form-check form-switch">
+			<input class="form-check-input" type="checkbox" role="switch" id="renderAtStartupSwitch" />
+			<label class="form-check-label" for="renderAtStartupSwitch"
+				>Resume rendering on startup.</label
+			>
+			<br /><small
+				>This means that, when opened, the app will start rendering the theme it was rendering
+				before being closed without the Start Rendering button being pressed.</small
+			>
+		</div>
+	</div>
+	<div id="startMinimised">
+		<div class="form-check form-switch">
+			<input class="form-check-input" type="checkbox" role="switch" id="startMinimisedSwitch" />
+			<label class="form-check-label" for="startMinimisedSwitch">Start minimised.</label>
+			<br /><small>If checked, the app will start minimised to system tray.</small>
+		</div>
+	</div>
+	<div id="warningAlert">
+		<div class="form-check form-switch">
+			<input class="form-check-input" type="checkbox" role="switch" id="warningAlertSwitch" />
+			<label class="form-check-label" for="warningAlertSwitch"
+				>Display LibreHardwareMonitor alert.</label
+			>
+			<br /><small>If checked, the app will remind you to start LibreHardwareMonitor.</small>
+		</div>
+	</div>
+	<button type="button" class="btn btn-outline-success" id="apply">Apply settings</button>
+	<br /><small id="applyAlert">Settings will be applied at next startup.</small>
+	<hr />
+	<div id="systemHealth">
+		<h3>Health</h3>
+		<p>iCUE: <span class="badge rounded-pill" id="icue">Not running</span></p>
+		<small
+			>While iCUE is running, weird stuff may happen. The display might disconnect, frames may not
+			be displayed correctly, etc. Please make sure to disable iCUE's autostart feature while using
+			this app directly upon login. I recommend SignalRGB as a companion app for this to still use
+			all your RGB with this app. And it's better than iCUE.</small
+		>
+		<br />
+		<br />
+		<p>LibreHardwareMonitor: <span class="badge rounded-pill" id="libre">Running</span></p>
+		<small
+			>LibreHardwareMonitor is needed for the app's system information capabilities. If not running,
+			themes using system information may not appear in the Themes tab. Please remember that you
+			need to restart this app for system information to work after starting LibreHardwareMonitor.</small
+		>
+	</div>
+	<hr />
+	<div id="folders">
+		<h3>Folders</h3>
+		<button type="button" class="btn btn-outline-primary" id="themeFolderBtn"
+			>Open theme folder</button
+		>
+		<br /><small
+			>This is the folder in which themes are stored. To add one, just drag the downloaded theme
+			into the theme folder. WARNING: Themes are full programs. Please make sure they're from a
+			trusted source. They can do bad things to your computer. Trust but verify.</small
+		>
+		<br /><small id="themeFolderText">Current theme folder:</small>
+	</div>
+</div>
+
+<style lang="scss">
+	@import "./+page.scss";
+</style>

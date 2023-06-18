@@ -1,0 +1,37 @@
+> Initializing Ultralight v1.3.0 with the following configuration
+    cache_path: 
+    resource_path_prefix: resources/
+    face_winding: CounterClockwise
+    font_hinting: Normal
+    font_gamma: 1.8
+    force_repaint: 0
+    animation_timer_delay: 0.0166667
+    scroll_timer_delay: 0.0166667
+    recycle_delay: 4
+    memory_cache_size: 64.00 MB
+    page_cache_size: 0
+    override_ram_size: disabled
+    min_large_heap_size: 32.00 MB
+    min_small_heap_size: 1.00 MB
+    num_renderer_threads: 0
+    max_update_time: 0.005
+    bitmap_alignment: 16
+
+
+> Creating Session with the following configuration:
+    id: 2
+    is_persistent: 1
+    name: default
+    is_default: 1
+    disk_path: default (you can adjust this location in Config::cache_path)
+
+> Creating View with the following configuration:
+    width: 480
+    height: 480
+    device scale: 1
+    session id: 2
+
+> Initializing Thread Pool with the following configuration:
+    physical processors (detected): 10
+    num threads: 9
+
