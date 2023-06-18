@@ -18,14 +18,20 @@ pub fn read_http_file(filename: &str, path: PathBuf) -> Option<HTTPFile> {
         path.push(separated);
     }
 
-    let file = match fs::read(path) {
+    let file = match fs::read(&path) {
         Err(_) => return None,
         Ok(file) => file,
     };
 
     let mime = match infer::get(&file) {
-        Some(kind) => kind.mime_type(),
-        None => "application/octet-stream",
+        Some(kind) => kind.mime_type().to_owned(),
+        None => match mime_guess::from_path(path.as_path()).first() {
+            Some(kind) => {
+                let kind = kind.to_string();
+                kind
+            }
+            None => "application/octet-stream".to_owned(),
+        },
     };
 
     let mut encoder = flate2::write::GzEncoder::new(vec![], flate2::Compression::default());

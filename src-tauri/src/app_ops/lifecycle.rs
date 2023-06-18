@@ -1,4 +1,4 @@
-use std::{error::Error, thread, time::Duration};
+use std::{error::Error, path::PathBuf, thread, time::Duration};
 
 use tauri::{App, Manager};
 
@@ -34,7 +34,7 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
 
     let server = SERVER.lock().unwrap();
 
-    server.serve_path(config.theme_path.clone());
+    server.serve_path(None);
     thread::sleep(Duration::from_millis(10));
     renderer.serve();
 

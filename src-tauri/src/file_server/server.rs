@@ -26,11 +26,6 @@ impl Server {
             for stream in listener.incoming() {
                 let stream = stream.unwrap();
 
-                match &fs_path {
-                    None => Server::handle_default(stream),
-                    Some(path) => Server::handle_set_path(stream, path),
-                }
-
                 if match rx_end.try_recv() {
                     Ok(result) => result,
                     _ => false,
@@ -44,6 +39,11 @@ impl Server {
                     }
                     _ => {}
                 };
+
+                match &fs_path {
+                    Some(path) => Server::handle_set_path(stream, path),
+                    None => Server::handle_default(stream),
+                }
             }
         });
 
@@ -57,7 +57,7 @@ impl Server {
     fn handle_default(mut stream: TcpStream) {
         let buf_reader = BufReader::new(&mut stream);
 
-        let _request: Vec<_> = buf_reader
+        let _: Vec<_> = buf_reader
             .lines()
             .map(|result| match result {
                 Ok(res) => res,
@@ -72,7 +72,7 @@ impl Server {
         let length = compressed_html.len();
 
         let response_header =
-            format!("{OK_STATUS}\r\nConnection: Keep-Alive\r\nContent-Encoding: gzip\r\nContent-Length: {length}\r\nContent-Type: text/html\r\nKeep-Alive: timeout=5, max=99\r\n\r\n");
+            format!("{OK_STATUS}\r\nConnection: close\r\nContent-Encoding: gzip\r\nContent-Length: {length}\r\nContent-Type: text/html\r\n\r\n");
 
         let mut response = vec![];
         response.extend(response_header.as_bytes().iter());
@@ -94,8 +94,6 @@ impl Server {
             .take_while(|line| !line.is_empty())
             .collect();
 
-        println!("{:?}", request);
-
         let filename = request[0].replace("GET /", "").replace(" HTTP/1.1", "");
 
         let read_file = match fs::read_http_file(&filename, base_path) {
@@ -108,11 +106,10 @@ impl Server {
 
         let response_header_vec = vec![
             OK_STATUS,
-            "Connection: Keep-Alive",
+            "Connection: close",
             "Content-Encoding: gzip",
             &read_file.content_length,
             &read_file.content_type,
-            "Keep-Alive: timeout=5, max=99",
             "\r\n",
         ];
 
@@ -125,20 +122,7 @@ impl Server {
     }
 
     fn return_404(mut stream: TcpStream) {
-        let buf_reader = BufReader::new(&mut stream);
-
-        let _request: Vec<_> = buf_reader
-            .lines()
-            .map(|result| match result {
-                Ok(res) => res,
-                Err(_) => "".to_string(),
-            })
-            .take_while(|line| !line.is_empty())
-            .collect();
-
-        let response_header = format!(
-            "HTTP/1.1 404 Not Found\r\nConnection: Keep-Alive\r\nKeep-Alive: timeout=5, max=99\r\n\r\n"
-        );
+        let response_header = format!("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
 
         stream.write_all(response_header.as_bytes()).unwrap();
     }

@@ -102,7 +102,7 @@ impl Renderer {
                     Ok(result) => result,
                     Err(_) => false,
                 } {
-                    match engine.load_url("http://127.0.0.1:2137") {
+                    match engine.load_url("http://127.0.0.1:2137/") {
                         Ok(_) => {}
                         Err(_) => println!("Failed to reload webpage!"),
                     };
