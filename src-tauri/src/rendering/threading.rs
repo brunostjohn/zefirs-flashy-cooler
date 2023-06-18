@@ -28,9 +28,13 @@ impl Renderer {
 
             println!("Received {:?} fps", fps);
 
+            static GC_TIMING: Duration = Duration::from_secs(15);
+
             let mut frame_time = Duration::from_millis(1000 / fps);
 
             let mut current_time = SystemTime::now();
+
+            let mut gc_time = SystemTime::now();
 
             let mut device = match Capellix::new() {
                 Err(error) => {
@@ -47,6 +51,21 @@ impl Renderer {
 
             loop {
                 engine.update();
+
+                if match gc_time.elapsed() {
+                    Ok(time) => {
+                        if time >= GC_TIMING {
+                            gc_time = SystemTime::now();
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                    Err(_) => false,
+                } {
+                    engine.garbage_collect();
+                }
+
                 if match current_time.elapsed() {
                     Ok(time) => {
                         if time >= frame_time {

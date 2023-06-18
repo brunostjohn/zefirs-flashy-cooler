@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::fs;
 
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ pub struct Config {
     pub fps: u64,
     pub start_at_login: bool,
     pub start_minimised: bool,
-    pub theme_path: Option<PathBuf>,
+    pub theme_path: Option<String>,
 }
 
 impl Config {

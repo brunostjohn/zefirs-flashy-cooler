@@ -20,6 +20,7 @@ use lifecycle::setup;
 
 #[path = "frontend/tray.rs"]
 mod tray;
+use once_cell::sync::Lazy;
 use tray::{build_tray, tray_event_handler};
 
 #[path = "file_server/server.rs"]
@@ -48,6 +49,15 @@ lazy_static! {
     pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::load_from_drive()));
     pub static ref SERVER: Arc<Mutex<Server>> = Arc::new(Mutex::new(Server::new(None)));
 }
+
+pub static THEMES_PATH: Lazy<PathBuf> = Lazy::new(|| {
+    let mut path = match tauri::api::path::document_dir() {
+        Some(path) => path,
+        None => PathBuf::from("./"),
+    };
+    path.push("Zefir's Flashy Cooler");
+    return path;
+});
 
 fn main() {
     let config = CONFIG.lock().unwrap();

@@ -86,30 +86,30 @@ impl Ultralight {
         };
     }
 
-    pub fn load_html(&self, html: &str) -> Result<(), &'static str> {
-        END_WAIT_LOOP.store(false, Ordering::Relaxed);
+    // pub fn load_html(&self, html: &str) -> Result<(), &'static str> {
+    //     END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
-        let html_cstring = match CString::new(html) {
-            Err(_) => return Err("Failed to create CString. Is HTML valid?"),
-            Ok(val) => val,
-        };
+    //     let html_cstring = match CString::new(html) {
+    //         Err(_) => return Err("Failed to create CString. Is HTML valid?"),
+    //         Ok(val) => val,
+    //     };
 
-        unsafe {
-            let html_ul = ulCreateString(html_cstring.as_ptr());
+    //     unsafe {
+    //         let html_ul = ulCreateString(html_cstring.as_ptr());
 
-            ulViewLoadHTML(self.view, html_ul);
-            ulDestroyString(html_ul);
+    //         ulViewLoadHTML(self.view, html_ul);
+    //         ulDestroyString(html_ul);
 
-            while !END_WAIT_LOOP.load(Ordering::Acquire) {
-                ulUpdate(self.renderer);
-                ulRender(self.renderer);
-            }
-        }
+    //         while !END_WAIT_LOOP.load(Ordering::Acquire) {
+    //             ulUpdate(self.renderer);
+    //             ulRender(self.renderer);
+    //         }
+    //     }
 
-        END_WAIT_LOOP.store(false, Ordering::Relaxed);
+    //     END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
-        Ok(())
-    }
+    //     Ok(())
+    // }
 
     pub fn load_url(&mut self, html: &str) -> Result<(), &'static str> {
         END_WAIT_LOOP.store(false, Ordering::Relaxed);
@@ -195,8 +195,17 @@ impl Ultralight {
 
         Ok(dst)
     }
+
+    pub fn garbage_collect(&self) {
+        unsafe {
+            let context = ulViewLockJSContext(self.view);
+            JSGarbageCollect(context);
+            ulViewLockJSContext(self.view);
+        }
+    }
 }
 
+#[allow(unused_variables)]
 pub unsafe extern "C" fn finished_callback(
     user_data: *mut c_void,
     caller: ULView,
@@ -210,7 +219,7 @@ pub unsafe extern "C" fn finished_callback(
     }
 }
 
-pub unsafe extern "C" fn logger_callback(log_level: ULLogLevel, message: ULString) {
-    let message = CString::from_raw(ulStringGetData(message) as *mut i8);
-    println!("{:?}", message);
-}
+// pub unsafe extern "C" fn logger_callback(log_level: ULLogLevel, message: ULString) {
+//     let message = CString::from_raw(ulStringGetData(message) as *mut i8);
+//     println!("{:?}", message);
+// }
