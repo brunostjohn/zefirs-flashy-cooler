@@ -22,6 +22,10 @@ use lifecycle::setup;
 mod tray;
 use tray::{build_tray, tray_event_handler};
 
+#[path = "file_server/server.rs"]
+mod server;
+use server::Server;
+
 use std::{
     env,
     path::PathBuf,
@@ -34,9 +38,6 @@ use rendering::Renderer;
 
 lazy_static! {
     pub static ref RENDERER: Arc<Mutex<Renderer>> = Arc::new(Mutex::new(Renderer::new(25)));
-}
-
-lazy_static! {
     pub static ref APP_FOLDER: PathBuf = match env::current_exe() {
         Ok(mut path) => {
             path.pop();
@@ -44,14 +45,13 @@ lazy_static! {
         }
         _ => PathBuf::from("./"),
     };
-}
-
-lazy_static! {
-    pub static ref CONFIG: Mutex<Config> = Mutex::new(Config::load_from_drive());
+    pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::load_from_drive()));
+    pub static ref SERVER: Arc<Mutex<Server>> = Arc::new(Mutex::new(Server::new(None)));
 }
 
 fn main() {
     let config = CONFIG.lock().unwrap();
+    config.write_to_drive();
 
     let start_minimised = config.start_minimised;
 

@@ -29,6 +29,8 @@ ul-sys = "1.3.1"
 hidapi = "2.3.3"
 lazy_static = "1.4.0"
 once_cell = "1.18.0"
+flate2 = "1.0.26"
+infer = "0.13.0"
 
 
 [features]

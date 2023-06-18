@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +9,7 @@ pub struct Config {
     pub fps: u64,
     pub start_at_login: bool,
     pub start_minimised: bool,
+    pub theme_path: Option<PathBuf>,
 }
 
 impl Config {
@@ -17,6 +18,7 @@ impl Config {
             fps: 25,
             start_at_login: false,
             start_minimised: false,
+            theme_path: None,
         }
     }
 
@@ -44,24 +46,25 @@ impl Config {
 
         loaded_config
     }
+
+    pub fn write_to_drive(&self) {
+        let mut write_path = APP_FOLDER.clone();
+        write_path.push("config.json");
+
+        let serialised = match serde_json::to_string_pretty(self) {
+            Ok(serialised) => serialised,
+            Err(_) => {
+                println!("Failed to serialise config.");
+                "{}".to_string()
+            }
+        };
+
+        match fs::write(write_path, serialised) {
+            Ok(_) => {}
+            Err(_) => println!("Failed to write config."),
+        }
+    }
 }
 
 // impl Drop for Config {
-//     fn drop(&mut self) {
-//         let mut write_path = APP_FOLDER.clone();
-//         write_path.push("config.json");
-
-//         let serialised = match serde_json::to_string_pretty(self) {
-//             Ok(serialised) => serialised,
-//             Err(_) => {
-//                 println!("Failed to serialise config.");
-//                 "{}".to_string()
-//             }
-//         };
-
-//         match fs::write(write_path, serialised) {
-//             Ok(_) => {}
-//             Err(_) => println!("Failed to write config."),
-//         }
-//     }
 // }

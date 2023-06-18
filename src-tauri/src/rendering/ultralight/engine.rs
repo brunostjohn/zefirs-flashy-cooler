@@ -62,49 +62,16 @@ impl Ultralight {
 
             view = ulCreateView(renderer, 480, 480, view_config, null_mut());
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
+            // let default_html = CString::new("http://localhost:2137").unwrap();
+            // let default_html_ul = ulCreateString(default_html.as_ptr());
+            // ulViewLoadHTML(view, default_html_ul);
+            // ulDestroyString(default_html_ul);
 
-            let default_html = CString::new(
-                r#"
-                    <html>
-                        <head>
-                            <style>
-                                body {
-                                    display: flex;
-                                    align-items: center;
-                                    justify-items: center;
-                                }
-                                h1 {
-                                    text-align: center;
-                                }
-                              </style>
-                        </head>
-
-                        <body>
-                                <h1 id="aaa">not doing anything</h1>
-                                <script>
-                                    setInterval(() => {
-                                        var currentdate = new Date();
-                                        var datetime = currentdate.getHours() + ":" 
-                                        + currentdate.getMinutes() + ":" + currentdate.getSeconds();
-
-                                        const h1 = document.getElementById("aaa");
-                                        h1.textContent = datetime;
-                                    }, 600);
-                                </script>
-                        </body>
-                    </html>
-                "#,
-            )
-            .unwrap();
-            let default_html_ul = ulCreateString(default_html.as_ptr());
-            ulViewLoadHTML(view, default_html_ul);
-            ulDestroyString(default_html_ul);
-
-            while !END_WAIT_LOOP.load(Ordering::Acquire) {
-                ulUpdate(renderer);
-                ulRender(renderer);
-            }
-            END_WAIT_LOOP.store(false, Ordering::Relaxed);
+            // while !END_WAIT_LOOP.load(Ordering::Acquire) {
+            //     ulUpdate(renderer);
+            //     ulRender(renderer);
+            // }
+            // END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
             surface = ulViewGetSurface(view);
             bitmap = ulBitmapSurfaceGetBitmap(surface);
@@ -144,7 +111,7 @@ impl Ultralight {
         Ok(())
     }
 
-    pub fn load_url(&self, html: &str) -> Result<(), &'static str> {
+    pub fn load_url(&mut self, html: &str) -> Result<(), &'static str> {
         END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
         let url_cstring = match CString::new(html) {

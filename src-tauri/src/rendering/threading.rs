@@ -12,7 +12,7 @@ use std::time::{Duration, SystemTime};
 
 pub struct Renderer {
     thread: Option<JoinHandle<()>>,
-    end_channel: mpsc::Sender<bool>,
+    end_channel: mpsc::SyncSender<bool>,
     theme_channel: mpsc::Sender<bool>,
     fps_channel: mpsc::Sender<u64>,
 }
@@ -20,11 +20,11 @@ pub struct Renderer {
 impl Renderer {
     pub fn new(fps: u64) -> Self {
         let (tx_theme, rx_theme) = mpsc::channel();
-        let (tx_end, rx_end) = mpsc::channel();
+        let (tx_end, rx_end) = mpsc::sync_channel(2);
         let (tx_fps, rx_fps) = mpsc::channel();
 
         let render = thread::spawn(move || {
-            let engine = Ultralight::new();
+            let mut engine = Ultralight::new();
 
             println!("Received {:?} fps", fps);
 
@@ -46,11 +46,7 @@ impl Renderer {
             };
 
             loop {
-                if thread::panicking() {
-                    println!("fuck");
-                }
                 engine.update();
-                println!("Renderer exists");
                 if match current_time.elapsed() {
                     Ok(time) => {
                         if time >= frame_time {
@@ -65,7 +61,6 @@ impl Renderer {
                         false
                     }
                 } {
-                    println!("Pushing image.");
                     engine.render();
                     let image = match engine.get_bitmap() {
                         Ok(img) => img,
@@ -103,32 +98,35 @@ impl Renderer {
                 }
                 thread::sleep(Duration::from_millis(3));
 
-                if match rx_theme.recv() {
+                if match rx_theme.try_recv() {
                     Ok(result) => result,
                     Err(_) => false,
                 } {
-                    match engine.load_url("http://localhost:80085") {
+                    match engine.load_url("http://127.0.0.1:2137") {
                         Ok(_) => {}
                         Err(_) => println!("Failed to reload webpage!"),
                     };
                 }
 
-                if match rx_end.recv() {
+                if match rx_end.try_recv() {
                     Ok(result) => result,
-                    Err(_) => {
-                        println!("Failed to receive end signal! Thread ending.");
-                        false
-                    }
+                    _ => false,
                 } {
                     println!("Received end signal. Thread: renderer.");
                     match device.close() {
                         Err(_) => println!("Failed to close device!."),
                         _ => {}
                     };
+                    match device.close() {
+                        Err(_) => {
+                            println!("Failed to close device.");
+                        }
+                        _ => {}
+                    };
                     break;
                 }
 
-                match rx_fps.recv() {
+                match rx_fps.try_recv() {
                     Ok(result) => {
                         frame_time = Duration::from_millis(1000 / result);
                     }
