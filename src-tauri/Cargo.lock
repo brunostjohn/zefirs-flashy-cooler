@@ -79,6 +79,7 @@ dependencies = [
  "dcv-color-primitives",
  "hidapi",
  "image",
+ "lazy_static",
  "once_cell",
  "serde",
  "serde_json",

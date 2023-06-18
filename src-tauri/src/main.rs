@@ -1,11 +1,18 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use lazy_static::lazy_static;
+
 #[path = "rendering/threading.rs"]
 mod rendering;
+
+#[path = "config/config.rs"]
+mod config;
 
 #[path = "frontend/basic_ops.rs"]
 mod frontend_commands;
 use frontend_commands::remote_exit;
+
+use config::Config;
 
 #[path = "app_ops/lifecycle.rs"]
 mod lifecycle;
@@ -15,20 +22,41 @@ use lifecycle::setup;
 mod tray;
 use tray::{build_tray, tray_event_handler};
 
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::{
+    env,
+    path::PathBuf,
+    sync::{Arc, Mutex},
+};
 
 use tauri::SystemTray;
 
-use rendering::{build_renderer, Renderer};
+use rendering::Renderer;
 
-pub static RENDERER: Lazy<Mutex<Renderer>> = Lazy::new(|| {
-    let renderer = build_renderer(25);
+lazy_static! {
+    pub static ref RENDERER: Arc<Mutex<Renderer>> = Arc::new(Mutex::new(Renderer::new(25)));
+}
 
-    Mutex::new(renderer)
-});
+lazy_static! {
+    pub static ref APP_FOLDER: PathBuf = match env::current_exe() {
+        Ok(mut path) => {
+            path.pop();
+            path
+        }
+        _ => PathBuf::from("./"),
+    };
+}
+
+lazy_static! {
+    pub static ref CONFIG: Mutex<Config> = Mutex::new(Config::load_from_drive());
+}
 
 fn main() {
+    let config = CONFIG.lock().unwrap();
+
+    let start_minimised = config.start_minimised;
+
+    drop(config);
+
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![remote_exit])
         .system_tray(SystemTray::new().with_menu(build_tray()))
@@ -43,4 +71,6 @@ fn main() {
             }
             _ => {}
         });
+
+    println!("App exited");
 }

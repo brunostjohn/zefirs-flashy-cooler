@@ -1,7 +1,5 @@
 use std::{
-    env,
     ffi::{c_ulonglong, c_void, CString},
-    path::PathBuf,
     ptr::null_mut,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -14,29 +12,23 @@ use dcv_color_primitives as dcp;
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
+use crate::APP_FOLDER;
+
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 
 pub struct Ultralight {
     renderer: ULRenderer,
     view: ULView,
-    surface: ULSurface,
     bitmap: ULBitmap,
 }
 
 impl Ultralight {
+    #[allow(unused_mut)]
     pub fn new() -> Ultralight {
         let mut renderer;
         let mut view;
         let mut surface;
         let mut bitmap;
-
-        let exe_folder_buf = match env::current_exe() {
-            Ok(mut path) => {
-                path.pop();
-                path
-            }
-            _ => PathBuf::from("./"),
-        };
 
         unsafe {
             let config = ulCreateConfig();
@@ -47,7 +39,7 @@ impl Ultralight {
                 write_plain_text: None,
             });
 
-            let mut log_path = exe_folder_buf.clone();
+            let mut log_path = APP_FOLDER.clone();
             log_path.push("log.txt");
 
             let log_path_cs = CString::new(log_path.to_str().unwrap()).unwrap();
@@ -59,7 +51,7 @@ impl Ultralight {
             // });
             ulEnablePlatformFontLoader();
 
-            let fs_folder = CString::new(exe_folder_buf.to_str().unwrap()).unwrap();
+            let fs_folder = CString::new(APP_FOLDER.to_str().unwrap()).unwrap();
             let fs_folder_ul = ulCreateString(fs_folder.as_ptr());
             ulEnablePlatformFileSystem(fs_folder_ul);
             ulDestroyString(fs_folder_ul);
@@ -76,6 +68,11 @@ impl Ultralight {
                     <html>
                         <head>
                             <style>
+                                body {
+                                    display: flex;
+                                    align-items: center;
+                                    justify-items: center;
+                                }
                                 h1 {
                                     text-align: center;
                                 }
@@ -83,7 +80,7 @@ impl Ultralight {
                         </head>
 
                         <body>
-                                <h1 id="aaa"></h1>
+                                <h1 id="aaa">not doing anything</h1>
                                 <script>
                                     setInterval(() => {
                                         var currentdate = new Date();
@@ -118,7 +115,6 @@ impl Ultralight {
         return Ultralight {
             renderer,
             view,
-            surface,
             bitmap,
         };
     }
