@@ -12,6 +12,9 @@ mod config;
 mod frontend_commands;
 use frontend_commands::remote_exit;
 
+#[path = "frontend/themes.rs"]
+mod themes;
+
 use config::Config;
 
 #[path = "app_ops/lifecycle.rs"]
@@ -63,12 +66,15 @@ fn main() {
     let config = CONFIG.lock().unwrap();
     config.write_to_drive();
 
-    let start_minimised = config.start_minimised;
+    // let start_minimised = config.start_minimised;
 
     drop(config);
 
     tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![remote_exit])
+        .invoke_handler(tauri::generate_handler![
+            remote_exit,
+            themes::get_all_themes
+        ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)
         .plugin(tauri_plugin_window_state::Builder::default().build())
