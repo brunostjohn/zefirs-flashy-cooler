@@ -1,4 +1,16 @@
 <script lang="ts">
+	import { invoke } from "@tauri-apps/api/tauri";
+	import { onMount } from "svelte";
+
+	let themeFolder = "";
+
+	onMount(async () => {
+		themeFolder = await invoke("get_theme_folder");
+	});
+
+	const openThemeFolder = () => {
+		invoke("open_theme_folder");
+	};
 </script>
 
 <div class="actualSettings">
@@ -58,19 +70,10 @@
 			<br /><small>If checked, the app will start minimised to system tray.</small>
 		</div>
 	</div>
-	<div id="warningAlert">
-		<div class="form-check form-switch">
-			<input class="form-check-input" type="checkbox" role="switch" id="warningAlertSwitch" />
-			<label class="form-check-label" for="warningAlertSwitch"
-				>Display LibreHardwareMonitor alert.</label
-			>
-			<br /><small>If checked, the app will remind you to start LibreHardwareMonitor.</small>
-		</div>
-	</div>
 	<button type="button" class="btn btn-outline-success" id="apply">Apply settings</button>
 	<br /><small id="applyAlert">Settings will be applied at next startup.</small>
 	<hr />
-	<div id="systemHealth">
+	<!-- <div id="systemHealth">
 		<h3>Health</h3>
 		<p>iCUE: <span class="badge rounded-pill" id="icue">Not running</span></p>
 		<small
@@ -88,18 +91,21 @@
 			need to restart this app for system information to work after starting LibreHardwareMonitor.</small
 		>
 	</div>
-	<hr />
+	<hr /> -->
 	<div id="folders">
 		<h3>Folders</h3>
-		<button type="button" class="btn btn-outline-primary" id="themeFolderBtn"
-			>Open theme folder</button
+		<button
+			type="button"
+			class="btn btn-outline-primary"
+			id="themeFolderBtn"
+			on:click={openThemeFolder}>Open theme folder</button
 		>
 		<br /><small
 			>This is the folder in which themes are stored. To add one, just drag the downloaded theme
 			into the theme folder. WARNING: Themes are full programs. Please make sure they're from a
 			trusted source. They can do bad things to your computer. Trust but verify.</small
 		>
-		<br /><small id="themeFolderText">Current theme folder:</small>
+		<br /><small id="themeFolderText">Current theme folder: {themeFolder}</small>
 	</div>
 </div>
 

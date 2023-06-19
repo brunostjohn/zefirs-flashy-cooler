@@ -73,7 +73,10 @@ fn main() {
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             remote_exit,
-            themes::get_all_themes
+            themes::get_all_themes,
+            themes::get_theme_folder,
+            themes::open_theme_folder,
+            themes::apply_theme
         ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)

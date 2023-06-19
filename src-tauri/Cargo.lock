@@ -76,6 +76,7 @@ name = "app"
 version = "0.1.0"
 dependencies = [
  "base64 0.21.2",
+ "color-thief",
  "dcv-color-primitives",
  "flate2",
  "hidapi",
@@ -430,6 +431,15 @@ dependencies = [
  "foreign-types",
  "libc",
  "objc",
+]
+
+[[package]]
+name = "color-thief"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6460d760cf38ce67c9e0318f896538820acc54f2d0a3bfc5b2c557211066c98"
+dependencies = [
+ "rgb",
 ]
 
 [[package]]
@@ -2484,6 +2494,15 @@ name = "regex-syntax"
 version = "0.7.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "436b050e76ed2903236f032a59761c1eb99e1b0aead2c257922771dab1fc8c78"
+
+[[package]]
+name = "rgb"
+version = "0.8.36"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20ec2d3e3fc7a92ced357df9cebd5a10b6fb2aa1ee797bf7e9ce2f17dffc8f59"
+dependencies = [
+ "bytemuck",
+]
 
 [[package]]
 name = "rustc-hash"

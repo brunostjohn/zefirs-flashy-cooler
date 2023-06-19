@@ -7,11 +7,13 @@
 		name: string;
 		fs_name: string;
 		image_src: string;
+		colour: string;
 	}
 
 	interface PreTheme {
 		name: string;
 		fs_name: string;
+		colour: string;
 	}
 
 	let themes: Theme[] = [];
@@ -36,15 +38,20 @@
 
 <div id="everything">
 	<div id="liveAlertPlaceholder" />
-
+	<!-- <aside class="search-bar">
+		<input type="text" class="form-control search" />
+	</aside> -->
 	<main id="card-container">
 		{#each themes as theme}
 			<article class="theme-card" id={theme.fs_name}>
 				<img src={theme.image_src} alt={theme.name + " Card"} class="theme-img" />
-				<h5 class="theme-title">
+				<h5 class="theme-title" style={`color: ${theme.colour};`}>
 					{theme.name}
 				</h5>
 			</article>
+		{/each}
+		{#each [1, 2, 3, 4, 5, 6, 7, 8] as i}
+			<article class="fillspace" />
 		{/each}
 	</main>
 </div>
