@@ -1,14 +1,24 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import { invoke } from "@tauri-apps/api/tauri";
 
 	export let src: string;
 	export let themeName: string;
 	export let textColour: string;
 	export let fsName: string;
+	export let networked = false;
+	const onClick = networked
+		? (fsName: string) => {
+				goto(`/themes/theme-view/networked/${encodeURIComponent(fsName)}`);
+		  }
+		: (fsName: string) =>
+				invoke("apply_theme", {
+					fsName,
+				});
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<article class="theme-card" id={fsName} on:click={() => invoke("apply_theme", { fsName })}>
+<article class="theme-card" id={fsName} on:click={() => onClick(fsName)}>
 	<img {src} alt={themeName + " Card"} class="theme-img" />
 	<h5 class="theme-title" style={`color: ${textColour}`}>
 		{themeName}
