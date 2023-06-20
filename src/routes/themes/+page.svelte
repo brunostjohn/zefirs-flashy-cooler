@@ -44,11 +44,11 @@
 			<h1 style="margin-bottom: 1rem;">Featured Themes</h1>
 		</div>
 		{#if !loadingFeatured}
-			<div transition:fade={{ delay: 400 }}>
+			<div>
 				<FeaturedThemes themes={featuredThemes} />
 			</div>
 		{:else}
-			<div class="loading-featured" transition:fade={{ duration: 50 }}>
+			<div class="loading-featured">
 				<h5>Loading</h5>
 				<Stretch color="#6ea8fe" />
 			</div>
@@ -60,19 +60,19 @@
 		{#if !loadingMy}
 			<ThemeCarousel themes={myThemes} />
 		{:else}
-			<div class="loading" transition:fade>
+			<div class="loading">
 				<h5>Loading</h5>
 				<DoubleBounce color="#8bb9fe" />
 			</div>
 		{/if}
-		<div class="section-header panel-gap" transition:fade>
+		<div class="section-header panel-gap">
 			<h1>Theme Store</h1>
 			<NavigationCircle orientation="right" href="/themes/theme-store" />
 		</div>
 		{#if !loadingAll}
 			<ThemeCarousel themes={allThemes} networked={true} />
 		{:else}
-			<div class="loading" transition:fade>
+			<div class="loading">
 				<h5>Loading</h5>
 				<DoubleBounce color="#8bb9fe" />
 			</div>

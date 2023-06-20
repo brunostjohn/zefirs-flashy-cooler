@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { fade } from "svelte/transition";
 	import type { Theme } from "../helpers/themeTools";
 	import SvelteMarkdown from "svelte-markdown";
 	import HeadingRendererMd from "./HeadingRendererMd.svelte";
@@ -7,7 +6,7 @@
 	export let theme: Theme;
 </script>
 
-<div class="panel-container" transition:fade>
+<div class="panel-container">
 	<div class="featured-theme">
 		<img src={theme.image_src} alt="Featured theme" class="bg-img" />
 		<div class="short-info" style={`color: ${theme.colour};`}>

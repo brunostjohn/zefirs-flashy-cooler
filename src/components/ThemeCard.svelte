@@ -9,7 +9,7 @@
 	export let networked = false;
 	const onClick = networked
 		? (fsName: string) => {
-				goto(`/themes/theme-view/networked/${encodeURIComponent(fsName)}`);
+				goto(`/themes/theme-view/${encodeURIComponent(fsName)}`);
 		  }
 		: (fsName: string) =>
 				invoke("apply_theme", {
@@ -33,37 +33,48 @@
 		flex-basis: 14rem;
 		flex-grow: 1;
 		min-width: 12rem;
+		min-height: 12rem;
+		aspect-ratio: 1/1;
 
 		.theme-img {
-			max-width: 100%;
+			overflow: hidden;
+			position: relative;
+			width: 100%;
+			height: 100%;
 			height: auto;
 			margin-left: 0;
 			margin-right: 0;
 			display: inline-block;
-			transition: all ease-in-out 0.05s;
 		}
 
 		.theme-title {
-			visibility: hidden;
+			opacity: 0%;
 			display: -webkit-box;
 			-webkit-box-orient: vertical;
 			-webkit-line-clamp: 1;
 			overflow: hidden;
 			position: absolute;
-			bottom: 0;
+			bottom: 10px;
 			left: 0;
 			transform: translate(5px, 9px);
-			transition: visibility ease-in-out 0.05s;
+			transition: opacity ease-in-out 100ms;
 		}
 
 		&:hover {
 			.theme-img {
 				filter: blur(5px);
 				overflow: hidden;
+
+				object-fit: cover;
+
+				width: 110%;
+				height: 110%;
+				top: -5%;
+				left: -5%;
 			}
 
 			.theme-title {
-				visibility: visible;
+				opacity: 100%;
 			}
 		}
 	}
