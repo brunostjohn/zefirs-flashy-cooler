@@ -9,7 +9,7 @@
 	export let networked = false;
 	const onClick = networked
 		? (fsName: string) => {
-				goto(`/themes/theme-view/${encodeURIComponent(fsName)}`);
+				goto(`/themes/${encodeURIComponent(fsName)}`);
 		  }
 		: (fsName: string) =>
 				invoke("apply_theme", {

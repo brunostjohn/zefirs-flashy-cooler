@@ -1,5 +1,6 @@
 import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { join, documentDir } from "@tauri-apps/api/path";
+import { fetchAndParseTheme } from "./ghApi";
 
 export interface Theme {
 	description?: string;
@@ -41,4 +42,19 @@ export const getThemes = async (which: "most_used" | "all" = "all") => {
 	});
 
 	return themes;
+};
+
+export const returnLocalOrNetworked = async (
+	fsName: string
+): Promise<{ networked: boolean; theme: Theme }> => {
+	const doesThemeExistLocally = await invoke("does_theme_exist", { fsName });
+	if (doesThemeExistLocally) {
+		const theme = (await invoke("get_theme", { fsName })) as Theme;
+
+		return { networked: false, theme };
+	} else {
+		const theme = await fetchAndParseTheme(fsName);
+
+		return { networked: true, theme };
+	}
 };

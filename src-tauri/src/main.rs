@@ -76,7 +76,11 @@ fn main() {
             themes::get_all_themes,
             themes::get_theme_folder,
             themes::open_theme_folder,
-            themes::apply_theme
+            themes::apply_theme,
+            themes::install_theme,
+            themes::uninstall_theme,
+            themes::does_theme_exist,
+            themes::get_theme
         ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)
