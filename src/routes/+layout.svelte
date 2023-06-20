@@ -1,7 +1,7 @@
 <script lang="ts">
 	import "bootstrap/dist/css/bootstrap.min.css";
 	import "./background.css";
-	import "bootstrap/dist/js/bootstrap.bundle";
+	// import "bootstrap/dist/js/bootstrap.bundle";
 	import { appWindow } from "@tauri-apps/api/window";
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { page } from "$app/stores";
@@ -30,7 +30,9 @@
 		alt="Zefir's Flashy Cooler Logo"
 	/>
 	<nav class="nav nav-pills nav-fill" id="controlbar">
-		<a class="nav-link" href="/" class:active={$page.url.pathname === "/"}>Themes</a>
+		<a class="nav-link" href="/themes" class:active={$page.url.pathname.includes("themes")}
+			>Themes</a
+		>
 		<a class="nav-link" href="/device" class:active={$page.url.pathname === "/device"}>Device</a>
 		<a class="nav-link" href="/renderer" class:active={$page.url.pathname === "/renderer"}
 			>Renderer</a
@@ -63,11 +65,6 @@
 			<img src="/images/closewindow.svg" id="closewindowimage" alt="close window button" />
 		</a>
 	</div>
-</div>
-<div id="everything">
-	<div id="liveAlertPlaceholder" />
-
-	<main id="card-container" />
 </div>
 
 {#key data.pathname}

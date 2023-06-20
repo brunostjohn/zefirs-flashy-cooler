@@ -1,0 +1,21 @@
+main {
+    margin-left: 5rem;
+    margin-right: 5rem;
+
+    section {
+        .section-header {
+            display: flex;
+            align-items: center;
+
+            h1 {
+                vertical-align: middle;
+                margin: 0;
+
+                position: relative;
+                bottom: 2px;
+                
+                margin-right: auto;
+            }
+        }
+    }
+}

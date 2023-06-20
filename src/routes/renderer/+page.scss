@@ -1,65 +1,65 @@
-  option {
-    background-color: #080d14;
-  }
-  
-  .btn {
-    margin: 4px;
-  }
-  
-  #maindiv {
-    height: 100%;
-    min-height: 100%;
-  }
-  
-  .sensorPicker {
-    padding: 2rem;
-    padding-top: 1rem;
-    border-radius: 10px;
-    border: 1px solid var(--bs-secondary-bg);
-    margin-bottom: 1rem;
-  }
-  
-  #smaller {
-    max-width: 30%;
-    width: 30%;
-    outline-style: solid;
-    outline-width: 1px;
-    outline-color: var(--bs-secondary-bg);
-    text-align: center;
-    vertical-align: middle;
-  }
-  
-  #larger {
-    max-width: 70%;
-    width: 70%;
-  }
-  
-  .card {
-    margin: 10px;
-    background-color: transparent;
-  }
-  
-  #preview {
-    border-radius: 50%;
-    margin: 3px;
-    max-width: 15rem;
-    max-height: 15rem;
-    margin-left: auto;
-    margin-right: auto;
-    display: block;
-  }
-  
-  h2 {
-    text-align: right;
-  }
-  
-  .full .clr-field button {
-    width: 100%;
-    height: 100%;
-    border-radius: 5px;
-  }
+option {
+	background-color: #080d14;
+}
 
-  .col-container{
-    margin-left: 5rem;
-    margin-right: 5rem;
-  }
+.btn {
+	margin: 4px;
+}
+
+#maindiv {
+	height: 100%;
+	min-height: 100%;
+}
+
+.sensorPicker {
+	padding: 2rem;
+	padding-top: 1rem;
+	border-radius: 10px;
+	border: 1px solid var(--bs-secondary-bg);
+	margin-bottom: 1rem;
+}
+
+#smaller {
+	max-width: 30%;
+	width: 30%;
+	outline-style: solid;
+	outline-width: 1px;
+	outline-color: var(--bs-secondary-bg);
+	text-align: center;
+	vertical-align: middle;
+}
+
+#larger {
+	max-width: 70%;
+	width: 70%;
+}
+
+.card {
+	margin: 10px;
+	background-color: transparent;
+}
+
+#preview {
+	border-radius: 50%;
+	margin: 3px;
+	max-width: 15rem;
+	max-height: 15rem;
+	margin-left: auto;
+	margin-right: auto;
+	display: block;
+}
+
+h2 {
+	text-align: right;
+}
+
+.full .clr-field button {
+	width: 100%;
+	height: 100%;
+	border-radius: 5px;
+}
+
+.col-container {
+	margin-left: 5rem;
+	margin-right: 5rem;
+}

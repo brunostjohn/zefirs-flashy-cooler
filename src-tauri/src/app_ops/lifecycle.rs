@@ -27,13 +27,13 @@ pub fn exit() {
         }
     };
 
-    let mut server = match SERVER.lock() {
-        Ok(result) => result,
-        Err(_) => return,
-    };
+    // let mut server = match SERVER.lock() {
+    //     Ok(result) => result,
+    //     Err(_) => return,
+    // };
 
     renderer.stop();
-    server.stop();
+    // server.stop();
 
     std::process::exit(0);
 }
