@@ -12,12 +12,28 @@ pub struct Server {
     thread: Option<JoinHandle<()>>,
     end_channel: mpsc::SyncSender<bool>,
     path_channel: mpsc::Sender<PathBuf>,
+    serving_fs_name: String,
 }
 
 impl Server {
     pub fn new(path: Option<PathBuf>) -> Self {
         let (tx_end, rx_end) = mpsc::sync_channel(2);
         let (tx_path, rx_path) = mpsc::channel();
+
+        let now_serving: String = match &path {
+            Some(path) => {
+                let local_p = path.clone();
+
+                local_p
+                    .into_iter()
+                    .last()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_owned()
+            }
+            None => "__DEFAULT__".to_string(),
+        };
 
         let server_handle = thread::spawn(move || {
             let listener = TcpListener::bind("127.0.0.1:2137").unwrap();
@@ -51,6 +67,7 @@ impl Server {
             thread: Some(server_handle),
             end_channel: tx_end,
             path_channel: tx_path,
+            serving_fs_name: now_serving,
         }
     }
 
@@ -158,6 +175,10 @@ impl Server {
             }
             None => {}
         }
+    }
+
+    pub fn now_serving(&self) -> String {
+        return self.serving_fs_name.clone();
     }
 }
 

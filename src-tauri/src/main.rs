@@ -10,7 +10,6 @@ mod config;
 
 #[path = "frontend/basic_ops.rs"]
 mod frontend_commands;
-use frontend_commands::remote_exit;
 
 #[path = "frontend/themes.rs"]
 mod themes;
@@ -72,7 +71,7 @@ fn main() {
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
-            remote_exit,
+            frontend_commands::remote_exit,
             themes::get_all_themes,
             themes::get_theme_folder,
             themes::open_theme_folder,
@@ -80,7 +79,9 @@ fn main() {
             themes::install_theme,
             themes::uninstall_theme,
             themes::does_theme_exist,
-            themes::get_theme
+            themes::get_theme,
+            themes::now_serving,
+            themes::apply_default
         ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)

@@ -62,16 +62,6 @@ impl Ultralight {
 
             view = ulCreateView(renderer, 480, 480, view_config, null_mut());
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
-            // let default_html = CString::new("http://localhost:2137").unwrap();
-            // let default_html_ul = ulCreateString(default_html.as_ptr());
-            // ulViewLoadHTML(view, default_html_ul);
-            // ulDestroyString(default_html_ul);
-
-            // while !END_WAIT_LOOP.load(Ordering::Acquire) {
-            //     ulUpdate(renderer);
-            //     ulRender(renderer);
-            // }
-            // END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
             surface = ulViewGetSurface(view);
             bitmap = ulBitmapSurfaceGetBitmap(surface);

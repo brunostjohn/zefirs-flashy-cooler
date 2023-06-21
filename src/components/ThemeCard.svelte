@@ -1,20 +1,14 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
-	import { invoke } from "@tauri-apps/api/tauri";
 
 	export let src: string;
 	export let themeName: string;
 	export let textColour: string;
 	export let fsName: string;
-	export let networked = false;
-	const onClick = networked
-		? (fsName: string) => {
-				goto(`/themes/${encodeURIComponent(fsName)}`);
-		  }
-		: (fsName: string) =>
-				invoke("apply_theme", {
-					fsName,
-				});
+	// export let networked = false;
+	const onClick = (fsName: string) => {
+		goto(`/themes/${encodeURIComponent(fsName)}`);
+	};
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -54,8 +48,8 @@
 			-webkit-line-clamp: 1;
 			overflow: hidden;
 			position: absolute;
-			bottom: 10px;
-			left: 0;
+			bottom: 4px;
+			left: 1px;
 			transform: translate(5px, 9px);
 			transition: opacity ease-in-out 100ms;
 		}

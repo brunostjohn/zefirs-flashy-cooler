@@ -1,10 +1,133 @@
-use std::{fs, thread, time::Duration};
+use std::{fs, path::PathBuf, thread, time::Duration};
 
 use crate::{RENDERER, SERVER, THEMES_PATH};
+use async_recursion::async_recursion;
 use color_thief::ColorFormat;
+use reqwest::header::USER_AGENT;
+use serde_json::Value;
 
 #[tauri::command]
-pub async fn install_theme(fs_name: String) {}
+pub fn now_serving() -> Theme {
+    let server = SERVER.lock().unwrap();
+    let fs_name = server.now_serving();
+
+    if fs_name == "__DEFAULT__" {
+        return Theme {
+            name: "Default Theme".to_string(),
+            fs_name: "__DEFAULT__".to_string(),
+            colour: Some("#FFFFFF".to_string()),
+            description: "The default theme that comes compiled into the app.".to_string(),
+            author: "Bruno St. John".to_string(),
+        };
+    }
+    get_theme(fs_name).unwrap()
+}
+
+#[tauri::command]
+pub fn apply_default() {
+    let server = SERVER.lock().unwrap();
+    server.serve_path(None);
+}
+
+#[derive(Debug)]
+struct DownloadElement {
+    pub url: String,
+    pub path_to_write: PathBuf,
+}
+
+#[async_recursion]
+async fn recurse_and_append(
+    search_path: String,
+    theme_path: PathBuf,
+) -> Result<Vec<DownloadElement>, &'static str> {
+    println!("Searching for {:?}", search_path);
+
+    let client = reqwest::Client::new();
+
+    let endpoint = format!(
+        "https://api.github.com/repos/brunostjohn/zefirs-flashy-cooler-themes/contents/Themes/{search_path}"
+    );
+
+    let body = match client.get(endpoint).header(USER_AGENT, "ZFC").send().await {
+        Ok(resp) => resp,
+        Err(_) => return Err("Failed to get theme information."),
+    };
+
+    let text = match body.text().await {
+        Ok(txt) => txt,
+        Err(_) => return Err("Failed to parse API response."),
+    };
+
+    let response = match serde_json::from_str::<Vec<Value>>(&text) {
+        Ok(value) => value,
+        Err(_) => return Err("Failed to deserialise API response to initial list."),
+    };
+
+    let mut results = vec![];
+
+    for file_or_dir in response {
+        let type_of = match &file_or_dir["type"] {
+            serde_json::Value::String(value) => value,
+            _ => return Err("Failed to deserialise API response file/dir!"),
+        };
+
+        match type_of.as_str() {
+            "file" => {
+                let url = match &file_or_dir["download_url"] {
+                    serde_json::Value::String(url) => url,
+                    _ => return Err("Failed to deserialise API response/file/url!"),
+                };
+
+                let git_path = match &file_or_dir["path"] {
+                    serde_json::Value::String(path) => path,
+                    _ => return Err("Failed to deserialise API response/file/git_path!"),
+                };
+
+                let mut path_elements: Vec<&str> = git_path.split("/").into_iter().collect();
+                path_elements.remove(0);
+                path_elements.remove(0);
+                println!("{:?}", path_elements);
+
+                let mut base_path = theme_path.clone();
+                base_path.extend(path_elements);
+
+                results.push(DownloadElement {
+                    url: url.to_owned(),
+                    path_to_write: base_path,
+                })
+            }
+            "dir" => {
+                let git_path = match &file_or_dir["path"] {
+                    serde_json::Value::String(path) => path,
+                    _ => return Err("Failed to deserialise API response/dir/git_path!"),
+                };
+
+                let mut path_elements: Vec<&str> = git_path.split("/").into_iter().collect();
+                path_elements.remove(0);
+                path_elements.remove(1);
+
+                let location_string = path_elements.join("/");
+
+                let recursed_vector =
+                    recurse_and_append(location_string, theme_path.clone()).await?;
+
+                results.extend(recursed_vector);
+            }
+            _ => {}
+        }
+    }
+
+    Ok(results)
+}
+
+#[tauri::command]
+pub async fn install_theme(fs_name: String) -> Result<(), &'static str> {
+    let mut theme_path = THEMES_PATH.clone();
+    theme_path.push(&fs_name);
+    let download_list: Vec<DownloadElement> = recurse_and_append(fs_name, theme_path).await?;
+    println!("{:?}", download_list);
+    Ok(())
+}
 
 #[tauri::command]
 pub async fn uninstall_theme(fs_name: String) {
@@ -150,7 +273,7 @@ pub async fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
 }
 
 #[tauri::command]
-pub async fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
+pub fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
     let mut theme_path = THEMES_PATH.clone();
     theme_path.push(&fs_name);
 
@@ -167,8 +290,14 @@ pub async fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
         Err(_) => "{}".to_string(),
     };
 
-    let mut manifest = match serde_json::from_str(&loaded) {
-        Ok(res) => res,
+    let mut manifest: Theme = match serde_json::from_str::<Value>(&loaded) {
+        Ok(res) => Theme {
+            name: res["name"].as_str().unwrap().to_string(),
+            fs_name,
+            colour: None,
+            description: res["description"].as_str().unwrap().to_string(),
+            author: res["author"].as_str().unwrap().to_string(),
+        },
         Err(_) => Theme {
             name: fs_name.clone(),
             fs_name: fs_name,

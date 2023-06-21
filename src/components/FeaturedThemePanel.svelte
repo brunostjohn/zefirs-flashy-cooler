@@ -2,12 +2,25 @@
 	import type { Theme } from "../helpers/themeTools";
 	import SvelteMarkdown from "svelte-markdown";
 	import HeadingRendererMd from "./HeadingRendererMd.svelte";
+	import { goto } from "$app/navigation";
 
 	export let theme: Theme;
+
+	let panel: HTMLDivElement;
+
+	const onClickPanel = () => {
+		panel.classList.remove("clicked-panel");
+		panel.classList.add("clicked-panel");
+		setTimeout(() => {
+			panel.classList.remove("clicked-panel");
+			goto(`/themes/${theme.fs_name}`);
+		}, 150);
+	};
 </script>
 
 <div class="panel-container">
-	<div class="featured-theme">
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div class="featured-theme" bind:this={panel} on:click={onClickPanel}>
 		<img src={theme.image_src} alt="Featured theme" class="bg-img" />
 		<div class="short-info" style={`color: ${theme.colour};`}>
 			<h3>
@@ -26,6 +39,28 @@
 
 <style lang="scss">
 	@import "../styles/mixins.scss";
+
+	:global(.clicked-panel) {
+		animation: clicked-panel-animation 150ms both linear;
+	}
+
+	@keyframes clicked-panel-animation {
+		0% {
+			width: 54.6rem;
+			height: 24.6em;
+		}
+
+		60% {
+			width: 52.6rem;
+			height: 22.6em;
+		}
+
+		100% {
+			width: 55rem;
+			height: 25rem;
+		}
+	}
+
 	.panel-container {
 		width: 55rem;
 		height: 25rem;
