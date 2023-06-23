@@ -9,6 +9,7 @@ export interface Theme {
 	fs_name: string;
 	image_src: string;
 	colour: string;
+	dls?: number;
 }
 
 interface PreTheme {

@@ -1,6 +1,6 @@
 use tauri::AppHandle;
 use window_shadows::set_shadow;
-use window_vibrancy::apply_mica;
+use window_vibrancy::{apply_acrylic, apply_mica};
 
 pub fn recreate_main_window(app: &AppHandle) {
     let window =
@@ -8,6 +8,13 @@ pub fn recreate_main_window(app: &AppHandle) {
             .build()
             .unwrap();
 
-    apply_mica(&window).unwrap();
+    #[cfg(target_os = "windows")]
+    match apply_mica(&window) {
+        Ok(_) => {}
+        Err(_) => {
+            let _ = apply_acrylic(&window, Some((0, 0, 0, 0)));
+        }
+    };
+
     set_shadow(&window, true).unwrap();
 }

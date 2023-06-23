@@ -65,8 +65,6 @@ fn main() {
     let config = CONFIG.lock().unwrap();
     config.write_to_drive();
 
-    // let start_minimised = config.start_minimised;
-
     drop(config);
 
     tauri::Builder::default()

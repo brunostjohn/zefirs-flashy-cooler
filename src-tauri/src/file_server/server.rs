@@ -11,7 +11,7 @@ mod fs;
 pub struct Server {
     thread: Option<JoinHandle<()>>,
     end_channel: mpsc::SyncSender<bool>,
-    path_channel: mpsc::Sender<PathBuf>,
+    path_channel: mpsc::Sender<Option<PathBuf>>,
     serving_fs_name: String,
 }
 
@@ -51,7 +51,7 @@ impl Server {
 
                 match rx_path.try_recv() {
                     Ok(path) => {
-                        fs_path = Some(path);
+                        fs_path = path;
                     }
                     _ => {}
                 };
@@ -163,17 +163,27 @@ impl Server {
         }
     }
 
-    pub fn serve_path(&self, path: Option<PathBuf>) {
+    pub fn serve_path(&mut self, path: Option<PathBuf>) {
         match path {
             Some(path_some) => {
-                match self.path_channel.send(path_some) {
+                match self.path_channel.send(Some(path_some.clone())) {
                     Err(_) => {
                         println!("Failed to change serve path.");
                     }
-                    _ => {}
+                    _ => {
+                        self.serving_fs_name =
+                            path_some.file_name().unwrap().to_str().unwrap().to_owned();
+                    }
                 };
             }
-            None => {}
+            None => match self.path_channel.send(None) {
+                Err(_) => {
+                    println!("Failed to change serve path.");
+                }
+                _ => {
+                    self.serving_fs_name = "__DEFAULT__".to_owned();
+                }
+            },
         }
     }
 

@@ -30,7 +30,7 @@
 		}
 		loadingFeatured = false;
 		try {
-			allThemes = await getAllThemes(10);
+			allThemes = await getAllThemes(0);
 		} catch (e) {
 			console.log(e);
 		}

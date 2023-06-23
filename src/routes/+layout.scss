@@ -1,3 +1,5 @@
+@import "../styles/mixins.scss";
+
 #controlbar {
 	padding: 5px;
 	background-color: rgba(44, 58, 71, 0.3);
@@ -56,14 +58,14 @@ a[href^="http://"],
 	width: 100%;
 	position: fixed;
 	top: 0;
-	overflow: hidden;
+	// overflow: hidden;
+	z-index: 1000;
 	left: 50%;
 	transform: translateX(-50%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	justify-items: center;
-	z-index: 1000;
 	padding-top: 0.1rem;
 	padding-bottom: 0.1rem;
 	-webkit-app-region: drag;
@@ -135,4 +137,60 @@ a[href^="http://"],
 .form-control,
 .form-select {
 	background-color: #060a0f3f;
+}
+
+.dl-list {
+	position: fixed;
+	left: 85px;
+	top: 18px;
+	z-index: 1001;
+
+	@include flex-center;
+
+	.svg-wrapper {
+		height: 2rem;
+		width: 2rem;
+		z-index: 100;
+		filter: brightness(100%);
+		transition: filter 150ms ease-in-out;
+
+		&:hover {
+			filter: brightness(80%);
+		}
+	}
+
+	svg {
+		height: 2rem;
+		width: 2rem;
+	}
+
+	&::after {
+		content: "";
+		border-top: 1px solid var(--bs-primary);
+		border-radius: 100%;
+		width: 45px;
+		height: 45px;
+		z-index: 1;
+		position: absolute;
+		top: -5px;
+		left: -7px;
+		animation: spin 2s linear infinite;
+	}
+
+	.svg-primary {
+		filter: invert(41%) sepia(92%) saturate(4359%) hue-rotate(206deg) brightness(96%) contrast(108%);
+	}
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+main {
+	z-index: 1;
 }

@@ -69,10 +69,26 @@
 
 {#key data.pathname}
 	<main in:fly={transitionIn} out:fly={transitionOut}>
-		<slot />
+		<slot style="z-index:2;" />
 	</main>
 {/key}
 
 <style lang="scss">
 	@import "./+layout.scss";
+
+	:global(.anim-cloud-click) {
+		animation: clicked 150ms linear both;
+	}
+
+	@keyframes clicked {
+		0% {
+			filter: brightness(80%);
+		}
+		50% {
+			filter: brightness(50%);
+		}
+		100% {
+			filter: brightness(100%);
+		}
+	}
 </style>

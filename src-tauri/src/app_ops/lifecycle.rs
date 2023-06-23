@@ -3,7 +3,7 @@ use std::{error::Error, thread, time::Duration};
 use tauri::{App, Manager};
 
 use window_shadows::set_shadow;
-use window_vibrancy::apply_mica;
+use window_vibrancy::{apply_acrylic, apply_blur, apply_mica, apply_vibrancy};
 
 #[path = "../config/ensure_dirs.rs"]
 mod ensure_dirs;
@@ -15,6 +15,9 @@ use self::ensure_dirs::ensure_dirs;
 #[allow(dead_code)]
 pub fn exit() {
     println!("Attempting exit.");
+
+    let config = CONFIG.lock().unwrap();
+    config.write_to_drive();
 
     let mut renderer = match RENDERER.lock() {
         Ok(result) => {
@@ -46,12 +49,16 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
 
     ensure_dirs();
 
-    let server = SERVER.lock().unwrap();
+    let mut server = SERVER.lock().unwrap();
     match &config.theme_path {
         Some(theme) => {
             let mut full_path = THEMES_PATH.clone();
             full_path.push(theme);
-            server.serve_path(Some(full_path));
+            if full_path.exists() {
+                server.serve_path(Some(full_path));
+            } else {
+                server.serve_path(None);
+            }
         }
         None => {
             server.serve_path(None);
@@ -66,9 +73,18 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let window = app.get_window("main").unwrap();
 
     #[cfg(target_os = "windows")]
-    apply_mica(&window).expect("Unsupported platform! 'apply_blur' is only supported on Windows");
+    match apply_mica(&window) {
+        Ok(_) => {}
+        Err(_) => {
+            let _ = apply_acrylic(&window, Some((0, 0, 0, 0)));
+        }
+    };
 
     set_shadow(&window, true).unwrap();
+
+    if config.start_minimised {
+        let _ = window.close();
+    }
 
     Ok(())
 }

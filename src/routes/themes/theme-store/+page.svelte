@@ -44,7 +44,6 @@
 					themeName={theme.name}
 					textColour={theme.colour}
 					fsName={theme.fs_name}
-					networked={true}
 				/>
 			{/each}
 			{#each [1, 2, 3, 4, 5, 6, 7, 8] as i}
@@ -59,7 +58,6 @@
 					themeName={theme.name}
 					textColour={theme.colour}
 					fsName={theme.fs_name}
-					networked={true}
 				/>
 			{/each}
 			{#each [1, 2, 3, 4, 5, 6, 7, 8] as _i}
