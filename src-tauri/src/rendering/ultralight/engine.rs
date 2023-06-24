@@ -1,6 +1,6 @@
 use std::{
     ffi::{c_ulonglong, c_void, CString},
-    ptr::null_mut,
+    ptr::{null, null_mut},
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,
@@ -191,6 +191,21 @@ impl Ultralight {
             let context = ulViewLockJSContext(self.view);
             JSGarbageCollect(context);
             ulViewLockJSContext(self.view);
+        }
+    }
+
+    pub fn call_js_script(&self, script: String) {
+        let cstr = CString::new(script).unwrap();
+        unsafe {
+            let jsstr = JSStringCreateWithUTF8CString(cstr.as_ptr());
+
+            let context = ulViewLockJSContext(self.view);
+
+            let _ = JSEvaluateScript(context, jsstr, null_mut(), null_mut(), 1, null_mut());
+
+            ulViewLockJSContext(self.view);
+
+            JSStringRelease(jsstr);
         }
     }
 }

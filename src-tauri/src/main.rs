@@ -32,6 +32,9 @@ use tray::{build_tray, tray_event_handler};
 mod server;
 use server::Server;
 
+#[path = "frontend/settings.rs"]
+mod settings;
+
 use std::{
     env,
     path::PathBuf,
@@ -55,6 +58,7 @@ lazy_static! {
     };
     pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::load_from_drive()));
     pub static ref SERVER: Arc<Mutex<Server>> = Arc::new(Mutex::new(Server::new(None)));
+    pub static ref SENSORS: Arc<Mutex<Sensors>> = Arc::new(Mutex::new(Sensors::new(None)));
 }
 
 pub static THEMES_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -86,7 +90,8 @@ fn main() {
             themes::does_theme_exist,
             themes::get_theme,
             themes::now_serving,
-            themes::apply_default
+            themes::apply_default,
+            settings::get_start_minimised
         ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)

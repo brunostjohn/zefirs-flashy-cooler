@@ -10,6 +10,7 @@ pub struct Config {
     pub start_at_login: bool,
     pub start_minimised: bool,
     pub theme_path: Option<String>,
+    pub poll_rate: u128,
 }
 
 impl Config {
@@ -19,6 +20,7 @@ impl Config {
             start_at_login: false,
             start_minimised: false,
             theme_path: None,
+            poll_rate: 3000,
         }
     }
 

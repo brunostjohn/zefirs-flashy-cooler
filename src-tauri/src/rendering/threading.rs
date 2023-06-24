@@ -49,6 +49,7 @@ impl Renderer {
                 Err(err) => println!("{:?}", err),
             };
 
+            let mut thing = 0;
             loop {
                 engine.update();
 
@@ -80,6 +81,10 @@ impl Renderer {
                         false
                     }
                 } {
+                    engine.call_js_script(
+                        format!("document.dispatchEvent(new CustomEvent('sensorsUpdated', {{ 'detail': {{'cpu': '{:?}'}} }}))", &thing),
+                    );
+                    thing += 1;
                     engine.render();
                     let image = match engine.get_bitmap() {
                         Ok(img) => img,
