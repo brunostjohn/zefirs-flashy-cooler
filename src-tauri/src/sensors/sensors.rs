@@ -1,12 +1,33 @@
 use std::{
-    ffi::CString,
+    ffi::{CStr, CString},
     sync::mpsc,
     thread::{self, JoinHandle},
     time::{Duration, SystemTime},
 };
 
-use libloading;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug)]
+#[repr(C)]
+struct PreSensor {
+    pub sensor: *mut i8,
+    pub value: *mut i8,
+    pub r#type: *mut i8,
+    pub parent_hw_type: *mut i8,
+}
+
+#[link(name = "bootstrapperdll", kind = "static")]
+#[link(name = "Runtime.WorkstationGC", kind = "static")]
+#[link(name = "System.Globalization.Native.Aot", kind = "static")]
+#[link(name = "System.IO.Compression.Native.Aot", kind = "static")]
+#[link(name = "LibreHardwareMonitorNative", kind = "static")]
+extern "C" {
+    fn open_computer() -> *mut i16;
+    fn close_computer(computer: *mut i16);
+    fn get_all_sensors(computer: *mut i16) -> *mut i8;
+    fn get_single_sensor_ptrs(path: *mut i8, computer: *mut i16) -> PreSensor;
+    fn free_mem(ptr: *mut i8);
+}
 
 #[derive(Deserialize, Debug)]
 pub struct Hardware {
@@ -21,11 +42,12 @@ pub struct Subhardware {
     pub sensors: Vec<Sensor>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize)]
 pub struct Sensor {
     pub sensor: String,
     pub value: String,
     pub r#type: String,
+    pub parent_hw_type: Option<String>,
 }
 
 pub struct Sensors {
@@ -50,32 +72,7 @@ impl Sensors {
         let (tx_park, rx_park) = mpsc::channel();
 
         let sensor_thread = thread::spawn(move || {
-            let lib;
-            unsafe {
-                lib =
-                    libloading::Library::new("./resources/LibreHardwareMonitorNative.dll").unwrap();
-            }
-
-            let get_all_sensors_symbol: libloading::Symbol<unsafe extern "C" fn() -> *mut i8>;
-            unsafe {
-                get_all_sensors_symbol = lib.get(b"get_all_sensors").unwrap();
-            }
-
-            let get_single_sensor_symbol: libloading::Symbol<
-                unsafe extern "C" fn(*mut i8) -> *mut i8,
-            >;
-            unsafe {
-                get_single_sensor_symbol = lib.get(b"get_single_sensor").unwrap();
-            }
-
-            let get_multiple_sensors_symbol: libloading::Symbol<
-                unsafe extern "C" fn(*mut i8) -> *mut i8,
-            >;
-            unsafe {
-                get_multiple_sensors_symbol = lib.get(b"get_single_sensor").unwrap();
-            }
-
-            fn get_all_sensors(ptr: *mut i8) -> Vec<Hardware> {
+            fn get_all_sensors_post(ptr: *mut i8) -> Vec<Hardware> {
                 let sensor_string;
                 unsafe {
                     let strc = CString::from_raw(ptr);
@@ -84,6 +81,8 @@ impl Sensors {
                         Ok(res) => res.to_owned(),
                         Err(_) => "".to_owned(),
                     };
+
+                    free_mem(ptr);
                 }
                 let sensors: Vec<Hardware> = match serde_json::from_str(&sensor_string) {
                     Ok(sensors) => sensors,
@@ -93,68 +92,73 @@ impl Sensors {
                 sensors
             }
 
-            fn get_single_sensor(ptr: *mut i8) -> Sensor {
-                let sensor_string;
-                unsafe {
-                    let strc = CString::from_raw(ptr);
-
-                    sensor_string = match strc.to_str() {
-                        Ok(res) => res.to_owned(),
-                        Err(_) => "".to_owned(),
-                    };
-                }
-                let sensor: Sensor = match serde_json::from_str(&sensor_string) {
-                    Ok(sensor) => sensor,
-                    Err(_) => Sensor {
-                        sensor: "".to_owned(),
-                        value: "".to_owned(),
-                        r#type: "".to_owned(),
-                    },
+            fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
+                let sensor_string = CString::new(sensor_string.to_owned()).unwrap();
+                let pre =
+                    unsafe { get_single_sensor_ptrs(sensor_string.as_ptr() as *mut i8, computer) };
+                let sensor_cstr =
+                    unsafe { CStr::from_ptr(pre.sensor).to_str().unwrap().to_owned() };
+                let value_cstr = unsafe { CStr::from_ptr(pre.value).to_str().unwrap().to_owned() };
+                let type_cstr = unsafe { CStr::from_ptr(pre.r#type).to_str().unwrap().to_owned() };
+                let parent_hw_type_cstr = unsafe {
+                    CStr::from_ptr(pre.parent_hw_type)
+                        .to_str()
+                        .unwrap()
+                        .to_owned()
                 };
 
-                sensor
+                unsafe {
+                    free_mem(pre.parent_hw_type);
+                    free_mem(pre.sensor);
+                    free_mem(pre.r#type);
+                    free_mem(pre.value);
+                };
+
+                Sensor {
+                    sensor: sensor_cstr,
+                    value: value_cstr,
+                    r#type: type_cstr,
+                    parent_hw_type: Some(parent_hw_type_cstr),
+                }
             }
 
-            fn get_multiple_sensors(ptr: *mut i8) -> Vec<Sensor> {
-                let sensor_string;
-                unsafe {
-                    let strc = CString::from_raw(ptr);
+            fn get_multiple_sensors(
+                sensor_paths: Vec<String>,
+                computer_ptr: *mut i16,
+            ) -> Vec<Sensor> {
+                let mut sensors = vec![];
 
-                    sensor_string = match strc.to_str() {
-                        Ok(res) => res.to_owned(),
-                        Err(_) => "".to_owned(),
-                    };
+                for sensor in sensor_paths {
+                    let sensor = get_single_sensor(&sensor, computer_ptr);
+                    sensors.push(sensor);
                 }
-                let sensor: Vec<Sensor> = match serde_json::from_str(&sensor_string) {
-                    Ok(sensors) => sensors,
-                    Err(_) => vec![Sensor {
-                        sensor: "".to_owned(),
-                        value: "".to_owned(),
-                        r#type: "".to_owned(),
-                    }],
-                };
 
-                sensor
+                sensors
             }
 
             let mut poll = Duration::from_millis(poll.or(Some(3000)).unwrap());
             let mut subscribed_multi = false;
             let mut subscribed: String = "".to_owned();
 
+            let computer = unsafe { open_computer() };
+
             loop {
                 let start_time = SystemTime::now();
 
                 if match rx_end.try_recv() {
                     Ok(val) => val,
-                    Err(_) => true,
+                    Err(_) => false,
                 } {
                     println!("Received end signal!");
+                    unsafe {
+                        close_computer(computer);
+                    }
                     break;
                 }
 
                 if match rx_park.try_recv() {
                     Ok(val) => val,
-                    Err(_) => true,
+                    Err(_) => false,
                 } {
                     println!("Received park signal!");
                     thread::park();
@@ -171,7 +175,7 @@ impl Sensors {
                 } {
                     let sensor_list;
                     unsafe {
-                        sensor_list = get_all_sensors(get_all_sensors_symbol());
+                        sensor_list = get_all_sensors_post(get_all_sensors(computer));
                     }
                     match tx_sensor_list.send(sensor_list) {
                         Ok(_) => {}
@@ -184,35 +188,28 @@ impl Sensors {
                         if sub.len() > 1 {
                             subscribed_multi = true;
                             subscribed = sub.join("||").to_owned();
+                            println!("got {:?}", &subscribed);
                         } else {
                             subscribed_multi = false;
                             subscribed = sub[0].clone();
                         }
                     }
-                    Err(_) => println!("Failed to receive subscription"),
+                    Err(_) => {}
                 }
 
                 if subscribed_multi {
-                    let vals;
-                    let sensor_string = CString::new(subscribed.clone()).unwrap();
-
-                    unsafe {
-                        vals = get_multiple_sensors(get_multiple_sensors_symbol(
-                            sensor_string.as_ptr() as *mut i8,
-                        ));
-                    }
+                    let vals = get_multiple_sensors(
+                        subscribed
+                            .split("||")
+                            .into_iter()
+                            .map(|x| x.to_owned())
+                            .collect(),
+                        computer,
+                    );
 
                     let _ = tx_sensor_val.send(vals);
                 } else {
-                    let val;
-                    let sensor_string = CString::new(subscribed.clone()).unwrap();
-
-                    unsafe {
-                        val = get_single_sensor(get_single_sensor_symbol(
-                            sensor_string.as_ptr() as *mut i8
-                        ));
-                    }
-
+                    let val = get_single_sensor(&subscribed, computer);
                     let _ = tx_sensor_val.send(vec![val]);
                 }
 
@@ -289,18 +286,19 @@ impl Sensors {
 
     pub fn get_sensor_value(&self) -> Result<Vec<Sensor>, &'static str> {
         self.rx_sensor_val
-            .recv()
+            .try_recv()
             .or(Err("Failed to receive value."))
     }
 
     pub fn pause(&self) -> Result<(), &'static str> {
-        self.tx_park.send(true).or(Err("Failed to send park."))
+        // self.tx_park.send(true).or(Err("Failed to send park."))
+        Ok(())
     }
 
     pub fn unpause(&self) {
-        match self.thread_handle.as_ref() {
-            Some(thread) => thread.thread().unpark(),
-            None => {}
-        }
+        // match self.thread_handle.as_ref() {
+        //     Some(thread) => thread.thread().unpark(),
+        //     None => {}
+        // }
     }
 }

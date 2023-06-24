@@ -76,7 +76,6 @@
 				"./resources/UltralightCore.dll",
 				"./resources/WebCore.dll",
 				"./resources/libMonoPosixHelper.dll",
-				"./resources/LibreHardwareMonitorNative.dll",
 				"./resources/MonoPosixHelper.dll"
 			],
 			"shortDescription": "",

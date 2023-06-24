@@ -48,6 +48,8 @@ impl Renderer {
 
             let mut gc_time = SystemTime::now();
 
+            let mut sensor_time = SystemTime::now();
+
             let mut device = match Capellix::new() {
                 Err(error) => {
                     println!("{:?}", error);
@@ -63,6 +65,8 @@ impl Renderer {
 
             let mut theme_config_path = PathBuf::new();
             let mut theme_config: Vec<ThemeConfigItem> = vec![];
+            let mut sensor_flag = false;
+            let mut sensor_values = vec![];
 
             loop {
                 engine.update();
@@ -95,6 +99,36 @@ impl Renderer {
                         false
                     }
                 } {
+                    if (match sensor_time.elapsed() {
+                        Ok(time) => {
+                            if time >= Duration::from_millis(600) {
+                                sensor_time = SystemTime::now();
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                        Err(_) => false,
+                    } && sensor_flag)
+                    {
+                        let sensors = SENSORS.lock().unwrap();
+                        match sensors.get_sensor_value() {
+                            Ok(result) => {
+                                sensor_values = result;
+                            }
+                            Err(_) => {}
+                        };
+                        drop(sensors);
+
+                        let sensor_string = serde_json::to_string(&sensor_values)
+                            .or::<Result<String, &'static str>>(Ok("[]".to_owned()))
+                            .unwrap();
+
+                        engine.call_js_script(
+                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", &sensor_string),
+                        );
+                    }
+
                     engine.render();
                     let image = match engine.get_bitmap() {
                         Ok(img) => img,
@@ -177,11 +211,18 @@ impl Renderer {
                             .map(|x| x.value.clone())
                             .collect();
 
+                        let sensors = SENSORS.lock().unwrap();
+
                         if sensors_only.len() > 0 {
-                            let sensors = SENSORS.lock().unwrap();
+                            sensor_flag = true;
+                            sensors.unpause();
                             sensors.subscribe(sensors_only);
-                            drop(sensors);
+                        } else {
+                            let _ = sensors.pause();
+                            sensor_flag = false;
                         }
+
+                        drop(sensors);
 
                         let everything_else: Vec<ThemeConfigItem> = theme_config
                             .iter()
@@ -193,9 +234,8 @@ impl Renderer {
                             serde_json::to_string::<Vec<ThemeConfigItem>>(&everything_else)
                                 .or::<Result<String, &'static str>>(Ok("[]".to_string()))
                                 .unwrap();
-
                         engine.call_js_script(
-                        format!("document.dispatchEvent(new CustomEvent('configLoaded', JSON.parse('{:?}')))", &everything_else_string),
+                            format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &everything_else_string),
                         );
                     }
                 }
