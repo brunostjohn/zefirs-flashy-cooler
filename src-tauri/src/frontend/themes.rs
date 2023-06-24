@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{CONFIG, RENDERER, SENSORS, SERVER, THEMES_PATH};
+use crate::{CONFIG, RENDERER, SERVER, THEMES_PATH};
 use color_thief::ColorFormat;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -36,8 +36,6 @@ pub fn now_serving() -> Theme {
 
 #[tauri::command]
 pub fn apply_default() {
-    let sensors = SENSORS.lock().unwrap();
-    let _ = sensors.pause();
     let mut server = SERVER.lock().unwrap();
     server.serve_path(None);
 }

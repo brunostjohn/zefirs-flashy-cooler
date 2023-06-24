@@ -191,24 +191,25 @@ impl Renderer {
 
                         let theme_config = theme_config_parsed;
 
-                        let sensors_only: Vec<String> = theme_config
+                        let sensors_only: Vec<ThemeConfigItem> = theme_config
                             .iter()
                             .filter(|x| x.r#type == "sensor")
-                            .map(|x| x.value.clone())
-                            .collect();
-
-                        let sensors = SENSORS.lock().unwrap();
+                            .map(|x| x.to_owned())
+                            .collect::<Vec<ThemeConfigItem>>();
 
                         if sensors_only.len() > 0 {
                             sensor_flag = true;
-                            sensors.unpause();
-                            sensors.subscribe(sensors_only);
+                            let sensor_paths: Vec<String> =
+                                sensors_only.iter().map(|x| x.value.clone()).collect();
+
+                            let sensors = SENSORS.lock().unwrap();
+
+                            sensors.subscribe(sensor_paths);
+
+                            drop(sensors);
                         } else {
-                            let _ = sensors.pause();
                             sensor_flag = false;
                         }
-
-                        drop(sensors);
 
                         let everything_else: Vec<ThemeConfigItem> = theme_config
                             .iter()

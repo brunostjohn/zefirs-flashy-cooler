@@ -58,7 +58,6 @@ pub struct Sensors {
     rx_sensor_list: mpsc::Receiver<Vec<Hardware>>,
     tx_list_rq: mpsc::Sender<bool>,
     rx_sensor_val: mpsc::Receiver<Vec<Sensor>>,
-    tx_park: mpsc::Sender<bool>,
 }
 
 impl Sensors {
@@ -68,8 +67,7 @@ impl Sensors {
         let (tx_subscribe, rx_subscribe) = mpsc::channel::<Vec<String>>();
         let (tx_sensor_list, rx_sensor_list) = mpsc::channel();
         let (tx_list_rq, rx_list_rq) = mpsc::channel();
-        let (tx_sensor_val, rx_sensor_val) = mpsc::channel();
-        let (tx_park, rx_park) = mpsc::channel();
+        let (tx_sensor_val, rx_sensor_val) = mpsc::sync_channel(0);
 
         let sensor_thread = thread::spawn(move || {
             fn get_all_sensors_post(ptr: *mut i8) -> Vec<Hardware> {
@@ -156,14 +154,6 @@ impl Sensors {
                     break;
                 }
 
-                if match rx_park.try_recv() {
-                    Ok(val) => val,
-                    Err(_) => false,
-                } {
-                    println!("Received park signal!");
-                    thread::park();
-                }
-
                 match rx_poll.try_recv() {
                     Ok(received) => poll = Duration::from_millis(received),
                     Err(_) => {}
@@ -232,7 +222,6 @@ impl Sensors {
             rx_sensor_list,
             tx_list_rq,
             rx_sensor_val,
-            tx_park,
         }
     }
 
@@ -288,17 +277,5 @@ impl Sensors {
         self.rx_sensor_val
             .try_recv()
             .or(Err("Failed to receive value."))
-    }
-
-    pub fn pause(&self) -> Result<(), &'static str> {
-        // self.tx_park.send(true).or(Err("Failed to send park."))
-        Ok(())
-    }
-
-    pub fn unpause(&self) {
-        // match self.thread_handle.as_ref() {
-        //     Some(thread) => thread.thread().unpark(),
-        //     None => {}
-        // }
     }
 }
