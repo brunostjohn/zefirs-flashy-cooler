@@ -1,6 +1,6 @@
 use std::{
     ffi::{c_ulonglong, c_void, CString},
-    ptr::{null, null_mut},
+    ptr::null_mut,
     sync::{
         atomic::{AtomicBool, Ordering},
         Arc,

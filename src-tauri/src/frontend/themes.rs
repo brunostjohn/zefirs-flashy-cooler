@@ -6,7 +6,7 @@ use std::{
     time::Duration,
 };
 
-use crate::{CONFIG, RENDERER, SERVER, THEMES_PATH};
+use crate::{CONFIG, RENDERER, SENSORS, SERVER, THEMES_PATH};
 use color_thief::ColorFormat;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
@@ -26,6 +26,9 @@ pub fn now_serving() -> Theme {
             colour: Some("#FFFFFF".to_string()),
             description: "The default theme that comes compiled into the app.".to_string(),
             author: "Bruno St. John".to_string(),
+            version: "1.0.0".to_owned(),
+            tested_on: None,
+            customisable_parameters: vec![],
         };
     }
     get_theme(fs_name).unwrap()
@@ -33,6 +36,8 @@ pub fn now_serving() -> Theme {
 
 #[tauri::command]
 pub fn apply_default() {
+    let sensors = SENSORS.lock().unwrap();
+    let _ = sensors.pause();
     let mut server = SERVER.lock().unwrap();
     server.serve_path(None);
 }
@@ -207,6 +212,7 @@ pub fn apply_theme(fs_name: String) {
 
     if theme_path.as_path().exists() {
         server.serve_path(Some(theme_path));
+        drop(server);
         thread::sleep(Duration::from_millis(10));
         renderer.serve();
     }
@@ -235,13 +241,26 @@ pub async fn get_theme_folder() -> &'static str {
     return THEMES_PATH.to_str().unwrap();
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Debug)]
+pub struct Parameter {
+    pub r#type: String,
+    pub display_as: String,
+    pub min: Option<String>,
+    pub max: Option<String>,
+    pub step: Option<String>,
+    pub default: Option<String>,
+}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct Theme {
     pub name: String,
+    pub author: String,
+    pub description: String,
+    pub version: String,
     pub fs_name: String,
     pub colour: Option<String>,
-    pub description: String,
-    pub author: String,
+    pub tested_on: Option<Vec<String>>,
+    pub customisable_parameters: Vec<Parameter>,
 }
 
 #[tauri::command]
@@ -283,6 +302,9 @@ pub async fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
                             colour: None,
                             description: "Failed to load theme.json".to_string(),
                             author: "Failed to load".to_string(),
+                            customisable_parameters: vec![],
+                            version: "0.0.0".to_owned(),
+                            tested_on: None,
                         },
                     };
 
@@ -344,6 +366,17 @@ pub fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
             colour: None,
             description: res["description"].as_str().unwrap().to_string(),
             author: res["author"].as_str().unwrap().to_string(),
+            version: res["version"]
+                .as_str()
+                .or(Some("1.0.0"))
+                .unwrap()
+                .to_string(),
+            tested_on: serde_json::from_value(res["tested_on"].clone())
+                .or::<Option<Vec<String>>>(Ok(None))
+                .unwrap(),
+            customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
+                .or::<Vec<Parameter>>(Ok(vec![]))
+                .unwrap(),
         },
         Err(_) => Theme {
             name: fs_name.clone(),
@@ -351,6 +384,9 @@ pub fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
             colour: None,
             description: "Failed to load theme.json".to_string(),
             author: "Failed to load".to_string(),
+            tested_on: None,
+            version: "0.0.0".to_owned(),
+            customisable_parameters: vec![],
         },
     };
 

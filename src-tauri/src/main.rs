@@ -76,8 +76,6 @@ fn main() {
 
     drop(config);
 
-    let sensors = Sensors::new(None);
-
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![
             frontend_commands::remote_exit,
@@ -91,7 +89,12 @@ fn main() {
             themes::get_theme,
             themes::now_serving,
             themes::apply_default,
-            settings::get_start_minimised
+            settings::get_start_minimised,
+            settings::set_start_minimised,
+            settings::get_start_login,
+            settings::set_start_login,
+            settings::get_poll_rate,
+            settings::set_poll_rate
         ])
         .system_tray(SystemTray::new().with_menu(build_tray()))
         .on_system_tray_event(tray_event_handler)

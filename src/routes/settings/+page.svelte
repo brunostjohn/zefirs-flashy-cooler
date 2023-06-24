@@ -4,12 +4,48 @@
 
 	let themeFolder = "";
 
+	let startLoginSwitch: HTMLInputElement;
+	let startMinimisedSwitch: HTMLInputElement;
+
+	let startAtLogin = false;
+	let startMinimised = false;
+	let pollRate = 3000;
+
 	onMount(async () => {
 		themeFolder = await invoke("get_theme_folder");
+
+		startAtLogin = await invoke("get_start_login");
+		startMinimised = await invoke("get_start_minimised");
+		pollRate = await invoke("get_poll_rate");
 	});
 
 	const openThemeFolder = () => {
 		invoke("open_theme_folder");
+	};
+
+	const handleLoginChange = async () => {
+		await invoke("set_start_login", { setting: startLoginSwitch.checked });
+	};
+
+	const handleMinimisedChange = async () => {
+		await invoke("set_start_minimised", { setting: startMinimisedSwitch.checked });
+	};
+
+	// eslint-disable-next-line @typescript-eslint/no-empty-function
+	let timeout = setTimeout(() => {}, 10);
+
+	const handlerWrapper = () => {
+		if (pollRate > 10000) {
+			pollRate = 10000;
+		} else if (pollRate < 1000) {
+			pollRate = 1000;
+		}
+		clearTimeout(timeout);
+		timeout = setTimeout(handlePollRateChange, 300);
+	};
+
+	const handlePollRateChange = async () => {
+		await invoke("set_poll_rate", { pollRate });
 	};
 </script>
 
@@ -44,54 +80,71 @@
 	</div>
 	<div id="startAtLogin">
 		<div class="form-check form-switch">
-			<input class="form-check-input" type="checkbox" role="switch" id="loginSwitch" />
+			<input
+				class="form-check-input"
+				type="checkbox"
+				role="switch"
+				id="loginSwitch"
+				bind:this={startLoginSwitch}
+				checked={startAtLogin}
+				on:change={() => handleLoginChange()}
+			/>
 			<label class="form-check-label" for="loginSwitch">Start at login.</label>
 			<br /><small
 				>If checked, the app will start when you login to your user account on this system.</small
 			>
 		</div>
 	</div>
-	<div id="renderAtStartup">
-		<div class="form-check form-switch">
-			<input class="form-check-input" type="checkbox" role="switch" id="renderAtStartupSwitch" />
-			<label class="form-check-label" for="renderAtStartupSwitch"
-				>Resume rendering on startup.</label
-			>
-			<br /><small
-				>This means that, when opened, the app will start rendering the theme it was rendering
-				before being closed without the Start Rendering button being pressed.</small
-			>
-		</div>
-	</div>
 	<div id="startMinimised">
 		<div class="form-check form-switch">
-			<input class="form-check-input" type="checkbox" role="switch" id="startMinimisedSwitch" />
+			<input
+				class="form-check-input"
+				type="checkbox"
+				role="switch"
+				id="startMinimisedSwitch"
+				bind:this={startMinimisedSwitch}
+				checked={startMinimised}
+				on:change={() => handleMinimisedChange()}
+			/>
 			<label class="form-check-label" for="startMinimisedSwitch">Start minimised.</label>
 			<br /><small>If checked, the app will start minimised to system tray.</small>
 		</div>
 	</div>
-	<button type="button" class="btn btn-outline-success" id="apply">Apply settings</button>
-	<br /><small id="applyAlert">Settings will be applied at next startup.</small>
-	<hr />
-	<!-- <div id="systemHealth">
-		<h3>Health</h3>
-		<p>iCUE: <span class="badge rounded-pill" id="icue">Not running</span></p>
-		<small
-			>While iCUE is running, weird stuff may happen. The display might disconnect, frames may not
-			be displayed correctly, etc. Please make sure to disable iCUE's autostart feature while using
-			this app directly upon login. I recommend SignalRGB as a companion app for this to still use
-			all your RGB with this app. And it's better than iCUE.</small
-		>
-		<br />
-		<br />
-		<p>LibreHardwareMonitor: <span class="badge rounded-pill" id="libre">Running</span></p>
-		<small
-			>LibreHardwareMonitor is needed for the app's system information capabilities. If not running,
-			themes using system information may not appear in the Themes tab. Please remember that you
-			need to restart this app for system information to work after starting LibreHardwareMonitor.</small
-		>
+	<div id="pollRate">
+		<label for="pollRate" class="form-label">Sensor poll rate.</label>
+		<div id="pollRateFlex">
+			<p>0s</p>
+			<input
+				type="range"
+				class="form-range"
+				min="1000"
+				max="10000"
+				step="1"
+				id="pollRate"
+				bind:value={pollRate}
+				on:change={handlerWrapper}
+			/>
+			<p>10s</p>
+		</div>
+		<div class="input-group mb-3">
+			<span class="input-group-text" id="pollrate">Current value in ms:</span>
+			<input
+				type="number"
+				min="1000"
+				max="10000"
+				class="form-control"
+				step="1"
+				aria-describedby="pollrate"
+				bind:value={pollRate}
+				on:change={handlerWrapper}
+			/>
+		</div>
+		<small>
+			The lower this value is, the more will sensor readings be up-to-date. This, however, comes
+			with higher CPU usage.
+		</small>
 	</div>
-	<hr /> -->
+	<hr />
 	<div id="folders">
 		<h3>Folders</h3>
 		<button
@@ -100,12 +153,14 @@
 			id="themeFolderBtn"
 			on:click={openThemeFolder}>Open theme folder</button
 		>
-		<br /><small
+		<br /><small class="theme-intro"
 			>This is the folder in which themes are stored. To add one, just drag the downloaded theme
 			into the theme folder. WARNING: Themes are full programs. Please make sure they're from a
 			trusted source. They can do bad things to your computer. Trust but verify.</small
 		>
-		<br /><small id="themeFolderText">Current theme folder: {themeFolder}</small>
+		<br /><br /><small id="themeFolderText">Current theme folder:</small><br /><small
+			>{themeFolder}</small
+		>
 	</div>
 </div>
 

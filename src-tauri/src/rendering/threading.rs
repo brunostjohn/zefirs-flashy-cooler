@@ -5,16 +5,28 @@ use capellix::Capellix;
 mod engine;
 use engine::Ultralight;
 use image::{self, RgbImage};
+use serde::{Deserialize, Serialize};
 
+use std::fs::{self};
+use std::path::PathBuf;
 use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
+use std::vec;
+
+use crate::{SENSORS, SERVER, THEMES_PATH};
 
 pub struct Renderer {
     thread: Option<JoinHandle<()>>,
     end_channel: mpsc::SyncSender<bool>,
     theme_channel: mpsc::Sender<bool>,
     fps_channel: mpsc::Sender<u64>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ThemeConfigItem {
+    pub r#type: String,
+    pub value: String,
 }
 
 impl Renderer {
@@ -49,7 +61,9 @@ impl Renderer {
                 Err(err) => println!("{:?}", err),
             };
 
-            let mut thing = 0;
+            let mut theme_config_path = PathBuf::new();
+            let mut theme_config: Vec<ThemeConfigItem> = vec![];
+
             loop {
                 engine.update();
 
@@ -81,10 +95,6 @@ impl Renderer {
                         false
                     }
                 } {
-                    engine.call_js_script(
-                        format!("document.dispatchEvent(new CustomEvent('sensorsUpdated', {{ 'detail': {{'cpu': '{:?}'}} }}))", &thing),
-                    );
-                    thing += 1;
                     engine.render();
                     let image = match engine.get_bitmap() {
                         Ok(img) => img,
@@ -130,6 +140,64 @@ impl Renderer {
                         Ok(_) => {}
                         Err(_) => println!("Failed to reload webpage!"),
                     };
+
+                    if theme_config.len() > 0 {
+                        let theme_config_str =
+                            serde_json::to_string::<Vec<ThemeConfigItem>>(&theme_config)
+                                .or::<Result<String, &'static str>>(Ok("[]".to_owned()))
+                                .unwrap();
+
+                        let _ = fs::write(&theme_config_path, theme_config_str);
+                    }
+
+                    let server = SERVER.lock().unwrap();
+                    let now_serving = server.now_serving();
+                    drop(server);
+                    let mut theme_path = THEMES_PATH.clone();
+                    theme_path.push(now_serving);
+                    theme_path.push("config.json");
+
+                    if theme_path.exists() {
+                        theme_config_path = theme_path.clone();
+
+                        let theme_config_unparsed = fs::read_to_string(theme_path)
+                            .or::<Result<String, &'static str>>(Ok("".to_owned()))
+                            .unwrap();
+
+                        let theme_config_parsed: Vec<ThemeConfigItem> =
+                            serde_json::from_str(&theme_config_unparsed)
+                                .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
+                                .unwrap();
+
+                        theme_config = theme_config_parsed;
+
+                        let sensors_only: Vec<String> = theme_config
+                            .iter()
+                            .filter(|x| x.r#type == "sensor")
+                            .map(|x| x.value.clone())
+                            .collect();
+
+                        if sensors_only.len() > 0 {
+                            let sensors = SENSORS.lock().unwrap();
+                            sensors.subscribe(sensors_only);
+                            drop(sensors);
+                        }
+
+                        let everything_else: Vec<ThemeConfigItem> = theme_config
+                            .iter()
+                            .filter(|x| x.r#type != "sensor")
+                            .map(|x| x.to_owned())
+                            .collect::<Vec<ThemeConfigItem>>();
+
+                        let everything_else_string =
+                            serde_json::to_string::<Vec<ThemeConfigItem>>(&everything_else)
+                                .or::<Result<String, &'static str>>(Ok("[]".to_string()))
+                                .unwrap();
+
+                        engine.call_js_script(
+                        format!("document.dispatchEvent(new CustomEvent('configLoaded', JSON.parse('{:?}')))", &everything_else_string),
+                        );
+                    }
                 }
 
                 if match rx_end.try_recv() {
