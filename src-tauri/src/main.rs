@@ -20,6 +20,9 @@ use config::Config;
 mod lifecycle;
 use lifecycle::setup;
 
+#[path = "sensors/sensors.rs"]
+mod sensors;
+
 #[path = "frontend/tray.rs"]
 mod tray;
 use once_cell::sync::Lazy;
@@ -38,6 +41,8 @@ use std::{
 use tauri::SystemTray;
 
 use rendering::Renderer;
+
+use crate::sensors::Sensors;
 
 lazy_static! {
     pub static ref RENDERER: Arc<Mutex<Renderer>> = Arc::new(Mutex::new(Renderer::new(25)));
@@ -66,6 +71,8 @@ fn main() {
     config.write_to_drive();
 
     drop(config);
+
+    let sensors = Sensors::new(None);
 
     tauri::Builder::default()
         .invoke_handler(tauri::generate_handler![

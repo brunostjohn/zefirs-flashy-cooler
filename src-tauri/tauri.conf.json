@@ -74,7 +74,10 @@
 				"./resources/icudt67l.dat",
 				"./resources/Ultralight.dll",
 				"./resources/UltralightCore.dll",
-				"./resources/WebCore.dll"
+				"./resources/WebCore.dll",
+				"./resources/libMonoPosixHelper.dll",
+				"./resources/LibreHardwareMonitorNative.dll",
+				"./resources/MonoPosixHelper.dll"
 			],
 			"shortDescription": "",
 			"targets": "all",

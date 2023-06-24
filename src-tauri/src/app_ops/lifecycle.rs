@@ -3,7 +3,7 @@ use std::{error::Error, thread, time::Duration};
 use tauri::{App, Manager};
 
 use window_shadows::set_shadow;
-use window_vibrancy::{apply_acrylic, apply_blur, apply_mica, apply_vibrancy};
+use window_vibrancy::{apply_acrylic, apply_mica};
 
 #[path = "../config/ensure_dirs.rs"]
 mod ensure_dirs;
