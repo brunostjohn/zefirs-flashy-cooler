@@ -8,7 +8,6 @@ use image::{self, RgbImage};
 use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
-use std::path::PathBuf;
 use std::sync::mpsc;
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
@@ -63,8 +62,6 @@ impl Renderer {
                 Err(err) => println!("{:?}", err),
             };
 
-            let mut theme_config_path = PathBuf::new();
-            let mut theme_config: Vec<ThemeConfigItem> = vec![];
             let mut sensor_flag = false;
             let mut sensor_values = vec![];
 
@@ -175,15 +172,6 @@ impl Renderer {
                         Err(_) => println!("Failed to reload webpage!"),
                     };
 
-                    if theme_config.len() > 0 {
-                        let theme_config_str =
-                            serde_json::to_string::<Vec<ThemeConfigItem>>(&theme_config)
-                                .or::<Result<String, &'static str>>(Ok("[]".to_owned()))
-                                .unwrap();
-
-                        let _ = fs::write(&theme_config_path, theme_config_str);
-                    }
-
                     let server = SERVER.lock().unwrap();
                     let now_serving = server.now_serving();
                     drop(server);
@@ -192,8 +180,6 @@ impl Renderer {
                     theme_path.push("config.json");
 
                     if theme_path.exists() {
-                        theme_config_path = theme_path.clone();
-
                         let theme_config_unparsed = fs::read_to_string(theme_path)
                             .or::<Result<String, &'static str>>(Ok("".to_owned()))
                             .unwrap();
@@ -203,7 +189,7 @@ impl Renderer {
                                 .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
                                 .unwrap();
 
-                        theme_config = theme_config_parsed;
+                        let theme_config = theme_config_parsed;
 
                         let sensors_only: Vec<String> = theme_config
                             .iter()
