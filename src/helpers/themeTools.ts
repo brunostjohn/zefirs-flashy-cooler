@@ -10,6 +10,17 @@ export interface Theme {
 	image_src: string;
 	colour: string;
 	dls?: number;
+	customisable_parameters: Parameter[];
+}
+
+export interface Parameter {
+	name: string;
+	type: string;
+	max: string;
+	min: string;
+	step: string;
+	display_as: string;
+	default: string;
 }
 
 interface PreTheme {

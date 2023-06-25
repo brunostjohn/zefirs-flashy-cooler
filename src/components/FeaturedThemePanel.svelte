@@ -13,7 +13,7 @@
 		panel.classList.add("clicked-panel");
 		setTimeout(() => {
 			panel.classList.remove("clicked-panel");
-			goto(`/themes/${theme.fs_name}`);
+			goto(`/themes/fsName?fsName=${encodeURIComponent(theme.fs_name)}`);
 		}, 150);
 	};
 </script>

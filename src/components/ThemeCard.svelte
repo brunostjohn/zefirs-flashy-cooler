@@ -7,7 +7,7 @@
 	export let fsName: string;
 	// export let networked = false;
 	const onClick = (fsName: string) => {
-		goto(`/themes/${encodeURIComponent(fsName)}`);
+		goto(`/themes/fsName?fsName=${encodeURIComponent(fsName)}`);
 	};
 </script>
 

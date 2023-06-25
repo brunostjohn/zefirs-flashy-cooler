@@ -2,6 +2,7 @@
 	import "bootstrap/dist/css/bootstrap.min.css";
 	import "./background.css";
 	// import "bootstrap/dist/js/bootstrap.bundle";
+	// import type { appWindow as aw } from "@tauri-apps/api/window";
 	import { appWindow } from "@tauri-apps/api/window";
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { page } from "$app/stores";
@@ -12,8 +13,18 @@
 
 	import { fly } from "svelte/transition";
 	import { cubicIn, cubicOut } from "svelte/easing";
+	// import { onMount } from "svelte";
+
+	// eslint-disable-next-line no-undef
+	// let appWindow: typeof aw;
 
 	export let data;
+
+	// onMount(async () => {
+	// 	// eslint-disable-next-line no-import-assign, @typescript-eslint/ban-ts-comment
+	// 	// @ts-ignore
+	// 	appWindow = await import("@tauri-apps/api/window");
+	// });
 
 	const duration = 200;
 	const delay = duration + 50;

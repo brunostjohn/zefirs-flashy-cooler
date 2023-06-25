@@ -3,12 +3,18 @@
 	import SearchBar from "../../../components/SearchBar.svelte";
 	import ThemeCard from "../../../components/ThemeCard.svelte";
 	import { fade } from "svelte/transition";
+	import { onMount } from "svelte";
+	import { getThemes, type Theme } from "../../../helpers/themeTools";
 
 	let transitionLength = 200;
 
 	let searchValue = "";
 
-	export let data;
+	let data = { themes: [] as Theme[] };
+
+	onMount(async () => {
+		data.themes = await getThemes();
+	});
 </script>
 
 <div id="everything">

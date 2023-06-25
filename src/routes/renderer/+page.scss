@@ -1,65 +1,104 @@
-option {
-	background-color: #080d14;
+@import "../../styles/mixins.scss";
+
+.loading-container {
+	@include flex-center;
+	height: 50vh;
 }
 
-.btn {
-	margin: 4px;
-}
+.theme-collect {
+	text-align: left;
 
-#maindiv {
-	height: 100%;
-	min-height: 100%;
-}
+	h1 {
+		margin-bottom: 0.1rem;
+	}
 
-.sensorPicker {
-	padding: 2rem;
-	padding-top: 1rem;
-	border-radius: 10px;
-	border: 1px solid var(--bs-secondary-bg);
+	h3 {
+		margin-bottom: 1rem;
+	}
+
 	margin-bottom: 1rem;
 }
 
-#smaller {
-	max-width: 30%;
-	width: 30%;
-	outline-style: solid;
-	outline-width: 1px;
-	outline-color: var(--bs-secondary-bg);
-	text-align: center;
-	vertical-align: middle;
+.info-content {
+	margin-left: 5rem;
+	margin-right: 5rem;
+	margin-top: 2rem;
+
+	display: flex;
+	flex-direction: row;
 }
 
-#larger {
-	max-width: 70%;
-	width: 70%;
-}
+.preview-card {
+	// float: right;
+	display: flex;
+	flex-direction: column;
+	// max-width: 12rem;
+	// width: 12rem;
+	// max-height: 12rem;
+	margin-top: 0.75rem;
 
-.card {
-	margin: 10px;
-	background-color: transparent;
-}
-
-#preview {
-	border-radius: 50%;
-	margin: 3px;
-	max-width: 15rem;
-	max-height: 15rem;
 	margin-left: auto;
-	margin-right: auto;
-	display: block;
+
+	.preview-image {
+		width: 18rem;
+		height: 18rem;
+		border-radius: 15px;
+	}
 }
 
-h2 {
-	text-align: right;
+.dls {
+	margin-left: auto;
+	margin-right: 5rem;
 }
 
-.full .clr-field button {
-	width: 100%;
-	height: 100%;
-	border-radius: 5px;
+.btn-group {
+	margin-top: 1rem;
+	// margin-left: auto;
+	// margin-right: 5rem;
+
+	button {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 8rem;
+		height: 4rem;
+		// text-align: center !important;
+
+		&:hover {
+			svg {
+				filter: invert(100%);
+			}
+		}
+
+		svg {
+			position: relative;
+			right: 4px;
+			top: 1px;
+
+			width: 2rem;
+			height: 2rem;
+
+			transition: 100ms filter ease-in-out;
+		}
+		.svg-primary {
+			filter: invert(41%) sepia(92%) saturate(4359%) hue-rotate(206deg) brightness(96%)
+				contrast(108%);
+		}
+
+		.svg-success {
+			filter: invert(42%) sepia(14%) saturate(2131%) hue-rotate(100deg) brightness(94%)
+				contrast(89%);
+		}
+
+		.svg-danger {
+			filter: invert(40%) sepia(75%) saturate(1860%) hue-rotate(326deg) brightness(82%)
+				contrast(115%);
+		}
+	}
 }
 
-.col-container {
+.controllable {
+	margin-top: 1rem;
 	margin-left: 5rem;
 	margin-right: 5rem;
 }

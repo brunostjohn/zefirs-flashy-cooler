@@ -19,6 +19,7 @@
 		author: "",
 		image_src: "",
 		colour: "",
+		customisable_parameters: [],
 	};
 
 	let networked = true;
@@ -27,12 +28,14 @@
 
 	let noDls = -1;
 
-	const fsName = $page.params.fsName;
+	let fsName = "";
 
 	let installerListen: UnlistenFn;
 	let uninstallerListen: UnlistenFn;
 
 	onMount(async () => {
+		fsName = $page.url.searchParams.get("fsName") ?? "";
+
 		try {
 			const themeData = await returnLocalOrNetworked(fsName);
 			theme = themeData.theme;

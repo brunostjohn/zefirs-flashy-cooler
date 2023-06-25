@@ -243,6 +243,7 @@ pub async fn get_theme_folder() -> &'static str {
 pub struct Parameter {
     pub r#type: String,
     pub display_as: String,
+    pub name: String,
     pub min: Option<String>,
     pub max: Option<String>,
     pub step: Option<String>,
