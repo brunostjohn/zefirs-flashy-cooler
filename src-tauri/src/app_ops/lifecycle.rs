@@ -1,6 +1,6 @@
-use std::{error::Error, thread, time::Duration};
+use std::{error::Error, io::Write, net::TcpStream, thread, time::Duration};
 
-use tauri::{App, Manager};
+use tauri::{App, Manager, Window};
 
 use window_shadows::set_shadow;
 use window_vibrancy::{apply_acrylic, apply_mica};
@@ -8,13 +8,15 @@ use window_vibrancy::{apply_acrylic, apply_mica};
 #[path = "../config/ensure_dirs.rs"]
 mod ensure_dirs;
 
-use crate::{CONFIG, RENDERER, SERVER, THEMES_PATH};
+use crate::{CONFIG, RENDERER, SENSORS, SERVER, THEMES_PATH};
 
 use self::ensure_dirs::ensure_dirs;
 
 #[allow(dead_code)]
-pub fn exit() {
+pub fn exit(window: &Window) {
     println!("Attempting exit.");
+
+    let _ = window.close();
 
     let config = CONFIG.lock().unwrap();
     config.write_to_drive();
@@ -30,13 +32,37 @@ pub fn exit() {
         }
     };
 
-    // let mut server = match SERVER.lock() {
-    //     Ok(result) => result,
-    //     Err(_) => return,
-    // };
-
     renderer.stop();
-    // server.stop();
+
+    let mut sensors = match SENSORS.lock() {
+        Ok(result) => {
+            println!("Acquired sensor lock!");
+            result
+        }
+        Err(_) => {
+            println!("Failed to get sensor lock");
+            return;
+        }
+    };
+
+    sensors.stop();
+
+    let mut server = match SERVER.lock() {
+        Ok(result) => {
+            println!("Acquired server lock!");
+            result
+        }
+        Err(_) => {
+            println!("Failed to lock server!");
+            return;
+        }
+    };
+
+    server.stop();
+
+    if let Ok(mut stream) = TcpStream::connect("127.0.0.1:2137") {
+        let _ = stream.write(&[0x00]);
+    }
 
     std::process::exit(0);
 }
@@ -64,6 +90,8 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
             server.serve_path(None);
         }
     };
+
+    drop(server);
 
     thread::sleep(Duration::from_millis(10));
     renderer.serve();

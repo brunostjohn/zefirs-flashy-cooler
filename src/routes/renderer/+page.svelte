@@ -8,6 +8,11 @@
 	import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 	import Boolean from "../../components/parameters/Boolean.svelte";
 	import type { Theme } from "../../helpers/themeTools";
+	import Sensor from "../../components/parameters/Sensor.svelte";
+	import Range from "../../components/parameters/Range.svelte";
+	import Colour from "../../components/parameters/Colour.svelte";
+	import Text from "../../components/parameters/Text.svelte";
+	import File from "../../components/parameters/File.svelte";
 
 	let theme: Theme = {
 		name: "undefined",
@@ -91,10 +96,21 @@
 	</div>
 	{#if theme.customisable_parameters.length > 0}
 		<div class="controllable">
+			<hr />
 			<h2>Customisable parameters</h2>
 			{#each theme.customisable_parameters as parameter}
 				{#if parameter.type === "boolean"}
 					<Boolean {parameter} />
+				{:else if parameter.type === "sensor"}
+					<Sensor {parameter} />
+				{:else if parameter.type === "range"}
+					<Range {parameter} />
+				{:else if parameter.type === "colour"}
+					<Colour {parameter} />
+				{:else if parameter.type === "text"}
+					<Text {parameter} />
+				{:else if parameter.type === "file"}
+					<File {parameter} />
 				{/if}
 			{/each}
 		</div>

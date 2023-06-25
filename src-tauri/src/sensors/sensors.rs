@@ -29,20 +29,20 @@ extern "C" {
     fn free_mem(ptr: *mut i8);
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Hardware {
     pub name: String,
     pub subhardware: Option<Vec<Subhardware>>,
     pub sensors: Option<Vec<Sensor>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Subhardware {
     pub name: String,
     pub sensors: Vec<Sensor>,
 }
 
-#[derive(Deserialize, Debug, Serialize)]
+#[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct Sensor {
     pub sensor: String,
     pub value: String,
@@ -73,7 +73,7 @@ impl Sensors {
             fn get_all_sensors_post(ptr: *mut i8) -> Vec<Hardware> {
                 let sensor_string;
                 unsafe {
-                    let strc = CString::from_raw(ptr);
+                    let strc = CStr::from_ptr(ptr);
 
                     sensor_string = match strc.to_str() {
                         Ok(res) => res.to_owned(),
@@ -154,11 +154,6 @@ impl Sensors {
                     break;
                 }
 
-                match rx_poll.try_recv() {
-                    Ok(received) => poll = Duration::from_millis(received),
-                    Err(_) => {}
-                }
-
                 if match rx_list_rq.try_recv() {
                     Ok(val) => val,
                     Err(_) => false,
@@ -171,6 +166,11 @@ impl Sensors {
                         Ok(_) => {}
                         Err(_) => println!("Failed to send list."),
                     };
+                }
+
+                match rx_poll.try_recv() {
+                    Ok(received) => poll = Duration::from_millis(received),
+                    Err(_) => {}
                 }
 
                 match rx_subscribe.try_recv() {

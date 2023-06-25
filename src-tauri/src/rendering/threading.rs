@@ -20,12 +20,14 @@ pub struct Renderer {
     end_channel: mpsc::SyncSender<bool>,
     theme_channel: mpsc::Sender<bool>,
     fps_channel: mpsc::Sender<u64>,
+    reload_config_channel: mpsc::Sender<bool>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ThemeConfigItem {
     pub r#type: String,
     pub value: String,
+    pub name: String,
 }
 
 impl Renderer {
@@ -33,6 +35,7 @@ impl Renderer {
         let (tx_theme, rx_theme) = mpsc::channel();
         let (tx_end, rx_end) = mpsc::sync_channel(2);
         let (tx_fps, rx_fps) = mpsc::channel();
+        let (tx_reload, rx_reload) = mpsc::channel();
 
         let render = thread::spawn(move || {
             let mut engine = Ultralight::new();
@@ -111,7 +114,9 @@ impl Renderer {
                         let sensors = SENSORS.lock().unwrap();
                         match sensors.get_sensor_value() {
                             Ok(result) => {
-                                sensor_values = result;
+                                if result[0].value != "a" && result[0].r#type != "a" {
+                                    sensor_values = result;
+                                }
                             }
                             Err(_) => {}
                         };
@@ -171,7 +176,12 @@ impl Renderer {
                         Ok(_) => {}
                         Err(_) => println!("Failed to reload webpage!"),
                     };
+                }
 
+                if match rx_reload.try_recv() {
+                    Ok(result) => result,
+                    Err(_) => false,
+                } {
                     let server = SERVER.lock().unwrap();
                     let now_serving = server.now_serving();
                     drop(server);
@@ -259,6 +269,7 @@ impl Renderer {
             theme_channel: tx_theme,
             end_channel: tx_end,
             fps_channel: tx_fps,
+            reload_config_channel: tx_reload,
         }
     }
 
@@ -291,6 +302,16 @@ impl Renderer {
         match self.theme_channel.send(true) {
             Err(_) => {
                 println!("Failed to request refresh!");
+            }
+            _ => {}
+        };
+        self.reload_theme_config();
+    }
+
+    pub fn reload_theme_config(&self) {
+        match self.reload_config_channel.send(true) {
+            Err(_) => {
+                println!("Failed to request config reload!");
             }
             _ => {}
         };

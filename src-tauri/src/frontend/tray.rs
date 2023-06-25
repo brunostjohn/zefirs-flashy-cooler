@@ -6,7 +6,9 @@ use window::recreate_main_window;
 mod lifecycle;
 use lifecycle::exit;
 
-use tauri::{AppHandle, CustomMenuItem, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem};
+use tauri::{
+    AppHandle, CustomMenuItem, Manager, SystemTrayEvent, SystemTrayMenu, SystemTrayMenuItem,
+};
 
 pub fn build_tray() -> SystemTrayMenu {
     let open = CustomMenuItem::new("open".to_string(), "Open Window");
@@ -28,7 +30,7 @@ pub fn tray_event_handler(app: &AppHandle, event: SystemTrayEvent) {
         }
         SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
             "quit" => {
-                exit();
+                exit(&app.get_window("main").unwrap());
             }
             "open" => {
                 recreate_main_window(app);

@@ -2,7 +2,7 @@ use std::{
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,
-    sync::mpsc,
+    sync::mpsc::{self, TryRecvError},
     thread::{self, JoinHandle},
 };
 
@@ -10,14 +10,14 @@ mod fs;
 
 pub struct Server {
     thread: Option<JoinHandle<()>>,
-    end_channel: mpsc::SyncSender<bool>,
+    end_channel: mpsc::Sender<bool>,
     path_channel: mpsc::Sender<Option<PathBuf>>,
     serving_fs_name: String,
 }
 
 impl Server {
     pub fn new(path: Option<PathBuf>) -> Self {
-        let (tx_end, rx_end) = mpsc::sync_channel(2);
+        let (tx_end, rx_end) = mpsc::channel();
         let (tx_path, rx_path) = mpsc::channel();
 
         let now_serving: String = match &path {
@@ -42,13 +42,6 @@ impl Server {
             for stream in listener.incoming() {
                 let stream = stream.unwrap();
 
-                if match rx_end.try_recv() {
-                    Ok(result) => result,
-                    _ => false,
-                } {
-                    break;
-                }
-
                 match rx_path.try_recv() {
                     Ok(path) => {
                         fs_path = path;
@@ -59,6 +52,14 @@ impl Server {
                 match &fs_path {
                     Some(path) => Server::handle_set_path(stream, path),
                     None => Server::handle_default(stream),
+                }
+
+                if match rx_end.try_recv() {
+                    Ok(result) => result,
+                    Err(TryRecvError::Empty) => false,
+                    Err(TryRecvError::Disconnected) => true,
+                } {
+                    break;
                 }
             }
         });
@@ -149,18 +150,6 @@ impl Server {
             Err(_) => println!("Failed to send end signal to thread: server."),
             _ => {}
         };
-
-        match self.thread.take() {
-            Some(thread) => {
-                match thread.join() {
-                    Err(_) => {
-                        println!("Failed to join thread: server.")
-                    }
-                    _ => {}
-                };
-            }
-            _ => {}
-        }
     }
 
     pub fn serve_path(&mut self, path: Option<PathBuf>) {

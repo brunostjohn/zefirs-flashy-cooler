@@ -26,6 +26,7 @@ mod sensors;
 #[path = "frontend/tray.rs"]
 mod tray;
 use once_cell::sync::Lazy;
+use sensors::Hardware;
 use tray::{build_tray, tray_event_handler};
 
 #[path = "file_server/server.rs"]
@@ -59,6 +60,7 @@ lazy_static! {
     pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::load_from_drive()));
     pub static ref SERVER: Arc<Mutex<Server>> = Arc::new(Mutex::new(Server::new(None)));
     pub static ref SENSORS: Arc<Mutex<Sensors>> = Arc::new(Mutex::new(Sensors::new(None)));
+    pub static ref SENSOR_TREE: Arc<Mutex<Vec<Hardware>>> = Arc::new(Mutex::new(vec![]));
 }
 
 pub static THEMES_PATH: Lazy<PathBuf> = Lazy::new(|| {
@@ -71,9 +73,23 @@ pub static THEMES_PATH: Lazy<PathBuf> = Lazy::new(|| {
 });
 
 fn main() {
+    let sensors_arc = SENSORS.clone();
+    let sensors = sensors_arc.lock().unwrap();
+
+    let _ = sensors.get_sensor_value();
+
+    let all = sensors.get_all_sensors().unwrap();
+    drop(sensors);
+
+    let sensor_tree_arc = SENSOR_TREE.clone();
+    let mut sensor_tree = sensor_tree_arc.lock().unwrap();
+
+    sensor_tree.extend(all);
+
+    drop(sensor_tree);
+
     let config = CONFIG.lock().unwrap();
     config.write_to_drive();
-
     drop(config);
 
     tauri::Builder::default()
@@ -89,6 +105,11 @@ fn main() {
             themes::get_theme,
             themes::now_serving,
             themes::apply_default,
+            themes::get_current_theme_parameter,
+            themes::apply_theme_parameter,
+            themes::select_file_and_save,
+            themes::request_sensor_tree,
+            themes::get_all_sensors,
             settings::get_start_minimised,
             settings::set_start_minimised,
             settings::get_start_login,

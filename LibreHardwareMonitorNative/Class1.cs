@@ -27,7 +27,8 @@ public struct PreSensor
 namespace LibreHardwareMonitorNative
 {
 
-    public class LibreHardwareMonitorNative {
+    public class LibreHardwareMonitorNative
+    {
         [UnmanagedCallersOnly(EntryPoint = "free_mem")]
         public static void Free(IntPtr ptr)
         {
@@ -61,7 +62,8 @@ namespace LibreHardwareMonitorNative
         public static void CloseComputer(IntPtr gchPtr)
         {
             GCHandle gch = GCHandle.FromIntPtr(gchPtr);
-            Computer computer = (Computer)gch.Target;
+            object ob = gch.Target;
+            Computer computer = (Computer)ob;
             computer.Close();
             gch.Free();
         }
@@ -77,13 +79,25 @@ namespace LibreHardwareMonitorNative
             //if (sensorPathString == IntPtr.Zero) return Marshal.StringToHGlobalAnsi("failed");
             string sensor = Marshal.PtrToStringAnsi(sensorPathString) ?? "failed";
 
-            if (sensor != "failed") {
+            if (sensor == "failed" || sensor.Length < 1)
+            {
+                PreSensor alter = new PreSensor();
+                alter.sensor = Marshal.StringToHGlobalAnsi("a");
+                alter.value = Marshal.StringToHGlobalAnsi("a");
+                alter.type = Marshal.StringToHGlobalAnsi("a");
+                alter.parent_hw_type = Marshal.StringToHGlobalAnsi("a");
+
+                return alter;
+            }
+
+            if (sensor != "failed")
+            {
                 string[] splitPath = sensor.Split("/");
 
-                IHardware parent = computer.Hardware.Where(x => x.Name == splitPath[0]).FirstOrDefault() ?? computer.Hardware.First();
+                IHardware parent = computer.Hardware.FirstOrDefault(x => x.Name == splitPath[0]) ?? computer.Hardware.First();
                 if (parent == null)
                 {
-                   // return Marshal.StringToHGlobalAnsi("failed");
+                    // return Marshal.StringToHGlobalAnsi("failed");
                 }
 
                 ISensor sensorClass;
@@ -91,12 +105,13 @@ namespace LibreHardwareMonitorNative
 
                 if (splitPath[1] == "subhardware")
                 {
-                    IHardware sub = parent.SubHardware.Where(x => x.Name == splitPath[2]).FirstOrDefault() ?? parent.SubHardware.First();
+                    IHardware sub = parent.SubHardware.FirstOrDefault(x => x.Name == splitPath[2]) ?? parent.SubHardware.First();
                     hwType = sub.HardwareType.ToString();
                     sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
-                } else
+                }
+                else
                 {
-                    sensorClass = parent.Sensors.Where(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]).FirstOrDefault() ?? parent.Sensors.First();
+                    sensorClass = parent.Sensors.FirstOrDefault(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]) ?? parent.Sensors.First();
                     hwType = parent.HardwareType.ToString();
                 }
 
@@ -120,7 +135,8 @@ namespace LibreHardwareMonitorNative
         public static IntPtr GetAllSensors(IntPtr gchPtr)
         {
             GCHandle gch = GCHandle.FromIntPtr(gchPtr);
-            Computer computer = (Computer)gch.Target;
+            object ob = gch.Target;
+            Computer computer = (Computer)ob;
             string serialised = "[";
 
             computer.Accept(new UpdateVisitor());
