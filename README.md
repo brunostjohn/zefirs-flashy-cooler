@@ -1,4 +1,4 @@
-# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/static/images/favicon-32x32.png) Zefir's Flashy Cooler
+# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/src-tauri/icons/32x32.png) Zefir's Flashy Cooler
 
 ## This branch is a transition to Tauri and Rust away from Electron. This app is still being worked on, it'll take time before this is fully cooked. Thank you for your patience.
 
