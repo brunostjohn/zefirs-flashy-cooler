@@ -1,0 +1,101 @@
+{
+	"build": {
+		"beforeBuildCommand": "npm run build",
+		"beforeDevCommand": "npm run dev",
+		"devPath": "http://localhost:5173",
+		"distDir": "../build"
+	},
+	"package": {
+		"productName": "zefirs-flashy-cooler",
+		"version": "0.1.0"
+	},
+	"tauri": {
+    "systemTray": {
+      "iconPath": "icons/favicon-32x32.png"
+    },
+		"allowlist": {
+			"all": false,
+			"path": {
+				"all": true
+			},
+			"window": {
+				"all": false,
+				"close": true,
+				"hide": true,
+				"show": true,
+				"maximize": true,
+				"minimize": true,
+				"unmaximize": true,
+				"unminimize": true,
+				"startDragging": true
+			},
+			"protocol": {
+				"asset": true,
+				"assetScope": ["$DOCUMENT/Zefir's Flashy Cooler/**/*.jpg"]
+			},
+			"fs": {
+				"readFile": true,
+				"readDir": true
+			}
+		},
+		"bundle": {
+			"active": true,
+			"category": "DeveloperTool",
+			"copyright": "",
+			"externalBin": [],
+			"icon": [
+				"icons/32x32.png",
+				"icons/128x128.png",
+				"icons/128x128@2x.png",
+				"icons/icon.icns",
+				"icons/icon.ico"
+			],
+			"identifier": "com.brunostjohn.zefirsflashycooler",
+			"longDescription": "",
+			"resources": [
+				"./resources/AppCore.dll",
+				"./resources/cacert.pem",
+				"./resources/gio-2.0-0.dll",
+				"./resources/glib-2.0-0.dll",
+				"./resources/gmodule-2.0-0.dll",
+				"./resources/gobject-2.0-0.dll",
+				"./resources/gstreamer-full-1.0.dll",
+				"./resources/gthread-2.0-0.dll",
+				"./resources/icudt67l.dat",
+				"./resources/Ultralight.dll",
+				"./resources/UltralightCore.dll",
+				"./resources/WebCore.dll",
+				"./resources/libMonoPosixHelper.dll",
+				"./resources/MonoPosixHelper.dll"
+			],
+			"shortDescription": "",
+			"targets": ["nsis", "updater"],
+			"windows": {
+				"certificateThumbprint": null,
+				"digestAlgorithm": "sha256",
+				"timestampUrl": ""
+			}
+		},
+		"security": {
+			"csp": ""
+		},
+		"updater": {
+			"active": false
+		},
+		"windows": [
+			{
+				"fullscreen": false,
+				"height": 800,
+        		"label": "main",
+        		"minHeight": 800,
+				"resizable": true,
+				"title": "Zefir's Flashy Cooler",
+				"width": 1130,
+        		"minWidth": 1130,
+				"transparent": true,
+        		"theme": "Dark",
+        		"decorations": false
+			}
+		]
+	}
+}

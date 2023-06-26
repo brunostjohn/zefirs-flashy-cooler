@@ -1,0 +1,65 @@
+#zefirCard {
+	float: right;
+	margin-left: 1rem;
+	background-color: #080d1400;
+}
+
+#version {
+	float: right;
+	margin-top: 0.5rem;
+}
+
+.actualSettings {
+	margin-left: 4rem;
+	margin-right: 4rem;
+	margin-top: 5.5rem;
+	margin-bottom: 1rem;
+	// overflow: scroll;
+}
+
+#logo {
+	width: 4rem;
+	height: 4rem;
+	vertical-align: middle;
+}
+
+h2 {
+	vertical-align: middle;
+}
+
+body {
+	overflow: overlay;
+}
+
+#themeFolderBtn {
+	$margin-sides: 0.5rem;
+
+	margin-top: $margin-sides -0.1rem;
+	margin-bottom: $margin-sides;
+}
+
+.theme-intro {
+	margin-top: 0.1rem;
+}
+
+#pollRateFlex {
+	display: flex;
+
+	#pollRate {
+		margin-left: 1rem;
+		margin-right: 1rem;
+	}
+}
+
+.input-group {
+	max-width: 16rem;
+	background-color: transparent;
+
+	span {
+		background-color: transparent;
+	}
+
+	input {
+		background-color: transparent;
+	}
+}

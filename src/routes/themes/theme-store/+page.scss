@@ -1,0 +1,150 @@
+@import "../../../styles/mixins.scss";
+
+.loading {
+	@include flex-center;
+	flex-direction: column;
+	height: 50vh;
+
+	h3 {
+		font-weight: 100;
+		opacity: 40%;
+	}
+}
+
+#card-container {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.search {
+	position: relative;
+	top: 2px;
+
+	margin-left: auto;
+	margin-right: 5rem;
+
+	padding: 0;
+
+	max-width: 25rem;
+	width: 18rem;
+}
+
+.title-header {
+	margin-left: 5rem;
+	margin-bottom: 1rem;
+
+	display: flex;
+	align-items: center;
+	justify-items: center;
+
+	h1 {
+		margin-bottom: 0;
+		vertical-align: middle;
+
+		position: relative;
+		bottom: 2px;
+	}
+}
+
+#no-themes {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+	height: 50vh;
+
+	position: relative;
+	top: 7vh;
+
+	h3,
+	p {
+		opacity: 40%;
+	}
+
+	h3 {
+		font-weight: 300;
+	}
+
+	p {
+		font-weight: 200;
+	}
+}
+
+body {
+	overflow: overlay;
+}
+
+body::-webkit-scrollbar {
+	width: 0.1em;
+	z-index: 0;
+}
+
+body::-webkit-scrollbar-track {
+	box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.3);
+	z-index: 0;
+}
+
+body::-webkit-scrollbar-thumb {
+	background-color: rgba(107, 107, 107, 0.575);
+	border-radius: 20px;
+	z-index: 0;
+}
+
+#everything {
+	margin-top: 4.5rem;
+}
+
+.alert {
+	margin-left: 10px;
+	margin-right: 10px;
+	margin-bottom: 15px;
+}
+
+.badge {
+	margin-left: 3px;
+}
+
+.active-badge {
+	transition: visibility 0.05s;
+	position: absolute;
+	right: 0;
+	top: 0;
+	width: 2.5rem;
+	padding: 0.5rem;
+	height: auto;
+	filter: invert(100%) sepia(0%) saturate(1%) hue-rotate(167deg) brightness(105%) contrast(101%);
+	opacity: 80%;
+}
+
+.fillspace {
+	flex-basis: 14rem;
+	flex-grow: 1;
+	min-width: 12rem;
+	height: 0;
+}
+
+#finalCard {
+	position: relative;
+	flex-basis: 14rem;
+	flex-grow: 1;
+	min-width: 12rem;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	justify-items: center;
+	align-items: center;
+	text-align: center;
+}
+
+#downloadIcon {
+	filter: invert(100%) sepia(0%) saturate(1%) hue-rotate(167deg) brightness(105%) contrast(101%);
+	height: auto;
+	width: 5rem;
+	padding: 0.5rem;
+}
+
+#linkingContainer {
+	text-decoration: none;
+	padding: 3rem;
+}

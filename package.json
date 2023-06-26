@@ -1,57 +1,42 @@
 {
-  "name": "zefirs-flashy-cooler",
-  "version": "0.1.0",
-  "devDependencies": {
-    "@electron-forge/cli": "^6.0.5",
-    "@electron-forge/maker-deb": "^6.0.4",
-    "@electron-forge/maker-rpm": "^6.0.4",
-    "@electron-forge/maker-squirrel": "^6.0.5",
-    "@electron-forge/maker-zip": "^6.0.4",
-    "@electron-forge/publisher-github": "^6.0.5",
-    "cargo-cp-artifact": "^0.1.8",
-    "electron": "^20.3.12",
-    "electron-rebuild": "^3.2.9"
-  },
-  "description": "An iCue replacement for the Capellix LCD lineup.",
-  "main": "main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "npm run build-debug && electron-forge start --inspect-electron",
-    "start-release": "npm run build-release && electron-forge start",
-    "package": "npm run build-release && electron-forge package",
-    "make": "npm run build-release && powershell ./scripts/create-clean-build.ps1",
-    "publish": "npm run build-release && powershell ./scripts/create-clean-build-publish.ps1",
-    "create-package": "electron-forge make",
-    "build-debug": "powershell .\\scripts\\build.ps1 -type debug",
-    "build": "npm run build-debug",
-    "build-release": "powershell .\\scripts\\build.ps1",
-    "start-no-recompile": "electron-forge start"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/brunostjohn/zefirs-flashy-cooler.git"
-  },
-  "author": "Bruno St. John",
-  "license": "AGPL-3.0-or-later",
-  "bugs": {
-    "url": "https://github.com/brunostjohn/zefirs-flashy-cooler/issues"
-  },
-  "homepage": "https://github.com/brunostjohn/zefirs-flashy-cooler#readme",
-  "dependencies": {
-    "@melloware/coloris": "^0.16.1",
-    "@napi-rs/canvas": "^0.1.40",
-    "bootstrap": "^5.3.0-alpha1",
-    "colors": "^1.4.0",
-    "electron-acrylic-window": "^0.5.11",
-    "electron-squirrel-startup": "^1.0.0",
-    "gif-extract-frames": "^1.0.2",
-    "image-size": "^1.0.2",
-    "nan": "^2.14.0",
-    "node-base64-image": "^2.0.4",
-    "node-hid": "^2.1.2",
-    "screenshot-desktop": "^0.0.0-development",
-    "update-electron-app": "^2.0.1",
-    "winax": "^3.3.4",
-    "winplayer-node": "github:brunostjohn/WinPlayer-Node"
-  }
+	"name": "zefirs-flashy-cooler",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build",
+		"preview": "vite preview",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --plugin-search-dir . --check . && eslint .",
+		"format": "prettier --plugin-search-dir . --write ."
+	},
+	"devDependencies": {
+		"@sveltejs/adapter-auto": "^2.0.0",
+		"@sveltejs/adapter-static": "^1.0.0-next.50",
+		"@sveltejs/kit": "^1.5.0",
+		"@typescript-eslint/eslint-plugin": "^5.45.0",
+		"@typescript-eslint/parser": "^5.45.0",
+		"bootstrap": "^5.3.0",
+		"colorthief": "^2.4.0",
+		"eslint": "^8.28.0",
+		"eslint-config-prettier": "^8.5.0",
+		"eslint-plugin-svelte": "^2.26.0",
+		"prettier": "^2.8.0",
+		"prettier-plugin-svelte": "^2.8.1",
+		"sass": "^1.63.4",
+		"svelte": "^3.54.0",
+		"svelte-carousel": "^1.0.25",
+		"svelte-check": "^3.0.1",
+		"svelte-loading-spinners": "^0.3.4",
+		"svelte-markdown": "^0.2.3",
+		"tslib": "^2.4.1",
+		"typescript": "^5.0.0",
+		"vite": "^4.3.0"
+	},
+	"type": "module",
+	"dependencies": {
+		"@melloware/coloris": "^0.20.0",
+		"@tauri-apps/api": "^1.4.0"
+	}
 }
