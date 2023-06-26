@@ -1,4 +1,4 @@
-# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/favicon-32x32.png) Zefir's Flashy Cooler
+# ![Logo](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/static/images/favicon-32x32.png) Zefir's Flashy Cooler
 
 ## This branch is a transition to Tauri and Rust away from Electron. This app is still being worked on, it'll take time before this is fully cooked. Thank you for your patience.
 
@@ -12,8 +12,8 @@ Currently supported coolers:
 - Corsair's Capellix LCD (reviison 2)
 - Thermaltake's Ultra LCD
 
-![Screenshot 1](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/screenshot.png)
-![Screenshot 2](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/assets/images/screenshot2.png)
+![Screenshot 1](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/static/images/screenshot.png)
+![Screenshot 2](https://raw.githubusercontent.com/brunostjohn/zefirs-flashy-cooler/main/static/images/screenshot2.png)
 
 This is designed explicitly for use with Windows.
 Will it run on Linux or macOS? Maybe. Probably not. Linux support is something I frequently think about. I actually might make that a thing once I get all the basic functionality down.
