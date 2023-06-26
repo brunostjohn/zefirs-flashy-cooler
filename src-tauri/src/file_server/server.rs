@@ -3,13 +3,12 @@ use std::{
     net::{TcpListener, TcpStream},
     path::PathBuf,
     sync::mpsc::{self, TryRecvError},
-    thread::{self, JoinHandle},
+    thread::{self},
 };
 
 mod fs;
 
 pub struct Server {
-    thread: Option<JoinHandle<()>>,
     end_channel: mpsc::Sender<bool>,
     path_channel: mpsc::Sender<Option<PathBuf>>,
     serving_fs_name: String,
@@ -35,7 +34,7 @@ impl Server {
             None => "__DEFAULT__".to_string(),
         };
 
-        let server_handle = thread::spawn(move || {
+        let _ = thread::spawn(move || {
             let listener = TcpListener::bind("127.0.0.1:2137").unwrap();
             let mut fs_path = path;
 
@@ -65,7 +64,6 @@ impl Server {
         });
 
         Server {
-            thread: Some(server_handle),
             end_channel: tx_end,
             path_channel: tx_path,
             serving_fs_name: now_serving,

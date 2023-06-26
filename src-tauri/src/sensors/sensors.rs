@@ -205,7 +205,9 @@ impl Sensors {
 
                 match start_time.elapsed() {
                     Ok(dur) => {
-                        thread::sleep(poll - dur);
+                        if dur < poll {
+                            thread::sleep(poll - dur);
+                        }
                     }
                     Err(_) => {
                         thread::sleep(poll);

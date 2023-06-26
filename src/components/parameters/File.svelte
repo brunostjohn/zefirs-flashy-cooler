@@ -11,7 +11,7 @@
 
 	let doneUnlisten: UnlistenFn;
 
-	const { name, display_as, default: def } = parameter;
+	const { name, display_as } = parameter;
 
 	onMount(async () => {
 		const parameterCurrent: ParameterValue = await invoke("get_current_theme_parameter", { name });
