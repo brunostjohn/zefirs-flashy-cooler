@@ -14,7 +14,6 @@
 	onMount(async () => {
 		const parameterCurrent: ParameterValue = await invoke("get_current_theme_parameter", { name });
 		hex = parameterCurrent.value.toLowerCase();
-
 		Coloris.init();
 		Coloris.coloris({
 			el: "#coloris",
@@ -24,6 +23,8 @@
 			onChange: handlerWrapper,
 			defaultColor: hex,
 		});
+
+		hex = parameterCurrent.value.toLowerCase();
 	});
 
 	const updateConfig = async () => {
@@ -50,12 +51,9 @@
 	div {
 		margin-top: 1rem;
 
-		#pickerContainer {
-			max-width: 20rem;
-		}
-
 		#coloris {
 			background-color: transparent;
+			// width: 94.5vw;
 		}
 	}
 </style>

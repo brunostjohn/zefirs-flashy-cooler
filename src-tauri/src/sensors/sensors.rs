@@ -50,6 +50,15 @@ pub struct Sensor {
     pub parent_hw_type: Option<String>,
 }
 
+#[derive(Deserialize, Debug, Serialize, Clone)]
+pub struct SensorWithDetails {
+    pub sensor: String,
+    pub value: String,
+    pub r#type: String,
+    pub parent_hw_type: Option<String>,
+    pub code_name: String,
+}
+
 pub struct Sensors {
     thread_handle: Option<JoinHandle<()>>,
     tx_end: mpsc::SyncSender<bool>,
@@ -58,6 +67,7 @@ pub struct Sensors {
     rx_sensor_list: mpsc::Receiver<Vec<Hardware>>,
     tx_list_rq: mpsc::Sender<bool>,
     rx_sensor_val: mpsc::Receiver<Vec<Sensor>>,
+    sensor_names: Vec<String>,
 }
 
 impl Sensors {
@@ -224,6 +234,7 @@ impl Sensors {
             rx_sensor_list,
             tx_list_rq,
             rx_sensor_val,
+            sensor_names: vec![],
         }
     }
 
@@ -256,7 +267,8 @@ impl Sensors {
         }
     }
 
-    pub fn subscribe(&self, sensor_paths: Vec<String>) {
+    pub fn subscribe(&mut self, sensor_paths: Vec<String>, sensor_names: Vec<String>) {
+        self.sensor_names = sensor_names;
         match self.tx_subscribe.send(sensor_paths) {
             Ok(_) => {}
             Err(_) => {
@@ -275,9 +287,35 @@ impl Sensors {
             .or(Err("Failed to receive sensor values."))
     }
 
-    pub fn get_sensor_value(&self) -> Result<Vec<Sensor>, &'static str> {
-        self.rx_sensor_val
+    pub fn get_sensor_value(&self) -> Result<Vec<SensorWithDetails>, &'static str> {
+        let sensor_pre = self
+            .rx_sensor_val
             .try_recv()
-            .or(Err("Failed to receive value."))
+            .or(Err("Failed to receive value."))?;
+
+        let mut details = vec![];
+
+        for sensor in &sensor_pre {
+            let location = sensor_pre
+                .iter()
+                .position(|x| {
+                    x.sensor == sensor.sensor
+                        && x.parent_hw_type == sensor.parent_hw_type
+                        && x.r#type == sensor.r#type
+                })
+                .unwrap();
+
+            let new_thing = SensorWithDetails {
+                value: sensor.value.clone(),
+                sensor: sensor.sensor.clone(),
+                parent_hw_type: sensor.parent_hw_type.clone(),
+                r#type: sensor.r#type.clone(),
+                code_name: self.sensor_names[location].clone(),
+            };
+
+            details.push(new_thing);
+        }
+
+        Ok(details)
     }
 }

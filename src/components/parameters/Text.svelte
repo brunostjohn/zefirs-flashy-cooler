@@ -45,7 +45,6 @@
 
 		input {
 			background: none;
-			max-width: 40rem;
 		}
 	}
 </style>

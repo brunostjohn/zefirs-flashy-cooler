@@ -3,7 +3,6 @@
 	import type { Parameter } from "../../helpers/themeTools";
 	import { invoke } from "@tauri-apps/api/tauri";
 	import type ParameterValue from "./parameter";
-	import { each } from "svelte/internal";
 	export let parameter: Parameter;
 
 	interface Sensor {
@@ -30,18 +29,36 @@
 		sensors: Sensor[];
 	}
 
-	let input: HTMLInputElement;
-
 	let allSensors: FlattenedHardware[] = [];
 
 	let allSensorsPre: Hardware[] = [];
 
 	let computedCategories: string[] = [];
+	let computedSensors: { name: string; displayName: string }[] = [];
 
 	let parent: string;
 	let category: string;
+	let selectedPath: string;
 
 	const { name, display_as } = parameter;
+
+	const initial = (parameterCurrent: ParameterValue) => {
+		if (parameterCurrent.value) {
+			if (parameterCurrent.value.length > 0) {
+				processHardware();
+
+				const path = parameterCurrent.value.split("/");
+
+				parent = path[0];
+				handleParentChange();
+
+				category = path[1] === "subhardware" ? path[2] : path[1];
+				handleCategoryChange();
+
+				selectedPath = parameterCurrent.value;
+			}
+		}
+	};
 
 	onMount(async () => {
 		const parameterCurrent: ParameterValue = await invoke("get_current_theme_parameter", { name });
@@ -49,6 +66,8 @@
 		allSensorsPre = (await invoke("get_all_sensors")) as Hardware[];
 
 		processHardware();
+
+		initial(parameterCurrent);
 	});
 
 	const processHardware = () => {
@@ -79,10 +98,13 @@
 	};
 
 	const updateConfig = async () => {
-		await invoke("apply_theme_parameter", { name, value: input.value });
+		console.log(selectedPath);
+		await invoke("apply_theme_parameter", { name, value: selectedPath });
 	};
 
 	const handleParentChange = () => {
+		computedSensors = [];
+
 		let branch = allSensors.filter((hardware) => {
 			return hardware.name === parent;
 		})[0];
@@ -96,20 +118,57 @@
 		}
 
 		computedCategories = temp;
+		category = computedCategories[0];
+		handleCategoryChange();
+	};
+
+	const handleCategoryChange = () => {
+		let branch = allSensors.filter((hardware) => {
+			return hardware.name === parent;
+		})[0];
+
+		let temp = branch.sensors.filter((x) => x.type === category);
+
+		let temp_built = [];
+
+		let path = `${parent}/${category}/`;
+
+		for (const sensor of temp) {
+			const obj = {
+				displayName: sensor.sensor,
+				name: path + sensor.sensor,
+			};
+
+			temp_built.push(obj);
+		}
+
+		computedSensors = temp_built;
+		selectedPath = computedSensors[0].name;
 	};
 </script>
 
 <div id="container">
+	<h5>{display_as}</h5>
 	{#if allSensors.length > 0}
-		<select bind:value={parent} on:change={handleParentChange} class="form-control">
+		<label for="parent" id="parentLbl">Hardware</label>
+		<select bind:value={parent} on:change={handleParentChange} class="form-control" id="parent">
 			{#each allSensors as sensor}
 				<option value={sensor.name}>{sensor.displayName}</option>
 			{/each}
 		</select>
 		{#if computedCategories.length > 0}
-			<select bind:value={category} class="form-control">
+			<label for="cat">Category</label>
+			<select bind:value={category} on:change={handleCategoryChange} class="form-control" id="cat">
 				{#each computedCategories as category}
 					<option value={category}>{category}</option>
+				{/each}
+			</select>
+		{/if}
+		{#if computedSensors.length > 0}
+			<label for="sensor">Sensor</label>
+			<select bind:value={selectedPath} on:change={updateConfig} class="form-control" id="sensor">
+				{#each computedSensors as sensor}
+					<option value={sensor.name}>{sensor.displayName}</option>
 				{/each}
 			</select>
 		{/if}
@@ -117,11 +176,24 @@
 </div>
 
 <style lang="scss">
-	div {
-		margin-top: 1rem;
+	#parentLbl {
+		margin-top: 0;
 	}
 
-	select {
-		background: none;
+	div {
+		margin-top: 1rem;
+
+		label {
+			margin-top: 1rem;
+			margin-bottom: 0.5rem;
+		}
+
+		select {
+			background-color: transparent;
+
+			option {
+				background-color: var(--bs-body-bg);
+			}
+		}
 	}
 </style>

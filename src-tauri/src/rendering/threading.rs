@@ -114,7 +114,10 @@ impl Renderer {
                         let sensors = SENSORS.lock().unwrap();
                         match sensors.get_sensor_value() {
                             Ok(result) => {
-                                if result[0].value != "a" && result[0].r#type != "a" {
+                                if result[0].value != "a"
+                                    && result[0].r#type != "a"
+                                    && result[0].value != "3"
+                                {
                                     sensor_values = result;
                                 }
                             }
@@ -122,12 +125,22 @@ impl Renderer {
                         };
                         drop(sensors);
 
-                        let sensor_string = serde_json::to_string(&sensor_values)
-                            .or::<Result<String, &'static str>>(Ok("[]".to_owned()))
-                            .unwrap();
+                        let mut all_sensor_string = "{".to_owned();
+
+                        for sensor in &sensor_values {
+                            all_sensor_string += &("\"".to_owned() + &sensor.code_name + "\":");
+                            let sensor_string = serde_json::to_string(&sensor)
+                                .or::<Result<String, &'static str>>(Ok("{}".to_owned()))
+                                .unwrap();
+                            all_sensor_string += &sensor_string;
+                            all_sensor_string += ",";
+                        }
+
+                        all_sensor_string.pop();
+                        all_sensor_string += "}";
 
                         engine.call_js_script(
-                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", &sensor_string),
+                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", &all_sensor_string),
                         );
                     }
 
@@ -212,9 +225,12 @@ impl Renderer {
                             let sensor_paths: Vec<String> =
                                 sensors_only.iter().map(|x| x.value.clone()).collect();
 
-                            let sensors = SENSORS.lock().unwrap();
+                            let sensor_names: Vec<String> =
+                                sensors_only.iter().map(|x| x.name.clone()).collect();
 
-                            sensors.subscribe(sensor_paths);
+                            let mut sensors = SENSORS.lock().unwrap();
+
+                            sensors.subscribe(sensor_paths, sensor_names);
 
                             drop(sensors);
                         } else {
@@ -227,12 +243,23 @@ impl Renderer {
                             .map(|x| x.to_owned())
                             .collect::<Vec<ThemeConfigItem>>();
 
-                        let everything_else_string =
-                            serde_json::to_string::<Vec<ThemeConfigItem>>(&everything_else)
+                        let mut collective_sensors_with_labels = "{".to_owned();
+
+                        for item in everything_else {
+                            collective_sensors_with_labels +=
+                                &("\"".to_owned() + &item.name.clone() + "\":");
+                            let item_string = serde_json::to_string::<ThemeConfigItem>(&item)
                                 .or::<Result<String, &'static str>>(Ok("[]".to_string()))
                                 .unwrap();
+                            collective_sensors_with_labels += &item_string;
+                            collective_sensors_with_labels += ",";
+                        }
+
+                        collective_sensors_with_labels.pop();
+                        collective_sensors_with_labels += "}";
+
                         engine.call_js_script(
-                            format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &everything_else_string),
+                            format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &collective_sensors_with_labels),
                         );
                     }
                 }
