@@ -9,21 +9,22 @@ use window_vibrancy::{apply_acrylic, apply_mica};
 
 #[inject_from_handle(config, renderer, sensors, server, app_folder)]
 #[allow(dead_code)]
-pub fn exit(window: &Window, app: &AppHandle) {
+pub fn exit(window: &Option<Window>, app: &AppHandle) {
     println!("Attempting exit.");
 
-    let _ = window.close();
+    if let Some(win) = window {
+        let _ = win.close();
+    }
 
     config.write_to_drive(app_folder.0.clone());
 
     renderer.stop();
 
-    sensors.stop();
-
     app.exit(0);
 }
 
 #[allow(dead_code)]
+#[inject_from_handle(config)]
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let window = app.get_window("main").unwrap();
 
@@ -37,9 +38,9 @@ pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
 
     set_shadow(&window, true).unwrap();
 
-    // if config.start_minimised {
-    //     let _ = window.close();
-    // }
+    if config.start_minimised {
+        let _ = window.close();
+    }
 
     Ok(())
 }

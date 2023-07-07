@@ -23,7 +23,7 @@ pub struct Ultralight {
 
 impl Ultralight {
     #[allow(unused_mut)]
-    pub fn new(APP_FOLDER: PathBuf) -> Ultralight {
+    pub fn new(app_folder: PathBuf) -> Ultralight {
         let mut renderer;
         let mut view;
         let mut surface;
@@ -38,7 +38,7 @@ impl Ultralight {
                 write_plain_text: None,
             });
 
-            let mut log_path = APP_FOLDER.clone();
+            let mut log_path = app_folder.clone();
             log_path.push("log.txt");
 
             let log_path_cs = CString::new(log_path.to_str().unwrap()).unwrap();
@@ -50,7 +50,7 @@ impl Ultralight {
             // });
             ulEnablePlatformFontLoader();
 
-            let fs_folder = CString::new(APP_FOLDER.to_str().unwrap()).unwrap();
+            let fs_folder = CString::new(app_folder.to_str().unwrap()).unwrap();
             let fs_folder_ul = ulCreateString(fs_folder.as_ptr());
             ulEnablePlatformFileSystem(fs_folder_ul);
             ulDestroyString(fs_folder_ul);

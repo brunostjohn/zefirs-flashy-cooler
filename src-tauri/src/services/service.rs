@@ -5,7 +5,7 @@ pub trait Service {
         data_names: Option<Vec<String>>,
     );
     fn get(&self) -> Result<Vec<ServiceResult>, &'static str>;
-    fn options(&self) -> Result<Vec<ServiceOption>, &'static str>;
+    fn options(&self) -> Option<Vec<ServiceOption>>;
     fn suspend(&mut self) -> Result<(), &'static str>;
 }
 
@@ -17,5 +17,5 @@ pub struct ServiceResult {
 }
 
 pub struct ServiceOption {
-    pub subscription_data: Option<String>,
+    pub subscription_data: String,
 }

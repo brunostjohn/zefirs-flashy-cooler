@@ -7,6 +7,8 @@ use hidapi::{HidApi, HidDevice};
 use image::RgbImage;
 
 use self::constants::constants::*;
+
+use super::{Device, DeviceCreator};
 mod constants;
 
 pub struct Capellix {
@@ -16,11 +18,11 @@ pub struct Capellix {
     unfucks_sent: u16,
 }
 
-impl Capellix {
-    pub fn new() -> Result<Capellix, &'static str> {
+impl DeviceCreator for Capellix {
+    fn new() -> Result<Capellix, &'static str> {
         let api = match HidApi::new() {
             Ok(api) => api,
-            Err(_) => return Err("Failed to initialise HidApi!"),
+            Err(_) => panic!("Failed to initialise HidApi!"),
         };
 
         let mut device_handle: Option<HidDevice> = None;
@@ -47,8 +49,10 @@ impl Capellix {
             });
         }
     }
+}
 
-    pub fn init(&mut self) -> Result<(), &'static str> {
+impl Device for Capellix {
+    fn init(&mut self) -> Result<(), &'static str> {
         self.init_time = SystemTime::now();
         let handle = match &self.device {
             Some(device) => device,
@@ -115,7 +119,7 @@ impl Capellix {
         Ok(())
     }
 
-    pub fn close(&mut self) -> Result<(), &'static str> {
+    fn close(&mut self) -> Result<(), &'static str> {
         thread::sleep(Duration::from_millis(5));
 
         let handle = match &self.device {
@@ -142,7 +146,7 @@ impl Capellix {
         Ok(())
     }
 
-    pub fn reopen(&mut self) -> Result<(), &'static str> {
+    fn reopen(&mut self) -> Result<(), &'static str> {
         let mut device_handle: Option<HidDevice> = None;
 
         for device in self.api.device_list() {
@@ -164,7 +168,7 @@ impl Capellix {
         }
     }
 
-    pub fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
+    fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
         let mut packets_sent = 0;
         let mut last_image: Vec<u8> = vec![];
         let image = turbojpeg::compress_image(img, 95, turbojpeg::Subsamp::Sub2x2)

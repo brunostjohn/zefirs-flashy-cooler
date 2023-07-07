@@ -1,8 +1,9 @@
-#[path = "./devices/capellix/device.rs"]
-mod capellix;
-use capellix::Capellix;
 #[path = "./ultralight/engine.rs"]
 mod engine;
+
+#[path = "devices/device.rs"]
+mod device;
+
 use engine::Ultralight;
 use image::{self, RgbImage};
 use serde::{Deserialize, Serialize};
@@ -14,6 +15,7 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use std::vec;
 
+use crate::rendering::device::DeviceContainer;
 use crate::sensors::Sensors;
 use crate::server::Server;
 
@@ -36,9 +38,9 @@ impl Renderer {
     pub fn new(
         fps: u64,
         app_folder: PathBuf,
-        THEMES_PATH: PathBuf,
-        SERVER: Arc<Mutex<Server>>,
-        SENSORS: Arc<Mutex<Sensors>>,
+        themes_path: PathBuf,
+        server: Arc<Mutex<Server>>,
+        sensors: Arc<Mutex<Sensors>>,
     ) -> Self {
         let (tx_theme, rx_theme) = mpsc::channel();
         let (tx_end, rx_end) = mpsc::sync_channel(2);
@@ -60,7 +62,7 @@ impl Renderer {
 
             let mut sensor_time = SystemTime::now();
 
-            let mut device = match Capellix::new() {
+            let mut device = match DeviceContainer::new() {
                 Err(error) => {
                     println!("{:?}", error);
                     return;
@@ -119,7 +121,7 @@ impl Renderer {
                         Err(_) => false,
                     } && sensor_flag)
                     {
-                        let sensors = SENSORS.lock().unwrap();
+                        let sensors = sensors.lock().unwrap();
                         match sensors.get_sensor_value() {
                             Ok(result) => {
                                 if result[0].value != "a"
@@ -203,10 +205,10 @@ impl Renderer {
                     Ok(result) => result,
                     Err(_) => false,
                 } {
-                    let server = SERVER.lock().unwrap();
+                    let server = server.lock().unwrap();
                     let now_serving = server.now_serving();
                     drop(server);
-                    let mut theme_path = THEMES_PATH.clone();
+                    let mut theme_path = themes_path.clone();
                     theme_path.push(now_serving);
                     theme_path.push("config.json");
 
@@ -236,7 +238,7 @@ impl Renderer {
                             let sensor_names: Vec<String> =
                                 sensors_only.iter().map(|x| x.name.clone()).collect();
 
-                            let mut sensors = SENSORS.lock().unwrap();
+                            let mut sensors = sensors.lock().unwrap();
 
                             sensors.subscribe(sensor_paths, sensor_names);
 
