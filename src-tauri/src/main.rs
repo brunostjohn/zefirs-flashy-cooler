@@ -1,7 +1,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use lazy_static::lazy_static;
-
 #[path = "rendering/threading.rs"]
 mod rendering;
 
@@ -23,9 +21,11 @@ use lifecycle::setup;
 #[path = "sensors/sensors.rs"]
 mod sensors;
 
+#[path = "services/service.rs"]
+mod service;
+
 #[path = "frontend/tray.rs"]
 mod tray;
-use once_cell::sync::Lazy;
 use sensors::Hardware;
 use tray::{build_tray, tray_event_handler};
 
@@ -35,6 +35,11 @@ use server::Server;
 
 #[path = "frontend/settings.rs"]
 mod settings;
+
+#[path = "config/ensure_dirs.rs"]
+mod ensure_dirs;
+
+use self::ensure_dirs::ensure_dirs;
 
 use std::{
     env,
@@ -48,51 +53,80 @@ use rendering::Renderer;
 
 use crate::sensors::Sensors;
 
-lazy_static! {
-    pub static ref RENDERER: Arc<Mutex<Renderer>> = Arc::new(Mutex::new(Renderer::new(25)));
-    pub static ref APP_FOLDER: PathBuf = match env::current_exe() {
+pub type SensorTree = Vec<Hardware>;
+pub type ThemesPath = PathBuf;
+pub struct AppFolder(PathBuf);
+
+fn main() {
+    let app_folder = match env::current_exe() {
         Ok(mut path) => {
             path.pop();
             path
         }
         _ => PathBuf::from("./"),
     };
-    pub static ref CONFIG: Arc<Mutex<Config>> = Arc::new(Mutex::new(Config::load_from_drive()));
-    pub static ref SERVER: Arc<Mutex<Server>> = Arc::new(Mutex::new(Server::new(None)));
-    pub static ref SENSORS: Arc<Mutex<Sensors>> = Arc::new(Mutex::new(Sensors::new(None)));
-    pub static ref SENSOR_TREE: Arc<Mutex<Vec<Hardware>>> = Arc::new(Mutex::new(vec![]));
-}
 
-pub static THEMES_PATH: Lazy<PathBuf> = Lazy::new(|| {
-    let mut path = match tauri::api::path::document_dir() {
+    let mut themes_path = match tauri::api::path::document_dir() {
         Some(path) => path,
         None => PathBuf::from("./"),
     };
-    path.push("Zefir's Flashy Cooler");
-    return path;
-});
+    themes_path.push("Zefir's Flashy Cooler");
 
-fn main() {
-    let sensors_arc = SENSORS.clone();
-    let sensors = sensors_arc.lock().unwrap();
+    let config = Config::load_from_drive(app_folder.clone());
+    config.write_to_drive(app_folder.clone());
 
-    let _ = sensors.get_sensor_value();
+    let sensors = Sensors::new(Some(config.poll_rate.clone()));
 
-    let all = sensors.get_all_sensors().unwrap();
-    drop(sensors);
+    let sensor_tree = sensors.get_all_sensors().unwrap();
+    let sensor_tree_am = Arc::new(Mutex::new(sensor_tree));
 
-    let sensor_tree_arc = SENSOR_TREE.clone();
-    let mut sensor_tree = sensor_tree_arc.lock().unwrap();
+    let sensors_am = Arc::new(Mutex::new(sensors));
 
-    sensor_tree.extend(all);
+    ensure_dirs(themes_path.clone());
 
-    drop(sensor_tree);
+    let mut server = Server::new(None);
 
-    let config = CONFIG.lock().unwrap();
-    config.write_to_drive();
-    drop(config);
+    match &config.theme_path {
+        Some(theme) => {
+            let mut full_path = themes_path.clone();
+            full_path.push(theme);
+            if full_path.exists() {
+                server.serve_path(Some(full_path));
+            } else {
+                server.serve_path(None);
+            }
+        }
+        None => {
+            server.serve_path(None);
+        }
+    };
+
+    let server_am = Arc::new(Mutex::new(server));
+
+    let renderer = Renderer::new(
+        config.fps.clone(),
+        app_folder.clone(),
+        themes_path.clone(),
+        server_am.clone(),
+        sensors_am.clone(),
+    );
+
+    renderer.serve();
+
+    let renderer_am = Arc::new(Mutex::new(renderer));
+
+    let app_folder_am = Arc::new(Mutex::new(AppFolder(app_folder)));
+    let config_am = Arc::new(Mutex::new(config));
+    let themes_path_am = Arc::new(Mutex::new(themes_path));
 
     tauri::Builder::default()
+        .manage(sensors_am)
+        .manage(renderer_am)
+        .manage(app_folder_am)
+        .manage(themes_path_am)
+        .manage(config_am)
+        .manage(sensor_tree_am)
+        .manage(server_am)
         .invoke_handler(tauri::generate_handler![
             frontend_commands::remote_exit,
             themes::get_all_themes,
@@ -108,7 +142,6 @@ fn main() {
             themes::get_current_theme_parameter,
             themes::apply_theme_parameter,
             themes::select_file_and_save,
-            themes::request_sensor_tree,
             themes::get_all_sensors,
             settings::get_start_minimised,
             settings::set_start_minimised,

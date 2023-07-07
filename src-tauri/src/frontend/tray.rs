@@ -30,7 +30,7 @@ pub fn tray_event_handler(app: &AppHandle, event: SystemTrayEvent) {
         }
         SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
             "quit" => {
-                exit(&app.get_window("main").unwrap());
+                exit(&app.get_window("main").unwrap(), app);
             }
             "open" => {
                 recreate_main_window(app);

@@ -1,8 +1,6 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use serde::{Deserialize, Serialize};
-
-use crate::APP_FOLDER;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Config {
@@ -24,8 +22,7 @@ impl Config {
         }
     }
 
-    pub fn load_from_drive() -> Self {
-        let mut load_path = APP_FOLDER.clone();
+    pub fn load_from_drive(mut load_path: PathBuf) -> Self {
         load_path.push("config.json");
 
         let loaded_config = {
@@ -49,8 +46,7 @@ impl Config {
         loaded_config
     }
 
-    pub fn write_to_drive(&self) {
-        let mut write_path = APP_FOLDER.clone();
+    pub fn write_to_drive(&self, mut write_path: PathBuf) {
         write_path.push("config.json");
 
         let serialised = match serde_json::to_string_pretty(self) {

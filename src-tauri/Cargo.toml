@@ -39,6 +39,7 @@ futures-util = "0.3.28"
 libloading = "0.8.0"
 ul-sys = { git = "https://github.com/VideowindoW/rust-ul-sys" }
 uuid = {version = "1.3.4", features = ["v4"] }
+macros = { version = "0.1.0", path = "src/macros" }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

@@ -8,12 +8,14 @@ use image::{self, RgbImage};
 use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
-use std::sync::mpsc;
+use std::path::PathBuf;
+use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime};
 use std::vec;
 
-use crate::{SENSORS, SERVER, THEMES_PATH};
+use crate::sensors::Sensors;
+use crate::server::Server;
 
 pub struct Renderer {
     thread: Option<JoinHandle<()>>,
@@ -31,14 +33,20 @@ pub struct ThemeConfigItem {
 }
 
 impl Renderer {
-    pub fn new(fps: u64) -> Self {
+    pub fn new(
+        fps: u64,
+        app_folder: PathBuf,
+        THEMES_PATH: PathBuf,
+        SERVER: Arc<Mutex<Server>>,
+        SENSORS: Arc<Mutex<Sensors>>,
+    ) -> Self {
         let (tx_theme, rx_theme) = mpsc::channel();
         let (tx_end, rx_end) = mpsc::sync_channel(2);
         let (tx_fps, rx_fps) = mpsc::channel();
         let (tx_reload, rx_reload) = mpsc::channel();
 
         let render = thread::spawn(move || {
-            let mut engine = Ultralight::new();
+            let mut engine = Ultralight::new(app_folder);
 
             println!("Received {:?} fps", fps);
 

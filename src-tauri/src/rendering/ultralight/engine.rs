@@ -1,5 +1,6 @@
 use std::{
     ffi::{c_ulonglong, c_void, CString},
+    path::PathBuf,
     ptr::null_mut,
     sync::{
         atomic::{AtomicBool, Ordering},
@@ -12,8 +13,6 @@ use dcv_color_primitives as dcp;
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
-use crate::APP_FOLDER;
-
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 
 pub struct Ultralight {
@@ -24,7 +23,7 @@ pub struct Ultralight {
 
 impl Ultralight {
     #[allow(unused_mut)]
-    pub fn new() -> Ultralight {
+    pub fn new(APP_FOLDER: PathBuf) -> Ultralight {
         let mut renderer;
         let mut view;
         let mut surface;

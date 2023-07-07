@@ -3,40 +3,43 @@ use std::{
     ffi::OsStr,
     fs::{self, File},
     io::Write,
-    path::Path,
+    path::{Path, PathBuf},
+    sync::{Arc, Mutex},
     thread::{self},
     time::Duration,
 };
 
-use crate::{rendering::ThemeConfigItem, CONFIG, RENDERER, SENSOR_TREE, SERVER, THEMES_PATH};
+use crate::{rendering::ThemeConfigItem, ThemesPath};
 use color_thief::ColorFormat;
 use futures_util::StreamExt;
+use macros::inject;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::api::dialog::blocking::FileDialogBuilder;
 use tauri::Window;
+use tauri::{api::dialog::blocking::FileDialogBuilder, State};
 use urlencoding::encode;
 
+#[inject(sensor_tree)]
 #[tauri::command]
-pub async fn get_all_sensors() -> Vec<crate::sensors::Hardware> {
-    SENSOR_TREE.lock().unwrap().clone()
+pub fn get_all_sensors() -> Vec<crate::sensors::Hardware> {
+    sensor_tree.clone()
 }
 
+#[inject(server, renderer, themes_path)]
 #[tauri::command]
-pub async fn select_file_and_save(name: String, current: String, window: Window) {
+pub fn select_file_and_save(name: String, current: String, window: Window) -> Result<(), ()> {
     let dialog = FileDialogBuilder::default().set_title("Select file");
     let picked = match dialog.pick_file() {
         Some(file) => file,
-        None => return,
+        None => return Ok(()),
     };
 
-    let server = SERVER.lock().unwrap();
     let now_serving = server.now_serving();
     drop(server);
 
     let current = current.replace("/", "");
 
-    let mut config_path = THEMES_PATH.clone();
+    let mut config_path = themes_path.clone();
     config_path.push(now_serving);
     let mut manifest_path = config_path.clone();
     let mut theme_path = config_path.clone();
@@ -50,14 +53,14 @@ pub async fn select_file_and_save(name: String, current: String, window: Window)
 
     let ext = match Path::new(&picked).extension().and_then(OsStr::to_str) {
         Some(ext) => ext.to_owned(),
-        None => return,
+        None => return Ok(()),
     };
 
     let filename = uuid::Uuid::new_v4().to_string() + "." + &ext;
     theme_path.push(&filename);
 
     match fs::copy(picked, theme_path) {
-        Err(_) => return,
+        Err(_) => return Ok(()),
         Ok(_) => {}
     };
 
@@ -134,22 +137,20 @@ pub async fn select_file_and_save(name: String, current: String, window: Window)
 
     let _ = fs::write(config_path, updated_stringified);
 
-    let renderer = RENDERER.lock().unwrap();
     renderer.reload_theme_config();
     drop(renderer);
 
     let _ = window.emit("changed-file", value);
+
+    Ok(())
 }
 
-#[tauri::command]
-pub fn request_sensor_tree() {}
-
+#[inject(themes_path, server)]
 #[tauri::command]
 pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
-    let server = SERVER.lock().unwrap();
     let now_serving = server.now_serving();
     drop(server);
-    let mut config_path = THEMES_PATH.clone();
+    let mut config_path = themes_path.clone();
     config_path.push(now_serving);
     let mut manifest_path = config_path.clone();
     config_path.push("config.json");
@@ -229,13 +230,13 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
     }
 }
 
+#[inject(server, themes_path, renderer)]
 #[tauri::command]
 pub fn apply_theme_parameter(name: String, value: String) {
-    let server = SERVER.lock().unwrap();
     let now_serving = server.now_serving();
     drop(server);
 
-    let mut config_path = THEMES_PATH.clone();
+    let mut config_path = themes_path.clone();
     config_path.push(now_serving);
     let mut manifest_path = config_path.clone();
     config_path.push("config.json");
@@ -312,15 +313,15 @@ pub fn apply_theme_parameter(name: String, value: String) {
 
     let _ = fs::write(config_path, updated_stringified);
 
-    let renderer = RENDERER.lock().unwrap();
     renderer.reload_theme_config();
     drop(renderer);
 }
 
+#[inject(server, themes_path)]
 #[tauri::command]
 pub fn now_serving() -> Theme {
-    let server = SERVER.lock().unwrap();
     let fs_name = server.now_serving();
+    let theme_path = themes_path.to_owned();
 
     if fs_name == "__DEFAULT__" {
         return Theme {
@@ -334,12 +335,12 @@ pub fn now_serving() -> Theme {
             customisable_parameters: vec![],
         };
     }
-    get_theme(fs_name).unwrap()
+    get_theme_inner(theme_path, fs_name).unwrap()
 }
 
+#[inject(server)]
 #[tauri::command]
 pub fn apply_default() {
-    let mut server = SERVER.lock().unwrap();
     server.serve_path(None);
 }
 
@@ -372,9 +373,14 @@ struct ProgressEvent {
 }
 
 #[tauri::command]
-pub async fn install_theme(fs_name: String, window: Window) -> Result<(), &'static str> {
-    let mut theme_path = THEMES_PATH.clone().to_owned();
-    theme_path.push(&fs_name);
+pub async fn install_theme(
+    fs_name: String,
+    window: Window,
+    themes_path: State<'_, Arc<Mutex<ThemesPath>>>,
+) -> Result<(), &'static str> {
+    let mut themes_path = themes_path.clone().lock().unwrap().to_owned();
+    themes_path.push(&fs_name);
+
     let manifest_file = match reqwest::get(
         "https://zfcapi.brunostjohn.com/theme/".to_string() + &encode(&fs_name).into_owned(),
     )
@@ -416,12 +422,12 @@ pub async fn install_theme(fs_name: String, window: Window) -> Result<(), &'stat
         paths.remove(0);
 
         let mut dirs_only: Vec<&str> = paths.clone();
-        let mut full_dir = theme_path.clone();
+        let mut full_dir = themes_path.clone();
         dirs_only.remove(dirs_only.len() - 1);
         full_dir.extend(dirs_only);
         fs::create_dir_all(full_dir).or(Err("Failed to create dirs."))?;
 
-        let mut location = theme_path.clone();
+        let mut location = themes_path.clone();
         location.extend(&paths);
 
         let mut file_handle = File::create(location).or(Err("Failed to create file."))?;
@@ -466,16 +472,15 @@ pub async fn install_theme(fs_name: String, window: Window) -> Result<(), &'stat
     Ok(())
 }
 
+#[inject(renderer, server, themes_path)]
 #[tauri::command]
-pub async fn uninstall_theme(fs_name: String, window: Window) -> Result<(), &'static str> {
-    let mut theme_path = THEMES_PATH.clone();
-    let mut server = SERVER.lock().unwrap();
-    theme_path.push(&fs_name);
+pub fn uninstall_theme(fs_name: String, window: Window) -> Result<(), &'static str> {
+    let mut themes_path = themes_path.clone();
+    themes_path.push(&fs_name);
 
-    if theme_path.as_path().exists() {
-        fs::remove_dir_all(theme_path).or(Err("Failed to remove theme."))?;
+    if themes_path.as_path().exists() {
+        fs::remove_dir_all(themes_path).or(Err("Failed to remove theme."))?;
         if server.now_serving() == fs_name {
-            let renderer = RENDERER.lock().unwrap();
             server.serve_path(None);
             renderer.serve();
         }
@@ -489,24 +494,22 @@ pub async fn uninstall_theme(fs_name: String, window: Window) -> Result<(), &'st
     Err("Files don't exist.")
 }
 
+#[inject(themes_path)]
 #[tauri::command]
-pub async fn does_theme_exist(fs_name: String) -> bool {
-    let mut theme_path = THEMES_PATH.clone();
+pub fn does_theme_exist(fs_name: String) -> Result<bool, bool> {
+    let mut theme_path = themes_path.clone();
     theme_path.push(fs_name);
 
     if theme_path.as_path().exists() {
-        return true;
+        return Ok(true);
     }
-    false
+    Err(false)
 }
 
+#[inject(renderer, server, config, themes_path)]
 #[tauri::command]
 pub fn apply_theme(fs_name: String) {
-    let renderer = RENDERER.lock().unwrap();
-    let mut server = SERVER.lock().unwrap();
-    let mut config = CONFIG.lock().unwrap();
-
-    let mut theme_path = THEMES_PATH.clone();
+    let mut theme_path = themes_path.clone();
     theme_path.push(&fs_name);
 
     config.theme_path = Some(fs_name);
@@ -529,17 +532,21 @@ fn get_image_buffer(img: image::DynamicImage) -> (Vec<u8>, ColorFormat) {
     }
 }
 
+#[inject(themes_path)]
 #[tauri::command]
-pub async fn open_theme_folder() {
+pub fn open_theme_folder() -> Result<(), ()> {
     std::process::Command::new("explorer")
-        .arg(THEMES_PATH.to_str().unwrap())
+        .arg(themes_path.to_str().unwrap())
         .spawn()
         .unwrap();
+
+    Ok(())
 }
 
+#[inject(themes_path)]
 #[tauri::command]
-pub async fn get_theme_folder() -> &'static str {
-    return THEMES_PATH.to_str().unwrap();
+pub fn get_theme_folder() -> Result<String, ()> {
+    Ok(themes_path.to_str().unwrap().to_owned())
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Debug)]
@@ -565,9 +572,10 @@ pub struct Theme {
     pub customisable_parameters: Vec<Parameter>,
 }
 
+#[inject(themes_path)]
 #[tauri::command]
-pub async fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
-    let theme_path = THEMES_PATH.as_path();
+pub fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
+    let theme_path = themes_path.as_path();
 
     let themes_iter = match fs::read_dir(theme_path) {
         Ok(vals) => vals,
@@ -643,9 +651,15 @@ pub async fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
     Ok(themes)
 }
 
+#[inject(themes_path)]
 #[tauri::command]
 pub fn get_theme(fs_name: String) -> Result<Theme, &'static str> {
-    let mut theme_path = THEMES_PATH.clone();
+    let theme_path = themes_path.to_owned();
+
+    get_theme_inner(theme_path, fs_name)
+}
+
+pub fn get_theme_inner(mut theme_path: PathBuf, fs_name: String) -> Result<Theme, &'static str> {
     theme_path.push(&fs_name);
 
     let dir_path = theme_path;
