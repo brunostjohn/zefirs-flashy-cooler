@@ -5,6 +5,6 @@ export const load = ({ url }) => {
 	const { pathname } = url;
 
 	return {
-		pathname,
+		pathname: pathname.split("/")[1],
 	};
 };

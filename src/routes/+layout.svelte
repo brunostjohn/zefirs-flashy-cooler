@@ -34,7 +34,9 @@
 		<a class="nav-link" href="/themes" class:active={$page.url.pathname.includes("themes")}
 			>Themes</a
 		>
-		<a class="nav-link" href="/device" class:active={$page.url.pathname === "/device"}>Device</a>
+		<a class="nav-link" href="/services" class:active={$page.url.pathname === "/services"}
+			>Services</a
+		>
 		<a class="nav-link" href="/renderer" class:active={$page.url.pathname === "/renderer"}
 			>Renderer</a
 		>

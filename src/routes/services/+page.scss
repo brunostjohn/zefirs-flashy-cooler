@@ -1,0 +1,24 @@
+#pollRateFlex {
+	display: flex;
+
+	#pollRate {
+		margin-left: 1rem;
+		margin-right: 1rem;
+	}
+}
+
+.pollRateContainer {
+	margin-top: 1rem;
+}
+
+.input-group {
+	background-color: transparent;
+
+	span {
+		background-color: transparent;
+	}
+
+	input {
+		background-color: transparent;
+	}
+}
