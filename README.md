@@ -33,10 +33,12 @@ To build this app from source, you'll need to give it some TLC.
 ### How to build
 
 1. Copy over all the Ultralight static libs to `/src-tauri/static-libs`.
-2. Compile LibreHardwareMonitorNative with `dotnet publish /p:NativeLib=Static /p:SelfContained=true -r win-x64 -c release` and also copy it to `/src-tauri/static-libs`.
-3. You might be missing some libs in your PATH. Check `/src-tauri/build.rs` and change directories to be applicable to your environment.
-4. If `System.IO.Compression.Native.Aot.lib` throws linker conflicts for you, run `lib /remove:libs-native\System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.Aot.dir\D\_\a_work\1\s\src\native\external\brotli\dec\decode.c.obj /LIBPATH:[WHEREEVER YOU HAVE THE REPO ON YOUR MACHINE]zefirs-flashy-cooler\src-tauri\static-libs .\System.IO.Compression.Native.Aot.lib`. These symbols are still covered by a different library and everything still functions correctly.
-5. Run `cargo tauri dev` in a cmd window with admin privileges. You should see that app start up.
+2. Copy Ultralight DLLs to `/src-tauri/`.
+3. Compile LibreHardwareMonitorNative with `dotnet publish /p:NativeLib=Static /p:SelfContained=true -r win-x64 -c release` and also copy it to `/src-tauri/static-libs`.
+4. You might be missing some libs in your PATH. Check `/src-tauri/build.rs` and change directories to be applicable to your environment.
+5. If `System.IO.Compression.Native.Aot.lib` throws linker conflicts for you, run `lib /remove:libs-native\System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.Aot.dir\D\_\a_work\1\s\src\native\external\brotli\dec\decode.c.obj /LIBPATH:[WHEREEVER YOU HAVE THE REPO ON YOUR MACHINE]zefirs-flashy-cooler\src-tauri\static-libs .\System.IO.Compression.Native.Aot.lib`. These symbols are still covered by a different library and everything still functions correctly.
+6. Copy supporting DLLs generated during AOT to `/src-tauri/`.
+7. Run `cargo tauri dev` in a cmd window with admin privileges. You should see that app start up.
 
 ## I want to make my own theme.
 

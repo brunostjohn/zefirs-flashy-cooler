@@ -17,9 +17,11 @@ pub fn receive_flag(channel: &Receiver<bool>, assume: bool) -> bool {
 
 pub struct EventTicker {
     frequency: Duration,
+    #[allow(dead_code)]
     time: SystemTime,
 }
 
+#[allow(dead_code)]
 impl EventTicker {
     pub fn new(frequency_ms: u64) -> Self {
         EventTicker {

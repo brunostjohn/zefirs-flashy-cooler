@@ -1,7 +1,6 @@
-use std::process::{Command, ExitStatus};
+use std::process::Command;
 
 use macros::inject;
-use tauri::AppHandle;
 
 #[inject(config)]
 #[tauri::command]

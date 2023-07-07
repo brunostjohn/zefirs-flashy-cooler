@@ -43,6 +43,8 @@ use self::ensure_dirs::ensure_dirs;
 
 use std::{
     env,
+    ffi::OsStr,
+    fs,
     path::PathBuf,
     sync::{Arc, Mutex},
 };

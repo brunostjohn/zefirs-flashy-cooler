@@ -242,6 +242,7 @@ impl Renderer {
         };
     }
 
+    #[allow(dead_code)]
     pub fn change_fps(&self, fps: u64) {
         match self.fps_channel.send(Duration::from_millis(1000 / fps)) {
             Ok(_) => {}

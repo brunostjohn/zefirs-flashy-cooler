@@ -143,6 +143,7 @@ impl Server {
         stream.write_all(response_header.as_bytes()).unwrap();
     }
 
+    #[allow(dead_code)]
     pub fn stop(&mut self) {
         match self.end_channel.send(true) {
             Err(_) => println!("Failed to send end signal to thread: server."),
