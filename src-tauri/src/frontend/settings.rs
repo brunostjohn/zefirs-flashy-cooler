@@ -1,6 +1,7 @@
-// use windows_taskscheduler::{RunLevel, Task, TaskAction, TaskLogonTrigger};
+use std::process::{Command, ExitStatus};
 
 use macros::inject;
+use tauri::AppHandle;
 
 #[inject(config)]
 #[tauri::command]
@@ -23,12 +24,48 @@ pub fn get_start_login() -> bool {
 
 #[inject(config, app_folder)]
 #[tauri::command]
-pub fn set_start_login(setting: bool) {
-    // if setting {
-    //     let trigger = TaskLogonTrigger::new("zefirs-flashy-cooler-autostart");
-    // }
-    config.start_minimised = setting;
+pub fn set_start_login(setting: bool) -> Result<(), &'static str> {
+    config.start_at_login = setting;
     config.write_to_drive(app_folder.0.to_owned());
+
+    if setting {
+        let argv = [
+            "/C",
+            &("schtasks /create /RU ".to_string()
+                + &whoami::username()
+                + " /tn ZefirsFlashyCooler-Autostart /tr "
+                + app_folder.0.to_str().unwrap()
+                + "\\zefirs-flashy-cooler.exe"
+                + " /sc onlogon /IT /RL highest /f"),
+        ];
+
+        Command::new("cmd")
+            .args(argv)
+            .spawn()
+            .or(Err("Failed to run command!"))?;
+    } else {
+        let argv = [
+            "/C",
+            "schtasks /query | findstr ZefirsFlashyCooler-Autostart",
+        ];
+
+        let exit_code = Command::new("cmd")
+            .args(argv)
+            .output()
+            .or(Err("Failed to run command!"))?
+            .status;
+
+        if exit_code.success() {
+            let argv = ["/C", "schtasks /delete /tn ZefirsFlashyCooler-Autostart /f"];
+
+            Command::new("cmd")
+                .args(argv)
+                .spawn()
+                .or(Err("Failed to run command!"))?;
+        }
+    }
+
+    Ok(())
 }
 
 #[inject(config)]

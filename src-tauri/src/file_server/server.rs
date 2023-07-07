@@ -2,7 +2,7 @@ use std::{
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,
-    sync::mpsc::{self, TryRecvError},
+    sync::mpsc::{self},
     thread::{self},
 };
 
@@ -13,6 +13,10 @@ pub struct Server {
     path_channel: mpsc::Sender<Option<PathBuf>>,
     serving_fs_name: String,
 }
+
+#[path = "../helpers/threading.rs"]
+mod helpers_threading;
+use helpers_threading::receive_flag;
 
 impl Server {
     pub fn new(path: Option<PathBuf>) -> Self {
@@ -53,11 +57,7 @@ impl Server {
                     None => Server::handle_default(stream),
                 }
 
-                if match rx_end.try_recv() {
-                    Ok(result) => result,
-                    Err(TryRecvError::Empty) => false,
-                    Err(TryRecvError::Disconnected) => true,
-                } {
+                if receive_flag(&rx_end, false) {
                     break;
                 }
             }
