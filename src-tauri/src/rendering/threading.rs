@@ -10,7 +10,7 @@ use helpers_threading::receive_flag;
 
 #[path = "../helpers/traits.rs"]
 mod traits;
-use traits::{Reassign, TryElapsed};
+// use traits::{Reassign, TryElapsed};
 
 use engine::Ultralight;
 use image::{self, RgbImage};
@@ -20,10 +20,12 @@ use std::fs::{self};
 use std::path::PathBuf;
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use std::vec;
 
 use crate::rendering::device::DeviceContainer;
+use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
+use crate::rendering::traits::{CustomSerialise, Reassign};
 use crate::sensors::Sensors;
 use crate::server::Server;
 
@@ -60,15 +62,9 @@ impl Renderer {
 
             println!("Received {:?} fps", fps);
 
-            static GC_TIMING: Duration = Duration::from_secs(15);
-
-            let mut frame_time = Duration::from_millis(1000 / fps);
-
-            let mut current_time = SystemTime::now();
-
-            let mut gc_time = SystemTime::now();
-
-            let mut sensor_time = SystemTime::now();
+            let mut gc_time = EventTicker::new(15 * 1000);
+            let mut frame_time = EventTicker::new(1000 / fps);
+            let mut sensor_time = EventTicker::new(3000);
 
             let mut device = match DeviceContainer::new() {
                 Err(error) => {
@@ -78,10 +74,9 @@ impl Renderer {
                 Ok(result) => result,
             };
 
-            match device.init() {
-                Ok(_) => {}
-                Err(err) => println!("{:?}", err),
-            };
+            let _ = device
+                .init()
+                .or_else(|_| Err(println!("Failed to initialise device.")));
 
             let mut sensor_flag = false;
             let mut sensor_values = vec![];
@@ -89,87 +84,46 @@ impl Renderer {
             loop {
                 engine.update();
 
-                if gc_time.try_elapsed(GC_TIMING) {
-                    gc_time = SystemTime::now();
-
+                if gc_time.check_time() {
                     engine.garbage_collect();
                 }
 
-                if current_time.try_elapsed(frame_time) {
-                    current_time = SystemTime::now();
-
-                    if sensor_time.try_elapsed(600) && sensor_flag {
-                        sensor_time = SystemTime::now();
-
+                if frame_time.check_time() {
+                    if sensor_time.check_time() && sensor_flag {
                         let sensors = sensors.lock().unwrap();
-                        match sensors.get_sensor_value() {
-                            Ok(result) => {
-                                if result[0].value != "a"
-                                    && result[0].r#type != "a"
-                                    && result[0].value != "3"
-                                {
-                                    sensor_values = result;
-                                }
-                            }
-                            Err(_) => {}
-                        };
+
+                        sensor_values = sensor_values.reassign(sensors.get_sensor_value());
+
                         drop(sensors);
 
-                        let mut all_sensor_string = "{".to_owned();
-
-                        for sensor in &sensor_values {
-                            all_sensor_string += &("\"".to_owned() + &sensor.code_name + "\":");
-                            let sensor_string = serde_json::to_string(&sensor)
-                                .or::<Result<String, &'static str>>(Ok("{}".to_owned()))
-                                .unwrap();
-                            all_sensor_string += &sensor_string;
-                            all_sensor_string += ",";
-                        }
-
-                        all_sensor_string.pop();
-                        all_sensor_string += "}";
-
                         engine.call_js_script(
-                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", &all_sensor_string),
+                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", sensor_values.custom_serialise()),
                         );
                     }
 
                     engine.render();
                     let image = engine.get_bitmap().or::<Vec<u8>>(Ok(vec![])).unwrap();
 
-                    match RgbImage::from_raw(480, 480, image.to_vec()) {
-                        None => {}
-                        Some(image) => {
-                            match device.send_image(&image) {
-                                Ok(_) => {}
-                                Err(_) => {
-                                    thread::sleep(Duration::from_secs(7));
-                                    match device.reopen() {
-                                        Ok(_) => {
-                                            match device.init() {
-                                                Ok(_) => {}
-                                                Err(_) => {
-                                                    println!("Failed to reinit device.");
-                                                    // send message to ui
-                                                }
-                                            }
-                                        }
-                                        Err(_) => {
-                                            println!("Failed to reconnect to device.");
-                                        }
-                                    };
+                    let _: Option<usize> =
+                        RgbImage::from_raw(480, 480, image.to_vec()).and_then(|image| {
+                            let _ = device.send_image(&image).or_else(|_| {
+                                thread::sleep(Duration::from_secs(7));
+                                if let Ok(_) = device.reopen() {
+                                    let _ = device
+                                        .init()
+                                        .or_else(|_| Err(println!("Failed to re-init device!")));
                                 }
-                            };
-                        }
-                    }
+                                Err("")
+                            });
+                            None
+                        });
                 }
                 thread::sleep(Duration::from_millis(3));
 
                 if receive_flag(&rx_theme, false) {
-                    match engine.load_url("http://127.0.0.1:2137/") {
-                        Ok(_) => {}
-                        Err(_) => println!("Failed to reload webpage!"),
-                    };
+                    let _ = engine
+                        .load_url("http://127.0.0.1:2137/")
+                        .or_else(|_| Err(println!("Failed to reload theme!")));
                 }
 
                 if receive_flag(&rx_reload, false) {
@@ -190,9 +144,7 @@ impl Renderer {
                                 .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
                                 .unwrap();
 
-                        let theme_config = theme_config_parsed;
-
-                        let sensors_only: Vec<ThemeConfigItem> = theme_config
+                        let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
                             .iter()
                             .filter(|x| x.r#type == "sensor")
                             .map(|x| x.to_owned())
@@ -215,29 +167,10 @@ impl Renderer {
                             sensor_flag = false;
                         }
 
-                        let everything_else: Vec<ThemeConfigItem> = theme_config
-                            .iter()
-                            .filter(|x| x.r#type != "sensor")
-                            .map(|x| x.to_owned())
-                            .collect::<Vec<ThemeConfigItem>>();
-
-                        let mut collective_sensors_with_labels = "{".to_owned();
-
-                        for item in everything_else {
-                            collective_sensors_with_labels +=
-                                &("\"".to_owned() + &item.name.clone() + "\":");
-                            let item_string = serde_json::to_string::<ThemeConfigItem>(&item)
-                                .or::<Result<String, &'static str>>(Ok("[]".to_string()))
-                                .unwrap();
-                            collective_sensors_with_labels += &item_string;
-                            collective_sensors_with_labels += ",";
-                        }
-
-                        collective_sensors_with_labels.pop();
-                        collective_sensors_with_labels += "}";
+                        let serialised = theme_config_parsed.custom_serialise();
 
                         engine.call_js_script(
-                            format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &collective_sensors_with_labels),
+                            format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &serialised),
                         );
                     }
                 }
@@ -252,7 +185,7 @@ impl Renderer {
                     break;
                 }
 
-                frame_time = frame_time.reassign(&rx_fps);
+                frame_time.change_frequency(&rx_fps);
             }
         });
 
