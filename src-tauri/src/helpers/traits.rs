@@ -3,9 +3,7 @@ use std::{
     time::{Duration, SystemTime},
 };
 
-use crate::sensors::SensorWithDetails;
-
-use super::ThemeConfigItem;
+use crate::{rendering::ThemeConfigItem, sensors::SensorWithDetails};
 
 pub trait CustomSerialise {
     fn custom_serialise(&self) -> String

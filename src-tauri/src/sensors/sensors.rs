@@ -2,10 +2,15 @@ use std::{
     ffi::{CStr, CString},
     sync::mpsc,
     thread::{self, JoinHandle},
-    time::{Duration, SystemTime},
 };
 
 use serde::{Deserialize, Serialize};
+
+#[path = "../helpers/threading.rs"]
+mod helpers_threading;
+use helpers_threading::EventTicker;
+
+use self::helpers_threading::{receive_flag, ChangeFrequency};
 
 #[derive(Debug)]
 #[repr(C)]
@@ -24,7 +29,7 @@ struct PreSensor {
 extern "C" {
     fn open_computer() -> *mut i16;
     fn close_computer(computer: *mut i16);
-    fn get_all_sensors(computer: *mut i16) -> *mut i8;
+    fn get_all_sensors_ptrs(computer: *mut i16) -> *mut i8;
     fn get_single_sensor_ptrs(path: *mut i8, computer: *mut i16) -> PreSensor;
     fn free_mem(ptr: *mut i8);
 }
@@ -80,83 +85,14 @@ impl Sensors {
         let (tx_sensor_val, rx_sensor_val) = mpsc::sync_channel(0);
 
         let sensor_thread = thread::spawn(move || {
-            fn get_all_sensors_post(ptr: *mut i8) -> Vec<Hardware> {
-                let sensor_string;
-                unsafe {
-                    let strc = CStr::from_ptr(ptr);
-
-                    sensor_string = match strc.to_str() {
-                        Ok(res) => res.to_owned(),
-                        Err(_) => "".to_owned(),
-                    };
-
-                    free_mem(ptr);
-                }
-                let sensors: Vec<Hardware> = match serde_json::from_str(&sensor_string) {
-                    Ok(sensors) => sensors,
-                    Err(_) => vec![],
-                };
-
-                sensors
-            }
-
-            fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
-                let sensor_string = CString::new(sensor_string.to_owned()).unwrap();
-                let pre =
-                    unsafe { get_single_sensor_ptrs(sensor_string.as_ptr() as *mut i8, computer) };
-                let sensor_cstr =
-                    unsafe { CStr::from_ptr(pre.sensor).to_str().unwrap().to_owned() };
-                let value_cstr = unsafe { CStr::from_ptr(pre.value).to_str().unwrap().to_owned() };
-                let type_cstr = unsafe { CStr::from_ptr(pre.r#type).to_str().unwrap().to_owned() };
-                let parent_hw_type_cstr = unsafe {
-                    CStr::from_ptr(pre.parent_hw_type)
-                        .to_str()
-                        .unwrap()
-                        .to_owned()
-                };
-
-                unsafe {
-                    free_mem(pre.parent_hw_type);
-                    free_mem(pre.sensor);
-                    free_mem(pre.r#type);
-                    free_mem(pre.value);
-                };
-
-                Sensor {
-                    sensor: sensor_cstr,
-                    value: value_cstr,
-                    r#type: type_cstr,
-                    parent_hw_type: Some(parent_hw_type_cstr),
-                }
-            }
-
-            fn get_multiple_sensors(
-                sensor_paths: Vec<String>,
-                computer_ptr: *mut i16,
-            ) -> Vec<Sensor> {
-                let mut sensors = vec![];
-
-                for sensor in sensor_paths {
-                    let sensor = get_single_sensor(&sensor, computer_ptr);
-                    sensors.push(sensor);
-                }
-
-                sensors
-            }
-
-            let mut poll = Duration::from_millis(poll.or(Some(3000)).unwrap());
+            let mut poll = EventTicker::new(poll.or(Some(3000)).unwrap());
             let mut subscribed_multi = false;
             let mut subscribed: String = "".to_owned();
 
             let computer = unsafe { open_computer() };
 
             loop {
-                let start_time = SystemTime::now();
-
-                if match rx_end.try_recv() {
-                    Ok(val) => val,
-                    Err(_) => false,
-                } {
+                if receive_flag(&rx_end, false) {
                     println!("Received end signal!");
                     unsafe {
                         close_computer(computer);
@@ -164,24 +100,15 @@ impl Sensors {
                     break;
                 }
 
-                if match rx_list_rq.try_recv() {
-                    Ok(val) => val,
-                    Err(_) => false,
-                } {
-                    let sensor_list;
-                    unsafe {
-                        sensor_list = get_all_sensors_post(get_all_sensors(computer));
-                    }
-                    match tx_sensor_list.send(sensor_list) {
-                        Ok(_) => {}
-                        Err(_) => println!("Failed to send list."),
-                    };
+                if receive_flag(&rx_list_rq, false) {
+                    let sensor_list = get_all_sensors(computer);
+
+                    let _ = tx_sensor_list
+                        .send(sensor_list)
+                        .or_else(|_| Err(println!("Failed to send sensor list!")));
                 }
 
-                match rx_poll.try_recv() {
-                    Ok(received) => poll = Duration::from_millis(received),
-                    Err(_) => {}
-                }
+                poll.change_frequency(&rx_poll);
 
                 match rx_subscribe.try_recv() {
                     Ok(sub) => {
@@ -213,16 +140,7 @@ impl Sensors {
                     let _ = tx_sensor_val.send(vec![val]);
                 }
 
-                match start_time.elapsed() {
-                    Ok(dur) => {
-                        if dur < poll {
-                            thread::sleep(poll - dur);
-                        }
-                    }
-                    Err(_) => {
-                        thread::sleep(poll);
-                    }
-                }
+                poll.wait_for_next();
             }
         });
 
@@ -318,4 +236,64 @@ impl Sensors {
 
         Ok(details)
     }
+}
+
+fn get_all_sensors(computer: *mut i16) -> Vec<Hardware> {
+    let ptr = unsafe { get_all_sensors_ptrs(computer) };
+    let sensor_string;
+    unsafe {
+        let strc = CStr::from_ptr(ptr);
+
+        sensor_string = match strc.to_str() {
+            Ok(res) => res.to_owned(),
+            Err(_) => "".to_owned(),
+        };
+
+        free_mem(ptr);
+    }
+    let sensors: Vec<Hardware> = match serde_json::from_str(&sensor_string) {
+        Ok(sensors) => sensors,
+        Err(_) => vec![],
+    };
+
+    sensors
+}
+
+fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
+    let sensor_string = CString::new(sensor_string.to_owned()).unwrap();
+    let pre = unsafe { get_single_sensor_ptrs(sensor_string.as_ptr() as *mut i8, computer) };
+    let sensor_cstr = unsafe { CStr::from_ptr(pre.sensor).to_str().unwrap().to_owned() };
+    let value_cstr = unsafe { CStr::from_ptr(pre.value).to_str().unwrap().to_owned() };
+    let type_cstr = unsafe { CStr::from_ptr(pre.r#type).to_str().unwrap().to_owned() };
+    let parent_hw_type_cstr = unsafe {
+        CStr::from_ptr(pre.parent_hw_type)
+            .to_str()
+            .unwrap()
+            .to_owned()
+    };
+
+    unsafe {
+        free_mem(pre.parent_hw_type);
+        free_mem(pre.sensor);
+        free_mem(pre.r#type);
+        free_mem(pre.value);
+    };
+
+    Sensor {
+        sensor: sensor_cstr,
+        value: value_cstr,
+        r#type: type_cstr,
+        parent_hw_type: Some(parent_hw_type_cstr),
+    }
+}
+
+fn get_multiple_sensors(sensor_paths: Vec<String>, computer_ptr: *mut i16) -> Vec<Sensor> {
+    let mut sensors = vec![];
+
+    for sensor in sensor_paths {
+        let sensor = get_single_sensor(&sensor, computer_ptr);
+        sensors.push(sensor);
+    }
+
+    sensors
 }
