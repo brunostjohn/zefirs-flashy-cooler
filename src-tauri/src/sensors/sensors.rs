@@ -29,7 +29,7 @@ struct PreSensor {
 extern "C" {
     fn open_computer() -> *mut i16;
     fn close_computer(computer: *mut i16);
-    fn get_all_sensors_ptrs(computer: *mut i16) -> *mut i8;
+    fn get_all_sensors(computer: *mut i16) -> *mut i8;
     fn get_single_sensor_ptrs(path: *mut i8, computer: *mut i16) -> PreSensor;
     fn free_mem(ptr: *mut i8);
 }
@@ -101,7 +101,7 @@ impl Sensors {
                 }
 
                 if receive_flag(&rx_list_rq, false) {
-                    let sensor_list = get_all_sensors(computer);
+                    let sensor_list = get_all_sensors_vec(computer);
 
                     let _ = tx_sensor_list
                         .send(sensor_list)
@@ -238,8 +238,8 @@ impl Sensors {
     }
 }
 
-fn get_all_sensors(computer: *mut i16) -> Vec<Hardware> {
-    let ptr = unsafe { get_all_sensors_ptrs(computer) };
+fn get_all_sensors_vec(computer: *mut i16) -> Vec<Hardware> {
+    let ptr = unsafe { get_all_sensors(computer) };
     let sensor_string;
     unsafe {
         let strc = CStr::from_ptr(ptr);
