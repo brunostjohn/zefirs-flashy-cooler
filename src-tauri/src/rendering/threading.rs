@@ -4,6 +4,14 @@ mod engine;
 #[path = "devices/device.rs"]
 mod device;
 
+#[path = "../helpers/threading.rs"]
+mod helpers_threading;
+use helpers_threading::receive_flag;
+
+#[path = "../helpers/traits.rs"]
+mod traits;
+use traits::{Reassign, TryElapsed};
+
 use engine::Ultralight;
 use image::{self, RgbImage};
 use serde::{Deserialize, Serialize};
@@ -23,7 +31,7 @@ pub struct Renderer {
     thread: Option<JoinHandle<()>>,
     end_channel: mpsc::SyncSender<bool>,
     theme_channel: mpsc::Sender<bool>,
-    fps_channel: mpsc::Sender<u64>,
+    fps_channel: mpsc::Sender<Duration>,
     reload_config_channel: mpsc::Sender<bool>,
 }
 
@@ -81,46 +89,18 @@ impl Renderer {
             loop {
                 engine.update();
 
-                if match gc_time.elapsed() {
-                    Ok(time) => {
-                        if time >= GC_TIMING {
-                            gc_time = SystemTime::now();
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    Err(_) => false,
-                } {
+                if gc_time.try_elapsed(GC_TIMING) {
+                    gc_time = SystemTime::now();
+
                     engine.garbage_collect();
                 }
 
-                if match current_time.elapsed() {
-                    Ok(time) => {
-                        if time >= frame_time {
-                            current_time = SystemTime::now();
-                            true
-                        } else {
-                            false
-                        }
-                    }
-                    Err(_) => {
-                        current_time = SystemTime::now();
-                        false
-                    }
-                } {
-                    if (match sensor_time.elapsed() {
-                        Ok(time) => {
-                            if time >= Duration::from_millis(600) {
-                                sensor_time = SystemTime::now();
-                                true
-                            } else {
-                                false
-                            }
-                        }
-                        Err(_) => false,
-                    } && sensor_flag)
-                    {
+                if current_time.try_elapsed(frame_time) {
+                    current_time = SystemTime::now();
+
+                    if sensor_time.try_elapsed(600) && sensor_flag {
+                        sensor_time = SystemTime::now();
+
                         let sensors = sensors.lock().unwrap();
                         match sensors.get_sensor_value() {
                             Ok(result) => {
@@ -155,13 +135,7 @@ impl Renderer {
                     }
 
                     engine.render();
-                    let image = match engine.get_bitmap() {
-                        Ok(img) => img,
-                        Err(err) => {
-                            println!("{:?}", err);
-                            vec![]
-                        }
-                    };
+                    let image = engine.get_bitmap().or::<Vec<u8>>(Ok(vec![])).unwrap();
 
                     match RgbImage::from_raw(480, 480, image.to_vec()) {
                         None => {}
@@ -191,20 +165,14 @@ impl Renderer {
                 }
                 thread::sleep(Duration::from_millis(3));
 
-                if match rx_theme.try_recv() {
-                    Ok(result) => result,
-                    Err(_) => false,
-                } {
+                if receive_flag(&rx_theme, false) {
                     match engine.load_url("http://127.0.0.1:2137/") {
                         Ok(_) => {}
                         Err(_) => println!("Failed to reload webpage!"),
                     };
                 }
 
-                if match rx_reload.try_recv() {
-                    Ok(result) => result,
-                    Err(_) => false,
-                } {
+                if receive_flag(&rx_reload, false) {
                     let server = server.lock().unwrap();
                     let now_serving = server.now_serving();
                     drop(server);
@@ -274,30 +242,17 @@ impl Renderer {
                     }
                 }
 
-                if match rx_end.try_recv() {
-                    Ok(result) => result,
-                    _ => false,
-                } {
+                if receive_flag(&rx_end, false) {
                     println!("Received end signal. Thread: renderer.");
-                    match device.close() {
-                        Err(_) => println!("Failed to close device!."),
-                        _ => {}
-                    };
-                    match device.close() {
-                        Err(_) => {
-                            println!("Failed to close device.");
-                        }
-                        _ => {}
-                    };
+
+                    let _ = device
+                        .close()
+                        .or_else(|_| Err(println!("Failed to close device!")));
+
                     break;
                 }
 
-                match rx_fps.try_recv() {
-                    Ok(result) => {
-                        frame_time = Duration::from_millis(1000 / result);
-                    }
-                    Err(_) => {}
-                }
+                frame_time = frame_time.reassign(&rx_fps);
             }
         });
 
@@ -355,7 +310,7 @@ impl Renderer {
     }
 
     pub fn change_fps(&self, fps: u64) {
-        match self.fps_channel.send(fps) {
+        match self.fps_channel.send(Duration::from_millis(1000 / fps)) {
             Ok(_) => {}
             Err(_) => println!("Failed to change FPS!"),
         }
