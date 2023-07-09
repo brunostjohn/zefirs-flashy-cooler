@@ -1,17 +1,15 @@
-use std::{
-    borrow::Cow,
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc,
-    },
+use std::sync::{
+    mpsc::{Receiver, Sender},
+    Arc,
 };
 
 use self::gpu::GPUDriver;
 
 use vulkano::{
-    buffer::{Buffer, BufferContents, BufferCreateInfo, BufferError, BufferUsage, Subbuffer},
+    buffer::{Buffer, BufferContents, BufferCreateInfo, BufferUsage, Subbuffer},
     device::QueueFlags,
-    format,
+    format::Format,
+    image::ImageDimensions,
     instance::{Instance, InstanceCreateInfo},
     memory::allocator::{
         AllocationCreateInfo, FreeListAllocator, GenericMemoryAllocator, MemoryUsage,
@@ -21,7 +19,7 @@ use vulkano::{
 };
 use vulkano::{
     device::{physical::PhysicalDeviceType, Device, DeviceCreateInfo},
-    format::Format,
+    image::StorageImage,
 };
 use vulkano::{
     device::{DeviceExtensions, Queue},
@@ -33,12 +31,6 @@ use ul_sys::*;
 #[path = "./gpu.rs"]
 mod gpu;
 use gpu::*;
-
-// pub enum VulkanVertexBuffer {
-//     Format2f4ub2f(Vec<ULVertex_2f_4ub_2f>),
-//     Format2f4ub2f2f28f(Vec<ULVertex_2f_4ub_2f_2f_28f>),
-// }
-
 #[derive(BufferContents, Vertex)]
 #[repr(C)]
 pub struct Vertex2F_4UB_2F {
@@ -184,14 +176,14 @@ pub enum VulkanGPUCommand {
     DestroyRenderBuffer(u32),
     CreateGeometry(
         u32,
-        Option<Vertex2F_4UB_2F>,
-        Option<Vertex2F_4UB_2F_2F_28F>,
+        Option<Vec<ULVertex_2f_4ub_2f>>,
+        Option<Vec<ULVertex_2f_4ub_2f_2f_28f>>,
         IndexBuffer,
     ),
     UpdateGeometry(
         u32,
-        Option<Vertex2F_4UB_2F>,
-        Option<Vertex2F_4UB_2F_2F_28F>,
+        Option<Vec<ULVertex_2f_4ub_2f>>,
+        Option<Vec<ULVertex_2f_4ub_2f_2f_28f>>,
         IndexBuffer,
     ),
     DestroyGeometry(u32),
@@ -216,6 +208,52 @@ impl GPUDriver for VulkanGPUDriverSender {
         vertex_buffer: gpu::VertexBuffer,
         index_buffer: gpu::IndexBuffer,
     ) {
+        match vertex_buffer.format {
+            VertexBufferFormat::Format_2f_4ub_2f => {
+                let (head, body, tail) = unsafe {
+                    vertex_buffer
+                        .buffer
+                        .as_slice()
+                        .align_to::<ULVertex_2f_4ub_2f>()
+                };
+
+                assert!(head.is_empty());
+                assert!(tail.is_empty());
+
+                let vertices = body.to_vec();
+
+                self.sender
+                    .send(VulkanGPUCommand::CreateGeometry(
+                        geometry_id,
+                        Some(vertices),
+                        None,
+                        index_buffer,
+                    ))
+                    .unwrap();
+            }
+            VertexBufferFormat::Format_2f_4ub_2f_2f_28f => {
+                let (head, body, tail) = unsafe {
+                    vertex_buffer
+                        .buffer
+                        .as_slice()
+                        .align_to::<ULVertex_2f_4ub_2f_2f_28f>()
+                };
+
+                assert!(head.is_empty());
+                assert!(tail.is_empty());
+
+                let vertices = body.to_vec();
+
+                self.sender
+                    .send(VulkanGPUCommand::CreateGeometry(
+                        geometry_id,
+                        None,
+                        Some(vertices),
+                        index_buffer,
+                    ))
+                    .unwrap();
+            }
+        };
     }
 
     fn create_render_buffer(&mut self, render_buffer_id: u32, render_buffer: gpu::RenderBuffer) {
@@ -273,7 +311,11 @@ impl GPUDriver for VulkanGPUDriverSender {
         self.next_texture_id
     }
 
-    fn update_command_list(&mut self, command_list: Vec<gpu::GPUCommand>) {}
+    fn update_command_list(&mut self, command_list: Vec<gpu::GPUCommand>) {
+        self.sender
+            .send(VulkanGPUCommand::UpdateCommandList(command_list))
+            .unwrap();
+    }
 
     fn update_geometry(
         &mut self,
@@ -281,6 +323,52 @@ impl GPUDriver for VulkanGPUDriverSender {
         vertex_buffer: gpu::VertexBuffer,
         index_buffer: gpu::IndexBuffer,
     ) {
+        match vertex_buffer.format {
+            VertexBufferFormat::Format_2f_4ub_2f => {
+                let (head, body, tail) = unsafe {
+                    vertex_buffer
+                        .buffer
+                        .as_slice()
+                        .align_to::<ULVertex_2f_4ub_2f>()
+                };
+
+                assert!(head.is_empty());
+                assert!(tail.is_empty());
+
+                let vertices = body.to_vec();
+
+                self.sender
+                    .send(VulkanGPUCommand::UpdateGeometry(
+                        geometry_id,
+                        Some(vertices),
+                        None,
+                        index_buffer,
+                    ))
+                    .unwrap();
+            }
+            VertexBufferFormat::Format_2f_4ub_2f_2f_28f => {
+                let (head, body, tail) = unsafe {
+                    vertex_buffer
+                        .buffer
+                        .as_slice()
+                        .align_to::<ULVertex_2f_4ub_2f_2f_28f>()
+                };
+
+                assert!(head.is_empty());
+                assert!(tail.is_empty());
+
+                let vertices = body.to_vec();
+
+                self.sender
+                    .send(VulkanGPUCommand::UpdateGeometry(
+                        geometry_id,
+                        None,
+                        Some(vertices),
+                        index_buffer,
+                    ))
+                    .unwrap();
+            }
+        };
     }
 
     fn update_texture(&mut self, texture_id: u32, bitmap: OwnedBitmap) {
@@ -297,6 +385,8 @@ pub struct VulkanGPUDriverReceiver {
     queues: Box<dyn ExactSizeIterator<Item = Arc<Queue>>>,
     receiver: Receiver<VulkanGPUCommand>,
     allocator: GenericMemoryAllocator<Arc<FreeListAllocator>>,
+    main_queue: Arc<Queue>,
+    main_queue_family_index: u32,
 }
 
 impl VulkanGPUDriverReceiver {
@@ -334,7 +424,7 @@ impl VulkanGPUDriverReceiver {
             })
             .unwrap();
 
-        let (device, queues) = Device::new(
+        let (device, mut queues) = Device::new(
             physical_device,
             DeviceCreateInfo {
                 ..Default::default()
@@ -344,6 +434,8 @@ impl VulkanGPUDriverReceiver {
 
         let allocator = StandardMemoryAllocator::new_default(device.clone());
 
+        let main_queue = queues.next().unwrap();
+
         Ok(Self {
             library,
             instance,
@@ -351,10 +443,153 @@ impl VulkanGPUDriverReceiver {
             queues: Box::new(queues),
             receiver,
             allocator,
+            main_queue_family_index: main_queue.queue_family_index(),
+            main_queue,
         })
     }
 
     pub fn get_memory_allocator(&self) -> &GenericMemoryAllocator<Arc<FreeListAllocator>> {
         return &self.allocator;
+    }
+
+    pub fn render(&mut self) -> Result<(), &'static str> {
+        while let Ok(cmd) = self.receiver.try_recv() {
+            match cmd {
+                VulkanGPUCommand::CreateTexture(id, bitmap) => {
+                    self.create_texture(id, bitmap)?;
+                }
+                VulkanGPUCommand::UpdateTexture(id, bitmap) => {
+                    self.update_texture(id, bitmap)?;
+                }
+                VulkanGPUCommand::DestroyTexture(id) => {
+                    self.destroy_texture(id)?;
+                }
+                VulkanGPUCommand::CreateRenderBuffer(id, render_buffer) => {
+                    self.create_render_buffer(id, render_buffer)?;
+                }
+                VulkanGPUCommand::DestroyRenderBuffer(id) => {
+                    self.destroy_render_buffer(id)?;
+                }
+                VulkanGPUCommand::CreateGeometry(id, vert_small, vert_large, index) => {
+                    if let Some(small) = vert_small {
+                        self.create_geometry(id, small, index)?;
+                    } else if let Some(large) = vert_large {
+                        self.create_geometry(id, large, index)?;
+                    }
+                }
+                VulkanGPUCommand::UpdateGeometry(id, vert_small, vert_large, index) => {
+                    if let Some(small) = vert_small {
+                        self.update_geometry(id, small, index)?;
+                    } else if let Some(large) = vert_large {
+                        self.update_geometry(id, large, index)?;
+                    }
+                }
+                VulkanGPUCommand::DestroyGeometry(id) => {
+                    self.destroy_geometry(id)?;
+                }
+                VulkanGPUCommand::UpdateCommandList(command_list) => {
+                    self.update_command_list(command_list)?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn create_texture(&mut self, id: u32, bitmap: OwnedBitmap) -> Result<(), &'static str> {
+        if bitmap.is_empty() {
+            // create empty texture
+        } else {
+            let pixels = bitmap
+                .pixels()
+                .ok_or("Failed to get bitmap pixels")?
+                .to_vec();
+
+            let upload_buffer = Buffer::from_iter(
+                &self.allocator,
+                BufferCreateInfo {
+                    usage: BufferUsage::TRANSFER_SRC,
+                    ..Default::default()
+                },
+                AllocationCreateInfo {
+                    usage: MemoryUsage::Upload,
+                    ..Default::default()
+                },
+                pixels,
+            )
+            .or(Err("Failed to create texture upload buffer!"))?;
+
+            let image = match bitmap.format() {
+                BitmapFormat::A8Unorm => StorageImage::new(
+                    &self.allocator,
+                    ImageDimensions::Dim2d {
+                        width: bitmap.width(),
+                        height: bitmap.height(),
+                        array_layers: 1,
+                    },
+                    Format::R8_UNORM,
+                    Some(self.main_queue_family_index),
+                ),
+
+                BitmapFormat::Bgra8UnormSrgb => StorageImage::new(
+                    &self.allocator,
+                    ImageDimensions::Dim2d {
+                        width: bitmap.width(),
+                        height: bitmap.height(),
+                        array_layers: 1,
+                    },
+                    Format::B8G8R8A8_SRGB,
+                    Some(self.main_queue_family_index),
+                ),
+            }
+            .or(Err("Failed to create image"))?;
+        }
+        Ok(())
+    }
+
+    fn update_texture(&mut self, id: u32, bitmap: OwnedBitmap) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn destroy_texture(&mut self, id: u32) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn create_render_buffer(
+        &mut self,
+        id: u32,
+        render_buffer: RenderBuffer,
+    ) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn destroy_render_buffer(&mut self, id: u32) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn create_geometry<T>(
+        &mut self,
+        id: u32,
+        vertex: impl VulkanVertexBuffer<T>,
+        index: IndexBuffer,
+    ) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn update_geometry<T>(
+        &mut self,
+        id: u32,
+        vertex: impl VulkanVertexBuffer<T>,
+        index: IndexBuffer,
+    ) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn destroy_geometry(&mut self, id: u32) -> Result<(), &'static str> {
+        Ok(())
+    }
+
+    fn update_command_list(&mut self, command_list: Vec<GPUCommand>) -> Result<(), &'static str> {
+        Ok(())
     }
 }
