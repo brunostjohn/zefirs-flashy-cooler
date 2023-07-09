@@ -13,6 +13,9 @@ use dcv_color_primitives as dcp;
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
+#[path = "./vulkan.rs"]
+mod vulkan;
+
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 
 pub struct Ultralight {
@@ -75,30 +78,31 @@ impl Ultralight {
         };
     }
 
-    // pub fn load_html(&self, html: &str) -> Result<(), &'static str> {
-    //     END_WAIT_LOOP.store(false, Ordering::Relaxed);
+    #[allow(dead_code)]
+    pub fn load_html(&self, html: &str) -> Result<(), &'static str> {
+        END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
-    //     let html_cstring = match CString::new(html) {
-    //         Err(_) => return Err("Failed to create CString. Is HTML valid?"),
-    //         Ok(val) => val,
-    //     };
+        let html_cstring = match CString::new(html) {
+            Err(_) => return Err("Failed to create CString. Is HTML valid?"),
+            Ok(val) => val,
+        };
 
-    //     unsafe {
-    //         let html_ul = ulCreateString(html_cstring.as_ptr());
+        unsafe {
+            let html_ul = ulCreateString(html_cstring.as_ptr());
 
-    //         ulViewLoadHTML(self.view, html_ul);
-    //         ulDestroyString(html_ul);
+            ulViewLoadHTML(self.view, html_ul);
+            ulDestroyString(html_ul);
 
-    //         while !END_WAIT_LOOP.load(Ordering::Acquire) {
-    //             ulUpdate(self.renderer);
-    //             ulRender(self.renderer);
-    //         }
-    //     }
+            while !END_WAIT_LOOP.load(Ordering::Acquire) {
+                ulUpdate(self.renderer);
+                ulRender(self.renderer);
+            }
+        }
 
-    //     END_WAIT_LOOP.store(false, Ordering::Relaxed);
+        END_WAIT_LOOP.store(false, Ordering::Relaxed);
 
-    //     Ok(())
-    // }
+        Ok(())
+    }
 
     pub fn load_url(&mut self, html: &str) -> Result<(), &'static str> {
         END_WAIT_LOOP.store(false, Ordering::Relaxed);
