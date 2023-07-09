@@ -35,6 +35,7 @@ pub struct Renderer {
     theme_channel: mpsc::Sender<bool>,
     fps_channel: mpsc::Sender<Duration>,
     reload_config_channel: mpsc::Sender<bool>,
+    port_channel: mpsc::Sender<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -56,6 +57,7 @@ impl Renderer {
         let (tx_end, rx_end) = mpsc::sync_channel(2);
         let (tx_fps, rx_fps) = mpsc::channel();
         let (tx_reload, rx_reload) = mpsc::channel();
+        let (tx_port, rx_port) = mpsc::channel();
 
         let render = thread::spawn(move || {
             let mut engine = Ultralight::new(app_folder);
@@ -123,6 +125,12 @@ impl Renderer {
                 if receive_flag(&rx_theme, false) {
                     let _ = engine
                         .load_url("http://127.0.0.1:2137/")
+                        .or_else(|_| Err(println!("Failed to reload theme!")));
+                }
+
+                if let Ok(port) = rx_port.try_recv() {
+                    let _ = engine
+                        .load_url(&format!("http://127.0.0.1:{port}"))
                         .or_else(|_| Err(println!("Failed to reload theme!")));
                 }
 
@@ -195,6 +203,7 @@ impl Renderer {
             end_channel: tx_end,
             fps_channel: tx_fps,
             reload_config_channel: tx_reload,
+            port_channel: tx_port,
         }
     }
 
@@ -247,6 +256,13 @@ impl Renderer {
         match self.fps_channel.send(Duration::from_millis(1000 / fps)) {
             Ok(_) => {}
             Err(_) => println!("Failed to change FPS!"),
+        }
+    }
+
+    pub fn send_port(&self, port: usize) {
+        match self.port_channel.send(port) {
+            Ok(_) => {}
+            Err(_) => println!("Failed to send port!"),
         }
     }
 }

@@ -9,6 +9,8 @@ main {
 
 .col-opts {
 	width: 30%;
+	min-width: 30%;
+	max-width: 30%;
 	border-right: 1px solid rgba(255, 255, 255, 0.2);
 
 	padding: 1rem;
@@ -17,6 +19,8 @@ main {
 
 .content {
 	width: 70%;
+	min-width: 70%;
+	max-width: 70%;
 
 	padding: 1rem;
 	padding-top: 0.5rem;

@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { page } from "$app/stores";
 	import { goto } from "$app/navigation";
 	import { sleep } from "../helpers/sleep";
 
@@ -10,22 +9,15 @@
 	let opt: HTMLDivElement;
 
 	const clicked = async () => {
-		opt.classList.add("animate-circle-navi-aaaaaaaa");
-		await sleep(300);
-		opt.classList.remove("animate-circle-navi-aaaaaaaa");
 		goto(`/services${href}`);
+		opt.classList.add("animate-click-link");
+		await sleep(200);
+		opt.classList.remove("animate-click-link");
 	};
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
-<div
-	class="selector-opt"
-	on:click={() => clicked()}
-	bind:this={opt}
-	style={$page.url.pathname === `/services${href}`
-		? `border: 1px solid rgba(255, 255, 255, 0.05);`
-		: undefined}
->
+<div class="selector-opt" on:click={() => clicked()} bind:this={opt}>
 	<div class="image">
 		<slot />
 	</div>
@@ -46,12 +38,12 @@
 		transition: all 150ms ease-in-out;
 		&:hover {
 			background-color: rgba(var(--bs-primary-rgb), 0.15);
-			border: 1px solid transparent !important;
 		}
 
 		border-radius: 15px;
 
 		padding: 0.6rem;
+		margin-bottom: 0.3rem;
 	}
 
 	.image {
@@ -80,8 +72,7 @@
 	}
 
 	:global(.animate-click-link) {
-		animation: clicked-link-animation 150ms both linear;
-		border: 1px solid transparent !important;
+		animation: clicked-link-animation 200ms both linear;
 	}
 
 	@keyframes clicked-link-animation {
@@ -94,7 +85,7 @@
 		}
 
 		100% {
-			background-color: rgba(var(--bs-primary-rgb), 0.15);
+			background-color: rgba(var(--bs-primary-rgb), 0);
 		}
 	}
 </style>

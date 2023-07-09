@@ -7,8 +7,8 @@ use macros::inject_from_handle;
 use window_shadows::set_shadow;
 use window_vibrancy::{apply_acrylic, apply_mica};
 
-#[inject_from_handle(config, renderer, sensors, server, app_folder)]
 #[allow(dead_code)]
+#[inject_from_handle(config, renderer, sensors, server, app_folder)]
 pub fn exit(window: &Option<Window>, app: &AppHandle) {
     println!("Attempting exit.");
 

@@ -22,6 +22,16 @@ impl DeviceCreator for TTUltra {
             api,
         })
     }
+    fn device_info() -> super::DeviceInfo
+    where
+        Self: Sized,
+    {
+        super::DeviceInfo {
+            name: "Thermaltake Toughliquid LCD Cooler".to_string(),
+            manufacturer: "Thermaltake".to_string(),
+            conflicting_processes: vec![],
+        }
+    }
 }
 
 impl Device for TTUltra {

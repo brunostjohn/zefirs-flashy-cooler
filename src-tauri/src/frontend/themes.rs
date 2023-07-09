@@ -496,14 +496,14 @@ pub fn uninstall_theme(fs_name: String, window: Window) -> Result<(), &'static s
 
 #[inject(themes_path)]
 #[tauri::command]
-pub fn does_theme_exist(fs_name: String) -> Result<bool, bool> {
+pub fn does_theme_exist(fs_name: String) -> bool {
     let mut theme_path = themes_path.clone();
     theme_path.push(fs_name);
 
     if theme_path.as_path().exists() {
-        return Ok(true);
+        return true;
     }
-    Err(false)
+    false
 }
 
 #[inject(renderer, server, config, themes_path)]
@@ -530,6 +530,12 @@ fn get_image_buffer(img: image::DynamicImage) -> (Vec<u8>, ColorFormat) {
         }
         _ => unreachable!(),
     }
+}
+
+#[inject(renderer)]
+#[tauri::command]
+pub fn select_port(port: usize) {
+    renderer.send_port(port);
 }
 
 #[inject(themes_path)]

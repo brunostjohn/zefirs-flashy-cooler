@@ -7,6 +7,8 @@
 	let startLoginSwitch: HTMLInputElement;
 	let startMinimisedSwitch: HTMLInputElement;
 
+	let portValue = 5173;
+
 	let startAtLogin = false;
 	let startMinimised = false;
 
@@ -27,6 +29,10 @@
 
 	const handleMinimisedChange = async () => {
 		await invoke("set_start_minimised", { setting: startMinimisedSwitch.checked });
+	};
+
+	const handlePortChange = async () => {
+		await invoke("select_port", { port: portValue });
 	};
 </script>
 
@@ -108,6 +114,20 @@
 		<br /><br /><small id="themeFolderText">Current theme folder:</small><br /><small
 			>{themeFolder}</small
 		>
+	</div>
+	<hr />
+	<div id="devSettings">
+		<h3>Developer settings</h3>
+		<div class="setting">
+			<div>
+				<label class="form-check-label" for="portIn">Use custom web server.</label>
+				<br /><small>If checked, the app will connect to the port specified below.</small>
+			</div>
+			<div class="port-flex">
+				<input class="form-control port" type="number" id="portIn" bind:value={portValue} />
+				<button class="btn btn-outline-primary" on:click={handlePortChange}>Connect</button>
+			</div>
+		</div>
 	</div>
 </div>
 

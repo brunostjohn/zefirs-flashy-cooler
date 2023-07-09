@@ -56,6 +56,15 @@ pub trait DeviceCreator {
     fn new() -> Result<Self, &'static str>
     where
         Self: Sized;
+    fn device_info() -> DeviceInfo
+    where
+        Self: Sized;
+}
+
+pub struct DeviceInfo {
+    pub name: String,
+    pub manufacturer: String,
+    pub conflicting_processes: Vec<String>,
 }
 
 pub trait Device {

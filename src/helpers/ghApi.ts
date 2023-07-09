@@ -25,6 +25,9 @@ export const getAllThemes = async (page: number = 0) => {
 			fs_name: themeObj.fs_name,
 			image_src,
 			colour,
+			customisable_parameters: manifest.customisable_parameters,
+			tested_on: manifest.tested_on,
+			version: manifest.version,
 			// colour: `#${colours[0].toString(16)}${colours[1].toString(16)}${colours[2].toString(16)}`,
 		};
 		themes.push(theme);
@@ -53,6 +56,9 @@ export const getFeaturedThemes = async () => {
 			fs_name: featuredTheme.fs_name,
 			image_src,
 			colour,
+			customisable_parameters: manifest.customisable_parameters,
+			version: manifest.version,
+			tested_on: manifest.tested_on,
 			// colour: `#${colours[0].toString(16)}${colours[1].toString(16)}${colours[2].toString(16)}`,
 		};
 		featuredThemes.push(theme);
@@ -101,7 +107,10 @@ export const fetchAndParseTheme = async (themePath: string): Promise<Theme> => {
 		image_src,
 		colour,
 		dls: parsedObject.dlNum,
-		// colour: `#${colours[0].toString(16)}${colours[1].toString(16)}${colours[2].toString(16)}`,
+		customisable_parameters: manifest.customisable_parameters,
+		tested_on: manifest.tested_on,
+		version: manifest.version,
+		fileSizeKB: parsedObject.fileSizeKB,
 	};
 
 	return themeObject;

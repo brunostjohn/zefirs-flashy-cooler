@@ -2,6 +2,8 @@ import { invoke, convertFileSrc } from "@tauri-apps/api/tauri";
 import { join, documentDir } from "@tauri-apps/api/path";
 import { fetchAndParseTheme } from "./ghApi";
 
+export type LCDDevice = "capellix" | "ttultra";
+
 export interface Theme {
 	description?: string;
 	author?: string;
@@ -11,6 +13,9 @@ export interface Theme {
 	colour: string;
 	dls?: number;
 	customisable_parameters: Parameter[];
+	tested_on: LCDDevice[];
+	version?: string;
+	fileSizeKB?: number;
 }
 
 export interface Parameter {

@@ -99,5 +99,25 @@
 			filter: invert(40%) sepia(75%) saturate(1860%) hue-rotate(326deg) brightness(82%)
 				contrast(115%);
 		}
+
+		.svg-info {
+			filter: invert(79%) sepia(29%) saturate(5616%) hue-rotate(147deg) brightness(93%) contrast(103%);
+		}
+	}
+}
+
+.chips-container {
+	&::-webkit-scrollbar {
+		display: none;
+	}
+
+	overflow-x: scroll;
+
+	display: flex;
+	align-items: center;
+	scroll-behavior: auto;
+
+	.pad-elt {
+		margin-right: 5rem;
 	}
 }

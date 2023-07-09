@@ -6,7 +6,7 @@
 		"distDir": "../build"
 	},
 	"package": {
-		"productName": "Zefir's Flashy Cooler",
+		"productName": "Zefirs Flashy Cooler",
 		"version": "../package.json"
 	},
 	"tauri": {
@@ -69,7 +69,7 @@
 				"./libMonoPosixHelper.dll",
 				"./MonoPosixHelper.dll"
 			],
-			"shortDescription": "Take your cooler to the next level.",
+			"shortDescription": "Zefir's Flashy Cooler",
 			"targets": ["nsis", "updater"],
 			"windows": {
 				"webviewInstallMode": {

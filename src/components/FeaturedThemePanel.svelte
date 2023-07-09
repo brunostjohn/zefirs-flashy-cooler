@@ -96,6 +96,7 @@
 			object-fit: cover;
 			z-index: -5;
 			filter: blur(20px) brightness(90%);
+			// background-color: var(--bs-primary);
 		}
 
 		.short-info {

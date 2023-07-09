@@ -49,6 +49,16 @@ impl DeviceCreator for Capellix {
             });
         }
     }
+    fn device_info() -> super::DeviceInfo
+    where
+        Self: Sized,
+    {
+        super::DeviceInfo {
+            name: "Corsair iCUE Capellix LCD Cooler".to_string(),
+            manufacturer: "Corsair".to_string(),
+            conflicting_processes: vec!["iCUE.exe".to_string()],
+        }
+    }
 }
 
 impl Device for Capellix {

@@ -5,6 +5,6 @@ export const load = ({ url }) => {
 	const { pathname } = url;
 
 	return {
-		pathname: pathname.split("/")[1],
+		pathname: pathname.includes("services") ? pathname.split("/")[1] : pathname,
 	};
 };

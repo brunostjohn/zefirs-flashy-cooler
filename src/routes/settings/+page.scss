@@ -1,3 +1,5 @@
+@import '../../styles/mixins.scss';
+
 #zefirCard {
 	float: right;
 	margin-left: 1rem;
@@ -53,4 +55,23 @@ body {
 	input {
 		background-color: transparent;
 	}
+}
+
+.port-flex {
+	@include flex-center;
+
+	margin-left: 1rem;
+	max-width: 20%;
+
+	input {
+		background: none;
+	}
+
+	#portIn {
+		margin-right: 1rem;
+	}
+}
+
+.setting {
+	display: flex;
 }

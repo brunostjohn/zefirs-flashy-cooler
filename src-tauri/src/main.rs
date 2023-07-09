@@ -43,8 +43,6 @@ use self::ensure_dirs::ensure_dirs;
 
 use std::{
     env,
-    ffi::OsStr,
-    fs,
     path::PathBuf,
     sync::{Arc, Mutex},
 };
@@ -145,6 +143,7 @@ fn main() {
             themes::apply_theme_parameter,
             themes::select_file_and_save,
             themes::get_all_sensors,
+            themes::select_port,
             settings::get_start_minimised,
             settings::set_start_minimised,
             settings::get_start_login,
