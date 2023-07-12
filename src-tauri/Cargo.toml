@@ -59,4 +59,16 @@ dhat-ad-hoc = []  # if you are doing ad hoc profiling
 
 [profile.release]
 lto = true
+opt-level= 3
+incremental = true
+panic = "abort"
+codegen-units = 1
+strip = true
+
+[profile.release.package."*"]
+opt-level= 3
+incremental = true
+
+[profile.release.build-override]
+opt-level = 3
 incremental = true

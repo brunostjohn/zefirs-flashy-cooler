@@ -77,6 +77,7 @@ pub struct RenderBuffer {
 }
 
 impl From<ULRenderBuffer> for RenderBuffer {
+    #[inline(always)]
     fn from(rb: ULRenderBuffer) -> Self {
         RenderBuffer {
             texture_id: rb.texture_id,
@@ -137,6 +138,7 @@ pub struct IndexBuffer {
 }
 
 impl From<ULIndexBuffer> for IndexBuffer {
+    #[inline(always)]
     fn from(vb: ULIndexBuffer) -> Self {
         assert!(vb.size % 4 == 0);
         assert!(!vb.data.is_null());
@@ -156,6 +158,7 @@ impl TryFrom<ULShaderType> for ShaderType {
     type Error = ();
 
     #[allow(non_upper_case_globals)]
+    #[inline(always)]
     fn try_from(st: ULShaderType) -> Result<Self, Self::Error> {
         match st {
             ULShaderType_kShaderType_Fill => Ok(ShaderType::Fill),
@@ -262,12 +265,14 @@ pub struct Rect<T> {
 }
 
 impl Rect<i32> {
+    #[inline(always)]
     pub fn is_empty(&self) -> bool {
         self.left == 0 && self.top == 0 && self.right == 0 && self.bottom == 0
     }
 }
 
 impl From<ULRect> for Rect<f32> {
+    #[inline(always)]
     fn from(r: ULRect) -> Self {
         Rect {
             left: r.left,
@@ -279,6 +284,7 @@ impl From<ULRect> for Rect<f32> {
 }
 
 impl From<ULIntRect> for Rect<i32> {
+    #[inline(always)]
     fn from(r: ULIntRect) -> Self {
         Rect {
             left: r.left,
@@ -290,6 +296,7 @@ impl From<ULIntRect> for Rect<i32> {
 }
 
 impl From<Rect<f32>> for ULRect {
+    #[inline(always)]
     fn from(r: Rect<f32>) -> Self {
         ULRect {
             left: r.left,
@@ -301,6 +308,7 @@ impl From<Rect<f32>> for ULRect {
 }
 
 impl From<Rect<i32>> for ULIntRect {
+    #[inline(always)]
     fn from(r: Rect<i32>) -> Self {
         ULIntRect {
             left: r.left,

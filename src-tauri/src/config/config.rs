@@ -22,6 +22,7 @@ impl Config {
         }
     }
 
+    #[inline(always)]
     pub fn load_from_drive(mut load_path: PathBuf) -> Self {
         load_path.push("config.json");
 
@@ -46,6 +47,7 @@ impl Config {
         loaded_config
     }
 
+    #[inline(always)]
     pub fn write_to_drive(&self, mut write_path: PathBuf) {
         write_path.push("config.json");
 
@@ -63,6 +65,3 @@ impl Config {
         }
     }
 }
-
-// impl Drop for Config {
-// }

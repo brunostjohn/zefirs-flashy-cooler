@@ -12,6 +12,7 @@ pub trait CustomSerialise {
 }
 
 impl CustomSerialise for Vec<ThemeConfigItem> {
+    #[inline(always)]
     fn custom_serialise(&self) -> String
     where
         Self: Sized,
@@ -43,6 +44,7 @@ impl CustomSerialise for Vec<ThemeConfigItem> {
 }
 
 impl CustomSerialise for Vec<SensorWithDetails> {
+    #[inline(always)]
     fn custom_serialise(&self) -> String
     where
         Self: Sized,
@@ -72,6 +74,7 @@ pub trait Reassign<T> {
 }
 
 impl Reassign<Result<Vec<SensorWithDetails>, &'static str>> for Vec<SensorWithDetails> {
+    #[inline(always)]
     fn reassign(self, channel: Result<Vec<SensorWithDetails>, &'static str>) -> Self
     where
         Self: Sized,
@@ -90,6 +93,7 @@ impl Reassign<Result<Vec<SensorWithDetails>, &'static str>> for Vec<SensorWithDe
 }
 
 impl Reassign<&Receiver<Duration>> for Duration {
+    #[inline(always)]
     fn reassign(self, channel: &Receiver<Self>) -> Self
     where
         Self: Sized,
@@ -108,6 +112,7 @@ pub trait TryElapsed<T> {
 }
 
 impl TryElapsed<u64> for SystemTime {
+    #[inline(always)]
     fn try_elapsed(&self, duration_ms: u64) -> bool
     where
         Self: Sized,
@@ -128,6 +133,7 @@ impl TryElapsed<u64> for SystemTime {
 }
 
 impl TryElapsed<Duration> for SystemTime {
+    #[inline(always)]
     fn try_elapsed(&self, duration: Duration) -> bool
     where
         Self: Sized,

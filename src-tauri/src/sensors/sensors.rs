@@ -156,6 +156,7 @@ impl Sensors {
         }
     }
 
+    #[inline(always)]
     pub fn stop(&mut self) {
         match self.tx_end.send(true) {
             Err(_) => {
@@ -176,6 +177,7 @@ impl Sensors {
         }
     }
 
+    #[inline(always)]
     pub fn change_poll_rate(&self, poll_rate: u64) {
         match self.tx_poll.send(poll_rate) {
             Ok(_) => {}
@@ -185,6 +187,7 @@ impl Sensors {
         }
     }
 
+    #[inline(always)]
     pub fn subscribe(&mut self, sensor_paths: Vec<String>, sensor_names: Vec<String>) {
         self.sensor_names = sensor_names;
         match self.tx_subscribe.send(sensor_paths) {
@@ -195,6 +198,7 @@ impl Sensors {
         }
     }
 
+    #[inline(always)]
     pub fn get_all_sensors(&self) -> Result<Vec<Hardware>, &'static str> {
         self.tx_list_rq
             .send(true)
@@ -205,6 +209,7 @@ impl Sensors {
             .or(Err("Failed to receive sensor values."))
     }
 
+    #[inline(always)]
     pub fn get_sensor_value(&self) -> Result<Vec<SensorWithDetails>, &'static str> {
         let sensor_pre = self
             .rx_sensor_val
@@ -238,6 +243,7 @@ impl Sensors {
     }
 }
 
+#[inline(always)]
 fn get_all_sensors_vec(computer: *mut i16) -> Vec<Hardware> {
     let ptr = unsafe { get_all_sensors(computer) };
     let sensor_string;
@@ -259,6 +265,7 @@ fn get_all_sensors_vec(computer: *mut i16) -> Vec<Hardware> {
     sensors
 }
 
+#[inline(always)]
 fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
     let sensor_string = CString::new(sensor_string.to_owned()).unwrap();
     let pre = unsafe { get_single_sensor_ptrs(sensor_string.as_ptr() as *mut i8, computer) };
@@ -287,6 +294,7 @@ fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
     }
 }
 
+#[inline(always)]
 fn get_multiple_sensors(sensor_paths: Vec<String>, computer_ptr: *mut i16) -> Vec<Sensor> {
     let mut sensors = vec![];
 

@@ -35,18 +35,22 @@ impl DeviceContainer {
         Err("Failed to open any device!")
     }
 
+    #[inline(always)]
     pub fn init(&mut self) -> Result<(), &'static str> {
         self.device.init()
     }
 
+    #[inline(always)]
     pub fn close(&mut self) -> Result<(), &'static str> {
         self.device.close()
     }
 
+    #[inline(always)]
     pub fn reopen(&mut self) -> Result<(), &'static str> {
         self.device.reopen()
     }
 
+    #[inline(always)]
     pub fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
         self.device.send_image(img)
     }
