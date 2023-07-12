@@ -1,14 +1,12 @@
-use std::{
-    borrow::Cow,
-    collections::HashMap,
-    mem,
-    rc::Rc,
-    sync::mpsc::{self, Receiver, Sender},
-};
+use std::{borrow::Cow, mem, rc::Rc};
+
+use kanal::Receiver;
+use kanal::Sender;
 
 use self::gpu::GPUDriver;
 
-use image::{DynamicImage, ImageBuffer};
+use rustc_hash::FxHashMap;
+
 use ul_sys::*;
 
 use glium::{
@@ -189,7 +187,7 @@ pub struct GPUDriverSender {
 
 impl GPUDriverSender {
     pub fn new(next_texture_id: u32, next_render_buffer_id: u32, next_geometry_id: u32) -> Self {
-        let (sender, _) = mpsc::channel();
+        let (sender, _) = kanal::unbounded();
         Self {
             next_texture_id,
             next_render_buffer_id,
@@ -370,24 +368,22 @@ struct RenderVertex {
 
 implement_vertex!(RenderVertex, position, tex_coords);
 
+#[allow(dead_code)]
 pub struct GPUDriverReceiver {
     receiver: Receiver<GPUDriverCommand>,
     context: Rc<Context>,
     head: HeadlessRenderer,
-    texture_map: HashMap<u32, (EitherTexture, Option<u32>)>,
+    texture_map: FxHashMap<u32, (EitherTexture, Option<u32>)>,
     empty_texture: EitherTexture,
-    render_buffer_map: HashMap<u32, RenderBuffer>,
-    geometry_map: HashMap<u32, (VertexBufferAny, glium::IndexBuffer<u32>)>,
+    render_buffer_map: FxHashMap<u32, RenderBuffer>,
+    geometry_map: FxHashMap<u32, (VertexBufferAny, glium::IndexBuffer<u32>)>,
     path_program: Program,
     fill_program: Program,
     rawdog: ContextWrapper<NotCurrent, ()>,
 }
 
 impl GPUDriverReceiver {
-    pub fn new(
-        receiver: Receiver<GPUDriverCommand>,
-        // context: &Rc<Context>,
-    ) -> Result<Self, &'static str> {
+    pub fn new(receiver: Receiver<GPUDriverCommand>) -> Result<Self, &'static str> {
         let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
 
         let gl_ctx = HeadlessRenderer::with_debug::<NotCurrent>(
@@ -404,22 +400,22 @@ impl GPUDriverReceiver {
                 .unwrap(),
         );
 
-        let texture_map = HashMap::new();
-        let render_buffer_map = HashMap::new();
-        let geometry_map = HashMap::new();
+        let texture_map = FxHashMap::default();
+        let render_buffer_map = FxHashMap::default();
+        let geometry_map = FxHashMap::default();
 
         let path_program = program!(&context,
         150 => {
-            vertex: include_str!("./shaders/v2f_c4f_t2f_vert.glsl"),
-            fragment: include_str!("./shaders/path_frag.glsl")
+            vertex: include_str!("./shaders/v2f_c4f_t2f_vert.vert"),
+            fragment: include_str!("./shaders/path_frag.frag")
         })
         .or(Err("Failed to create path shader!"))
         .unwrap();
 
         let fill_program = program!(&context,
         150 => {
-            vertex: include_str!("./shaders/v2f_c4f_t2f_t2f_d28f_vert.glsl"),
-            fragment: include_str!("./shaders/fill_frag.glsl")
+            vertex: include_str!("./shaders/v2f_c4f_t2f_t2f_d28f_vert.vert"),
+            fragment: include_str!("./shaders/fill_frag.frag")
         })
         .or(Err("Failed to create fill shader!"))
         .unwrap();
@@ -439,6 +435,7 @@ impl GPUDriverReceiver {
         })
     }
 
+    #[inline]
     pub fn render_bitmap(&mut self, tex_id: u32) -> Result<Cow<'_, [u8]>, &'static str> {
         let image = self.get_texture(&tex_id).unwrap();
 
@@ -449,12 +446,14 @@ impl GPUDriverReceiver {
         Ok(image)
     }
 
+    #[inline]
     pub fn get_texture(&self, id: &u32) -> Option<&EitherTexture> {
         self.texture_map.get(id).map(|(t, _)| t)
     }
 
+    #[inline]
     pub fn render(&mut self) -> Result<(), &'static str> {
-        while let Ok(cmd) = self.receiver.try_recv() {
+        while let Some(cmd) = self.receiver.try_recv().or(Err("Failed to receive"))? {
             match cmd {
                 GPUDriverCommand::CreateTexture(id, bitmap) => {
                     let tex = self.create_texture(id, bitmap)?;
@@ -503,7 +502,6 @@ impl GPUDriverReceiver {
                 .map_err(|_| "Failed to create texture")
                 .map(|t| EitherTexture::Regular2d(t))?;
         } else {
-            // since its not empty, it should have a valid pixels.
             let bitmap_pixels = bitmap.pixels().unwrap();
             match bitmap.format() {
                 BitmapFormat::A8Unorm => {
@@ -560,6 +558,7 @@ impl GPUDriverReceiver {
         Ok(())
     }
 
+    #[inline]
     fn destroy_texture(&mut self, id: u32) -> Result<(), &'static str> {
         assert!(self.texture_map.contains_key(&id));
 
@@ -648,6 +647,7 @@ impl GPUDriverReceiver {
         Ok(())
     }
 
+    #[inline]
     fn destroy_geometry(&mut self, id: u32) -> Result<(), &'static str> {
         assert!(self.geometry_map.contains_key(&id));
 

@@ -1,4 +1,4 @@
-#version 150
+#version 330
 
 // Program Uniforms
 uniform vec4 State;

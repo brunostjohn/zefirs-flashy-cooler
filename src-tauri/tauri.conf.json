@@ -69,7 +69,7 @@
 				"./libMonoPosixHelper.dll",
 				"./MonoPosixHelper.dll"
 			],
-			"shortDescription": "Zefir's Flashy Cooler",
+			"shortDescription": "Zefirs Flashy Cooler",
 			"targets": ["nsis", "updater"],
 			"windows": {
 				"webviewInstallMode": {

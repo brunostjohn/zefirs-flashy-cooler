@@ -27,6 +27,7 @@ pub enum EitherTexture {
 }
 
 impl EitherTexture {
+    #[inline]
     pub fn width(&self) -> u32 {
         match self {
             EitherTexture::Regular2d(t) => t.width(),
@@ -34,6 +35,7 @@ impl EitherTexture {
         }
     }
 
+    #[inline]
     pub fn height(&self) -> u32 {
         match self {
             EitherTexture::Regular2d(t) => t.height(),
@@ -41,6 +43,7 @@ impl EitherTexture {
         }
     }
 
+    #[inline]
     pub fn sampled(&'_ self) -> EitherSampler<'_> {
         match self {
             EitherTexture::Regular2d(t) => EitherSampler::Regular2d(t.sampled()),
@@ -48,6 +51,7 @@ impl EitherTexture {
         }
     }
 
+    #[inline]
     pub fn data(&'_ self) -> PixelBuffer<(u8, u8, u8, u8)> {
         match self {
             EitherTexture::Regular2d(t) => t.read_to_pixel_buffer(),

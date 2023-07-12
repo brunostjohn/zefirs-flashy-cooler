@@ -187,6 +187,7 @@ pub struct GPUState {
 impl TryFrom<ULGPUState> for GPUState {
     type Error = ();
 
+    #[inline]
     fn try_from(gs: ULGPUState) -> Result<Self, Self::Error> {
         Ok(GPUState {
             viewport_width: gs.viewport_width,

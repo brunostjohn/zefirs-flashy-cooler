@@ -93,7 +93,7 @@ pub struct Bitmap {
 }
 
 impl Bitmap {
-    pub(crate) unsafe fn from_raw(raw: ULBitmap) -> Option<Self> {
+    pub unsafe fn from_raw(raw: ULBitmap) -> Option<Self> {
         if raw.is_null() {
             return None;
         }
@@ -180,10 +180,12 @@ impl Bitmap {
 }
 
 impl Bitmap {
+    #[inline]
     pub fn width(&self) -> u32 {
         unsafe { ulBitmapGetWidth(self.internal) }
     }
 
+    #[inline]
     pub fn height(&self) -> u32 {
         unsafe { ulBitmapGetHeight(self.internal) }
     }
@@ -206,6 +208,7 @@ impl Bitmap {
         unsafe { ulBitmapGetSize(self.internal.into()) }
     }
 
+    #[inline]
     pub fn lock_pixels(&mut self) -> Option<PixelsGuard> {
         let (raw_pixels, size) = unsafe {
             ulBitmapLockPixels(self.internal);
@@ -225,7 +228,8 @@ impl Bitmap {
         }
     }
 
-    pub(crate) unsafe fn raw_unlock_pixels(&mut self) {
+    #[inline]
+    pub unsafe fn raw_unlock_pixels(&mut self) {
         ulBitmapUnlockPixels(self.internal);
     }
 

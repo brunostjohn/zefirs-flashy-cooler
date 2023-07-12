@@ -5,12 +5,10 @@ use std::{
     slice,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc,
+        Arc,
     },
 };
 
-use dcp::{convert_image, ColorSpace, ImageFormat, PixelFormat};
-use dcv_color_primitives as dcp;
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
@@ -37,7 +35,7 @@ impl Ultralight {
         let mut renderer;
         let mut view;
 
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = kanal::unbounded();
 
         unsafe { GPU_SENDER.set_tx(tx) };
 
@@ -94,8 +92,6 @@ impl Ultralight {
             view = ulCreateView(renderer, 480, 480, view_config, null_mut());
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
         };
-
-        dcp::initialize();
 
         return Ultralight {
             renderer,
