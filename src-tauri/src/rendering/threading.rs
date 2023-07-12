@@ -104,21 +104,20 @@ impl Renderer {
                     }
 
                     engine.render();
-                    let image = engine.get_bitmap().or::<Vec<u8>>(Ok(vec![])).unwrap();
+                    let image = engine.get_bitmap().unwrap();
 
-                    let _: Option<usize> =
-                        RgbImage::from_raw(480, 480, image.to_vec()).and_then(|image| {
-                            let _ = device.send_image(&image).or_else(|_| {
-                                thread::sleep(Duration::from_secs(7));
-                                if let Ok(_) = device.reopen() {
-                                    let _ = device
-                                        .init()
-                                        .or_else(|_| Err(println!("Failed to re-init device!")));
-                                }
-                                Err("")
-                            });
-                            None
+                    let _: Option<usize> = RgbImage::from_raw(480, 480, image).and_then(|image| {
+                        let _ = device.send_image(&image).or_else(|_| {
+                            thread::sleep(Duration::from_secs(7));
+                            if let Ok(_) = device.reopen() {
+                                let _ = device
+                                    .init()
+                                    .or_else(|_| Err(println!("Failed to re-init device!")));
+                            }
+                            Err("")
                         });
+                        None
+                    });
                 }
                 thread::sleep(Duration::from_millis(3));
 

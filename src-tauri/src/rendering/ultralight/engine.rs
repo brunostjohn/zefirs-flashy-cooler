@@ -1,25 +1,18 @@
 use std::{
-    ffi::{c_ulonglong, c_void, CStr, CString},
-    mem,
+    ffi::{c_ulonglong, c_void, CString},
     path::PathBuf,
     ptr::null_mut,
     slice,
     sync::{
         atomic::{AtomicBool, Ordering},
-        mpsc, Arc, Mutex,
+        mpsc, Arc,
     },
 };
 
-use dcp::*;
+use dcp::{convert_image, ColorSpace, ImageFormat, PixelFormat};
 use dcv_color_primitives as dcp;
-use glium::{
-    backend::Facade,
-    glutin::{platform::windows::RawContextExt, ContextBuilder, NotCurrent},
-    HeadlessRenderer,
-};
 use once_cell::sync::Lazy;
 use ul_sys::*;
-use windows::Win32::UI::WindowsAndMessaging::GetDesktopWindow;
 
 use self::driver::{
     gpu::{Bitmap, GPUCommand, GPUDriver, OwnedBitmap},
@@ -30,12 +23,11 @@ use self::driver::{
 mod driver;
 
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
-static GPU_SENDER: Lazy<Mutex<Option<GPUDriverSender>>> = Lazy::new(|| Mutex::new(None));
+static mut GPU_SENDER: Lazy<GPUDriverSender> = Lazy::new(|| GPUDriverSender::new(0, 0, 0));
 
 pub struct Ultralight {
     renderer: ULRenderer,
     view: ULView,
-    // bitmap: ULBitmap,
     driver_recv: GPUDriverReceiver,
 }
 
@@ -44,21 +36,12 @@ impl Ultralight {
     pub fn new(app_folder: PathBuf) -> Ultralight {
         let mut renderer;
         let mut view;
-        // let mut surface;
-        // let mut bitmap;
 
         let (tx, rx) = mpsc::channel();
 
-        let driver_sender = GPUDriverSender::new(0, 0, 0, tx);
-        *GPU_SENDER.lock().unwrap() = Some(driver_sender);
+        unsafe { GPU_SENDER.set_tx(tx) };
 
-        let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
-
-        let gl_ctx =
-            HeadlessRenderer::new::<NotCurrent>(unsafe { mem::transmute_copy(ctx.context()) })
-                .unwrap();
-
-        let driver_recv = GPUDriverReceiver::new(rx, gl_ctx.get_context()).unwrap();
+        let driver_recv = GPUDriverReceiver::new(rx).unwrap();
 
         unsafe {
             let config = ulCreateConfig();
@@ -93,9 +76,9 @@ impl Ultralight {
             let log_path_ul = ulCreateString(log_path_cs.as_ptr());
             ulEnableDefaultLogger(log_path_ul);
             ulDestroyString(log_path_ul);
-            // ulPlatformSetLogger(ULLogger {
-            //     log_message: Some(logger_callback),
-            // });
+            ulPlatformSetLogger(ULLogger {
+                log_message: Some(logger_callback),
+            });
             ulEnablePlatformFontLoader();
 
             let fs_folder = CString::new(app_folder.to_str().unwrap()).unwrap();
@@ -110,9 +93,6 @@ impl Ultralight {
 
             view = ulCreateView(renderer, 480, 480, view_config, null_mut());
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
-
-            // surface = ulViewGetSurface(view);
-            // bitmap = ulBitmapSurfaceGetBitmap(surface);
         };
 
         dcp::initialize();
@@ -120,7 +100,6 @@ impl Ultralight {
         return Ultralight {
             renderer,
             view,
-            // bitmap,
             driver_recv,
         };
     }
@@ -176,68 +155,37 @@ impl Ultralight {
         Ok(())
     }
 
+    #[inline]
     pub fn update(&self) {
         unsafe {
             ulUpdate(self.renderer);
         }
     }
 
+    #[inline]
     pub fn render(&mut self) {
         unsafe {
             ulRender(self.renderer);
         }
+
         let _ = self.driver_recv.render();
     }
 
-    pub fn get_bitmap(&self) -> Result<Vec<u8>, &'static str> {
-        // let mut bitmap: Vec<u8> = vec![0u8; 480 * 480 * 4];
+    #[inline]
+    pub fn get_bitmap(&mut self) -> Result<Vec<u8>, &'static str> {
+        let render_target = unsafe { ulViewGetRenderTarget(self.view) };
+        let src = self.driver_recv.render_bitmap(render_target.texture_id)?;
 
-        // let src_format = ImageFormat {
-        //     pixel_format: PixelFormat::Bgra,
-        //     color_space: ColorSpace::Rgb,
-        //     num_planes: 1,
-        // };
+        let mut dst = vec![0u8; 480 * 480 * 4];
 
-        // unsafe {
-        //     let pixel_buf = ulBitmapLockPixels(self.bitmap);
-        //     let pixel_buf_size = ulBitmapGetSize(self.bitmap);
-        //     std::slice::from_raw_parts(pixel_buf as *mut u8, pixel_buf_size as usize)
-        //         .clone_into(&mut bitmap);
-        //     ulBitmapUnlockPixels(self.bitmap);
-        // }
+        for (output, chunk) in dst.chunks_exact_mut(3).zip(src.chunks_exact(4)) {
+            output.copy_from_slice(&chunk[0..3]);
+        }
 
-        // let dst_format = ImageFormat {
-        //     pixel_format: PixelFormat::Rgb,
-        //     color_space: ColorSpace::Rgb,
-        //     num_planes: 1,
-        // };
-
-        // let mut dst = vec![0u8; 480 * 480 * 3];
-
-        // let src_bgra_buf = &[&bitmap[..]];
-        // let dst_rgb_buf = &mut [&mut dst[..]];
-
-        // match convert_image(
-        //     480,
-        //     480,
-        //     &src_format,
-        //     None,
-        //     src_bgra_buf,
-        //     &dst_format,
-        //     None,
-        //     dst_rgb_buf,
-        // ) {
-        //     Err(err) => {
-        //         println!("{:?}", err);
-        //         return Err("Failed to convert to RGB.");
-        //     }
-        //     _ => {}
-        // };
-
-        // Ok(dst)
-        Ok(vec![])
+        Ok(dst)
     }
 
+    #[inline]
     pub fn garbage_collect(&self) {
         unsafe {
             let context = ulViewLockJSContext(self.view);
@@ -246,6 +194,7 @@ impl Ultralight {
         }
     }
 
+    #[inline]
     pub fn call_js_script(&self, script: String) {
         let cstr = CString::new(script).unwrap();
         unsafe {
@@ -276,99 +225,82 @@ pub unsafe extern "C" fn finished_callback(
     }
 }
 
-pub unsafe extern "C" fn logger_callback(_log_level: ULLogLevel, message: ULString) {
-    let message = CStr::from_ptr(message as *const i8);
-    println!("{:?}", message);
+pub unsafe extern "C" fn logger_callback(log_level: ULLogLevel, message: ULString) {
+    let raw_data = ulStringGetData(message);
+    let utf8_data = slice::from_raw_parts(raw_data, ulStringGetLength(message) as usize)
+        .iter()
+        .map(|c| *c as u8)
+        .collect();
+
+    let msg = String::from_utf8(utf8_data).map_err(|_| "X").unwrap();
+
+    #[allow(non_upper_case_globals)]
+    let log_level = match log_level {
+        ULLogLevel_kLogLevel_Error => "Error",
+        ULLogLevel_kLogLevel_Info => "Info",
+        ULLogLevel_kLogLevel_Warning => "Warning",
+        _ => "None",
+    };
+
+    println!("[ {log_level} ] {msg}");
 }
 
 pub unsafe extern "C" fn begin_sync() {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().begin_synchronize();
+    GPU_SENDER.begin_synchronize();
 }
 
 pub unsafe extern "C" fn end_sync() {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().end_synchronize();
+    GPU_SENDER.end_synchronize();
 }
 
 pub unsafe extern "C" fn next_tex_id() -> u32 {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().next_texture_id()
+    GPU_SENDER.next_texture_id()
 }
 
 pub unsafe extern "C" fn create_tex(texture_id: u32, bitmap: ULBitmap) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().create_texture(
+    GPU_SENDER.create_texture(
         texture_id,
         OwnedBitmap::from_bitmap(&mut Bitmap::from_raw(bitmap).unwrap()).unwrap(),
     );
 }
 
 pub unsafe extern "C" fn update_tex(texture_id: u32, bitmap: ULBitmap) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().update_texture(
+    GPU_SENDER.update_texture(
         texture_id,
         OwnedBitmap::from_bitmap(&mut Bitmap::from_raw(bitmap).unwrap()).unwrap(),
     );
 }
 
 pub unsafe extern "C" fn destroy_tex(texture_id: u32) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().destroy_texture(texture_id);
+    GPU_SENDER.destroy_texture(texture_id);
 }
 
 pub unsafe extern "C" fn next_render_buf_id() -> u32 {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().next_render_buffer_id()
+    GPU_SENDER.next_render_buffer_id()
 }
 
 pub unsafe extern "C" fn create_render_buf(render_buf_id: u32, buf: ULRenderBuffer) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender
-        .unwrap()
-        .create_render_buffer(render_buf_id, buf.into());
+    GPU_SENDER.create_render_buffer(render_buf_id, buf.into());
 }
 
 pub unsafe extern "C" fn destroy_render_buf(buf_id: u32) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().destroy_render_buffer(buf_id);
+    GPU_SENDER.destroy_render_buffer(buf_id);
 }
 
 pub unsafe extern "C" fn next_geo_id() -> u32 {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().next_geometry_id()
+    GPU_SENDER.next_geometry_id()
 }
 
 pub unsafe extern "C" fn create_geo(geo_id: u32, vertices: ULVertexBuffer, indices: ULIndexBuffer) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender
-        .unwrap()
-        .create_geometry(geo_id, vertices.try_into().unwrap(), indices.into());
+    GPU_SENDER.create_geometry(geo_id, vertices.try_into().unwrap(), indices.into());
 }
 
 pub unsafe extern "C" fn update_geo(geo_id: u32, vertices: ULVertexBuffer, indices: ULIndexBuffer) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender
-        .unwrap()
-        .update_geometry(geo_id, vertices.try_into().unwrap(), indices.into());
+    GPU_SENDER.update_geometry(geo_id, vertices.try_into().unwrap(), indices.into());
 }
 
 pub unsafe extern "C" fn destroy_geo(geo_id: u32) {
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().destroy_geometry(geo_id);
+    GPU_SENDER.destroy_geometry(geo_id);
 }
 
 pub unsafe extern "C" fn update_cmd_lst(list: ULCommandList) {
@@ -380,7 +312,5 @@ pub unsafe extern "C" fn update_cmd_lst(list: ULCommandList) {
         .map(|cmd| GPUCommand::try_from(*cmd).unwrap())
         .collect();
 
-    let mut sender_opt = GPU_SENDER.lock().unwrap();
-    let sender = sender_opt.as_mut();
-    sender.unwrap().update_command_list(cmds);
+    GPU_SENDER.update_command_list(cmds);
 }

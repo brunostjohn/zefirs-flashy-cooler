@@ -1,26 +1,27 @@
 use std::{
     borrow::Cow,
     collections::HashMap,
+    mem,
     rc::Rc,
-    sync::{
-        mpsc::{Receiver, Sender},
-        Arc,
-    },
+    sync::mpsc::{self, Receiver, Sender},
 };
 
 use self::gpu::GPUDriver;
 
+use image::{DynamicImage, ImageBuffer};
 use ul_sys::*;
 
 use glium::{
     backend::{Context, Facade},
     framebuffer::SimpleFrameBuffer,
-    program,
+    glutin::NotCurrent,
+    glutin::{platform::windows::RawContextExt, ContextBuilder, ContextWrapper},
+    implement_vertex, program,
     texture::{ClientFormat, MipmapsOption, RawImage2d, SrgbTexture2d, UncompressedFloatFormat},
     uniform,
     uniforms::UniformBuffer,
     vertex::VertexBufferAny,
-    Blend, DrawParameters, Program, Surface, Texture2d,
+    Blend, DrawParameters, HeadlessRenderer, Program, Surface, Texture2d,
 };
 
 #[path = "./gpu.rs"]
@@ -30,6 +31,7 @@ use gpu::*;
 #[path = "./tex.rs"]
 pub mod tex;
 use tex::*;
+use windows::Win32::UI::WindowsAndMessaging::GetDesktopWindow;
 
 pub enum GLVertexBuffer {
     Format2f4ub2f(Vec<ULVertex_2f_4ub_2f>),
@@ -186,18 +188,18 @@ pub struct GPUDriverSender {
 }
 
 impl GPUDriverSender {
-    pub fn new(
-        next_texture_id: u32,
-        next_render_buffer_id: u32,
-        next_geometry_id: u32,
-        sender: Sender<GPUDriverCommand>,
-    ) -> Self {
+    pub fn new(next_texture_id: u32, next_render_buffer_id: u32, next_geometry_id: u32) -> Self {
+        let (sender, _) = mpsc::channel();
         Self {
             next_texture_id,
             next_render_buffer_id,
             next_geometry_id,
             sender,
         }
+    }
+
+    pub fn set_tx(&mut self, sender: Sender<GPUDriverCommand>) {
+        self.sender = sender;
     }
 }
 
@@ -360,25 +362,46 @@ impl GPUDriver for GPUDriverSender {
     }
 }
 
+#[derive(Copy, Clone)]
+struct RenderVertex {
+    position: [f32; 2],
+    tex_coords: [f32; 2],
+}
+
+implement_vertex!(RenderVertex, position, tex_coords);
+
 pub struct GPUDriverReceiver {
     receiver: Receiver<GPUDriverCommand>,
     context: Rc<Context>,
+    head: HeadlessRenderer,
     texture_map: HashMap<u32, (EitherTexture, Option<u32>)>,
     empty_texture: EitherTexture,
     render_buffer_map: HashMap<u32, RenderBuffer>,
     geometry_map: HashMap<u32, (VertexBufferAny, glium::IndexBuffer<u32>)>,
     path_program: Program,
     fill_program: Program,
+    rawdog: ContextWrapper<NotCurrent, ()>,
 }
 
 impl GPUDriverReceiver {
     pub fn new(
         receiver: Receiver<GPUDriverCommand>,
-        context: &Rc<Context>,
+        // context: &Rc<Context>,
     ) -> Result<Self, &'static str> {
-        let context = context.clone();
+        let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
+
+        let gl_ctx = HeadlessRenderer::with_debug::<NotCurrent>(
+            unsafe { mem::transmute_copy(ctx.context()) },
+            glium::debug::DebugCallbackBehavior::PrintAll,
+        )
+        .unwrap();
+
+        let context = gl_ctx.get_context().clone();
+
         let empty_texture = EitherTexture::Regular2d(
-            Texture2d::empty(&context, 1, 1).or(Err("Failed to create empty texture!"))?,
+            Texture2d::empty(&context, 1, 1)
+                .or(Err("Failed to create empty texture!"))
+                .unwrap(),
         );
 
         let texture_map = HashMap::new();
@@ -390,18 +413,20 @@ impl GPUDriverReceiver {
             vertex: include_str!("./shaders/v2f_c4f_t2f_vert.glsl"),
             fragment: include_str!("./shaders/path_frag.glsl")
         })
-        .or(Err("Failed to create path shader!"))?;
+        .or(Err("Failed to create path shader!"))
+        .unwrap();
 
         let fill_program = program!(&context,
         150 => {
             vertex: include_str!("./shaders/v2f_c4f_t2f_t2f_d28f_vert.glsl"),
             fragment: include_str!("./shaders/fill_frag.glsl")
         })
-        .or(Err("Failed to create fill shader!"))?;
+        .or(Err("Failed to create fill shader!"))
+        .unwrap();
 
         Ok(Self {
             receiver,
-            context,
+            context: context.get_context().clone(),
             empty_texture,
             texture_map,
             render_buffer_map,
@@ -409,7 +434,23 @@ impl GPUDriverReceiver {
 
             path_program,
             fill_program,
+            head: gl_ctx,
+            rawdog: ctx,
         })
+    }
+
+    pub fn render_bitmap(&mut self, tex_id: u32) -> Result<Cow<'_, [u8]>, &'static str> {
+        let image = self.get_texture(&tex_id).unwrap();
+
+        let image_data: RawImage2d<'_, u8> = image.data().read_as_texture_2d().unwrap();
+
+        let image = image_data.data;
+
+        Ok(image)
+    }
+
+    pub fn get_texture(&self, id: &u32) -> Option<&EitherTexture> {
+        self.texture_map.get(id).map(|(t, _)| t)
     }
 
     pub fn render(&mut self) -> Result<(), &'static str> {
@@ -452,7 +493,7 @@ impl GPUDriverReceiver {
 
     fn create_texture(
         &mut self,
-        id: u32,
+        #[allow(unused_variables)] id: u32,
         bitmap: OwnedBitmap,
     ) -> Result<EitherTexture, &'static str> {
         let tex;

@@ -160,8 +160,11 @@ fn main() {
         .run(|_app_handle, event| match event {
             tauri::RunEvent::ExitRequested { api, .. } => {
                 api.prevent_exit();
+                // println!("Exit requested");
             }
-            _ => {}
+            _ => {
+                // println!("{:#?}", event);
+            }
         });
 
     println!("App exited");
