@@ -13,15 +13,6 @@ use helpers_threading::EventTicker;
 
 use self::helpers_threading::{receive_flag, ChangeFrequency};
 
-#[derive(Debug)]
-#[repr(C)]
-struct PreSensor {
-    pub sensor: *mut i8,
-    pub value: *mut i8,
-    pub r#type: *mut i8,
-    pub parent_hw_type: *mut i8,
-}
-
 #[link(name = "bootstrapperdll", kind = "static")]
 #[link(name = "Runtime.WorkstationGC", kind = "static")]
 #[link(name = "System.Globalization.Native.Aot", kind = "static")]
@@ -31,7 +22,7 @@ extern "C" {
     fn open_computer() -> *mut i16;
     fn close_computer(computer: *mut i16);
     fn get_all_sensors(computer: *mut i16) -> *mut i8;
-    fn get_single_sensor_ptrs(path: *mut i8, computer: *mut i16) -> PreSensor;
+    fn get_single_sensor_ptrs(path: *mut i8, computer: *mut i16) -> *mut i8;
     fn free_mem(ptr: *mut i8);
 }
 
@@ -56,6 +47,13 @@ pub struct Sensor {
     pub parent_hw_type: Option<String>,
 }
 
+static DEFAULT_SENSOR: Sensor = Sensor {
+    sensor: String::new(),
+    value: String::new(),
+    r#type: String::new(),
+    parent_hw_type: None,
+};
+
 #[derive(Deserialize, Debug, Serialize, Clone)]
 pub struct SensorWithDetails {
     pub sensor: String,
@@ -79,23 +77,23 @@ impl SensorWithDetails {
 
 pub struct Sensors {
     thread_handle: Option<JoinHandle<()>>,
-    tx_end: mpsc::SyncSender<bool>,
-    tx_poll: mpsc::Sender<u64>,
-    tx_subscribe: mpsc::Sender<Vec<String>>,
-    rx_sensor_list: mpsc::Receiver<Vec<Hardware>>,
-    tx_list_rq: mpsc::Sender<bool>,
-    rx_sensor_val: mpsc::Receiver<Vec<Sensor>>,
+    tx_end: kanal::Sender<bool>,
+    tx_poll: kanal::Sender<u64>,
+    tx_subscribe: kanal::Sender<Vec<String>>,
+    rx_sensor_list: kanal::Receiver<Vec<Hardware>>,
+    tx_list_rq: kanal::Sender<bool>,
+    rx_sensor_val: kanal::Receiver<Vec<Sensor>>,
     sensor_names: Vec<String>,
 }
 
 impl Sensors {
     pub fn new(poll: Option<u64>) -> Self {
-        let (tx_end, rx_end) = mpsc::sync_channel(2);
-        let (tx_poll, rx_poll) = mpsc::channel();
-        let (tx_subscribe, rx_subscribe) = mpsc::channel::<Vec<String>>();
-        let (tx_sensor_list, rx_sensor_list) = mpsc::channel();
-        let (tx_list_rq, rx_list_rq) = mpsc::channel();
-        let (tx_sensor_val, rx_sensor_val) = mpsc::sync_channel(0);
+        let (tx_end, rx_end) = kanal::bounded(2);
+        let (tx_poll, rx_poll) = kanal::unbounded();
+        let (tx_subscribe, rx_subscribe) = kanal::unbounded::<Vec<String>>();
+        let (tx_sensor_list, rx_sensor_list) = kanal::unbounded();
+        let (tx_list_rq, rx_list_rq) = kanal::unbounded();
+        let (tx_sensor_val, rx_sensor_val) = kanal::bounded(0);
 
         let sensor_thread = thread::spawn(move || {
             let mut poll = EventTicker::new(poll.or(Some(3000)).unwrap());
@@ -124,14 +122,16 @@ impl Sensors {
                 poll.change_frequency(&rx_poll);
 
                 match rx_subscribe.try_recv() {
-                    Ok(sub) => {
-                        if sub.len() > 1 {
-                            subscribed_multi = true;
-                            subscribed = sub.join("||").to_owned();
-                            println!("got {:?}", &subscribed);
-                        } else {
-                            subscribed_multi = false;
-                            subscribed = sub[0].clone();
+                    Ok(sub_send) => {
+                        if let Some(sub) = sub_send {
+                            if sub.len() > 1 {
+                                subscribed_multi = true;
+                                subscribed = sub.join("||").to_owned();
+                                println!("got {:?}", &subscribed);
+                            } else {
+                                subscribed_multi = false;
+                                subscribed = sub[0].clone();
+                            }
                         }
                     }
                     Err(_) => {}
@@ -224,61 +224,65 @@ impl Sensors {
 
     #[inline(always)]
     pub fn get_sensor_value(&self) -> Result<Vec<SensorWithDetails>, &'static str> {
-        let sensor_pre = self
+        let sensor_pre_opt = self
             .rx_sensor_val
             .try_recv()
             .or(Err("Failed to receive value."))?;
 
-        if self.sensor_names.len() > 10 {
-            let mut details = Vec::with_capacity(self.sensor_names.len());
+        if let Some(sensor_pre) = sensor_pre_opt {
+            if self.sensor_names.len() > 10 {
+                let mut details = Vec::with_capacity(self.sensor_names.len());
 
-            for sensor in (&sensor_pre).into_iter() {
-                let location = (*sensor_pre)
-                    .into_par_iter()
-                    .position_any(|x| {
-                        x.sensor == sensor.sensor
-                            && x.parent_hw_type == sensor.parent_hw_type
-                            && x.r#type == sensor.r#type
-                    })
-                    .unwrap();
+                for sensor in (&sensor_pre).into_iter() {
+                    let location = (*sensor_pre)
+                        .into_par_iter()
+                        .position_any(|x| {
+                            x.sensor == sensor.sensor
+                                && x.parent_hw_type == sensor.parent_hw_type
+                                && x.r#type == sensor.r#type
+                        })
+                        .unwrap();
+
+                    let new_thing =
+                        SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
+
+                    details.push(new_thing);
+                }
+
+                return Ok(details);
+            } else if self.sensor_names.len() > 1 {
+                let mut details = Vec::with_capacity(self.sensor_names.len());
+
+                for sensor in (&sensor_pre).into_iter() {
+                    let location = (*sensor_pre)
+                        .into_iter()
+                        .position(|x| {
+                            x.sensor == sensor.sensor
+                                && x.parent_hw_type == sensor.parent_hw_type
+                                && x.r#type == sensor.r#type
+                        })
+                        .unwrap();
+
+                    let new_thing =
+                        SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
+
+                    details.push(new_thing);
+                }
+
+                return Ok(details);
+            } else {
+                let mut details = Vec::with_capacity(1);
 
                 let new_thing =
-                    SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
+                    SensorWithDetails::new(self.sensor_names[0].clone(), sensor_pre[0].clone());
 
                 details.push(new_thing);
+
+                return Ok(details);
             }
-
-            Ok(details)
-        } else if self.sensor_names.len() > 1 {
-            let mut details = Vec::with_capacity(self.sensor_names.len());
-
-            for sensor in (&sensor_pre).into_iter() {
-                let location = (*sensor_pre)
-                    .into_iter()
-                    .position(|x| {
-                        x.sensor == sensor.sensor
-                            && x.parent_hw_type == sensor.parent_hw_type
-                            && x.r#type == sensor.r#type
-                    })
-                    .unwrap();
-
-                let new_thing =
-                    SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
-
-                details.push(new_thing);
-            }
-
-            Ok(details)
-        } else {
-            let mut details = Vec::with_capacity(1);
-
-            let new_thing =
-                SensorWithDetails::new(self.sensor_names[0].clone(), sensor_pre[0].clone());
-
-            details.push(new_thing);
-
-            Ok(details)
         }
+
+        Err("")
     }
 }
 
@@ -308,29 +312,31 @@ fn get_all_sensors_vec(computer: *mut i16) -> Vec<Hardware> {
 fn get_single_sensor(sensor_string: &String, computer: *mut i16) -> Sensor {
     let sensor_string = CString::new(sensor_string.to_owned()).unwrap();
     let pre = unsafe { get_single_sensor_ptrs(sensor_string.as_ptr() as *mut i8, computer) };
-    let sensor_cstr = unsafe { CStr::from_ptr(pre.sensor).to_str().unwrap().to_owned() };
-    let value_cstr = unsafe { CStr::from_ptr(pre.value).to_str().unwrap().to_owned() };
-    let type_cstr = unsafe { CStr::from_ptr(pre.r#type).to_str().unwrap().to_owned() };
-    let parent_hw_type_cstr = unsafe {
-        CStr::from_ptr(pre.parent_hw_type)
-            .to_str()
-            .unwrap()
-            .to_owned()
-    };
+
+    let obtained = unsafe { CStr::from_ptr(pre as *const i8) };
+
+    let string = obtained.to_str().unwrap();
+
+    let mut sensor;
+
+    if string == "v" {
+        sensor = DEFAULT_SENSOR.clone();
+        sensor.value = "a".to_string();
+    } else {
+        let mut split_data = string.split("||");
+        sensor = Sensor {
+            sensor: split_data.next().unwrap().to_string(),
+            value: split_data.next().unwrap().to_string(),
+            r#type: split_data.next().unwrap().to_string(),
+            parent_hw_type: Some(split_data.next().unwrap().to_string()),
+        };
+    }
 
     unsafe {
-        free_mem(pre.parent_hw_type);
-        free_mem(pre.sensor);
-        free_mem(pre.r#type);
-        free_mem(pre.value);
+        free_mem(pre);
     };
 
-    Sensor {
-        sensor: sensor_cstr,
-        value: value_cstr,
-        r#type: type_cstr,
-        parent_hw_type: Some(parent_hw_type_cstr),
-    }
+    sensor
 }
 
 #[inline(always)]

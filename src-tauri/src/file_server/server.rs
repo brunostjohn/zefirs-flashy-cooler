@@ -9,8 +9,8 @@ use std::{
 mod fs;
 
 pub struct Server {
-    end_channel: mpsc::Sender<bool>,
-    path_channel: mpsc::Sender<Option<PathBuf>>,
+    end_channel: kanal::Sender<bool>,
+    path_channel: kanal::Sender<Option<PathBuf>>,
     serving_fs_name: String,
 }
 
@@ -20,8 +20,8 @@ use helpers_threading::receive_flag;
 
 impl Server {
     pub fn new(path: Option<PathBuf>) -> Self {
-        let (tx_end, rx_end) = mpsc::channel();
-        let (tx_path, rx_path) = mpsc::channel();
+        let (tx_end, rx_end) = kanal::unbounded();
+        let (tx_path, rx_path) = kanal::unbounded::<Option<PathBuf>>();
 
         let now_serving: String = match &path {
             Some(path) => {
@@ -47,7 +47,9 @@ impl Server {
 
                 match rx_path.try_recv() {
                     Ok(path) => {
-                        fs_path = path;
+                        if let Some(path_opt) = path {
+                            fs_path = path_opt;
+                        }
                     }
                     _ => {}
                 };

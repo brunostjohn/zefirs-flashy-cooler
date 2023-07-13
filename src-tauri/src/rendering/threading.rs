@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
 use std::path::PathBuf;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::vec;
@@ -31,11 +31,11 @@ use crate::server::Server;
 
 pub struct Renderer {
     thread: Option<JoinHandle<()>>,
-    end_channel: mpsc::SyncSender<bool>,
-    theme_channel: mpsc::Sender<bool>,
-    fps_channel: mpsc::Sender<Duration>,
-    reload_config_channel: mpsc::Sender<bool>,
-    port_channel: mpsc::Sender<usize>,
+    end_channel: kanal::Sender<bool>,
+    theme_channel: kanal::Sender<bool>,
+    fps_channel: kanal::Sender<Duration>,
+    reload_config_channel: kanal::Sender<bool>,
+    port_channel: kanal::Sender<usize>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -53,11 +53,11 @@ impl Renderer {
         server: Arc<Mutex<Server>>,
         sensors: Arc<Mutex<Sensors>>,
     ) -> Self {
-        let (tx_theme, rx_theme) = mpsc::channel();
-        let (tx_end, rx_end) = mpsc::sync_channel(2);
-        let (tx_fps, rx_fps) = mpsc::channel();
-        let (tx_reload, rx_reload) = mpsc::channel();
-        let (tx_port, rx_port) = mpsc::channel();
+        let (tx_theme, rx_theme) = kanal::unbounded();
+        let (tx_end, rx_end) = kanal::bounded(2);
+        let (tx_fps, rx_fps) = kanal::unbounded();
+        let (tx_reload, rx_reload) = kanal::unbounded();
+        let (tx_port, rx_port) = kanal::unbounded();
 
         let render = thread::spawn(move || {
             let mut engine = Ultralight::new(app_folder);
@@ -127,10 +127,12 @@ impl Renderer {
                         .or_else(|_| Err(println!("Failed to reload theme!")));
                 }
 
-                if let Ok(port) = rx_port.try_recv() {
-                    let _ = engine
-                        .load_url(&format!("http://127.0.0.1:{port}"))
-                        .or_else(|_| Err(println!("Failed to reload theme!")));
+                if let Ok(port_opt) = rx_port.try_recv() {
+                    if let Some(port) = port_opt {
+                        let _ = engine
+                            .load_url(&format!("http://127.0.0.1:{port}"))
+                            .or_else(|_| Err(println!("Failed to reload theme!")));
+                    }
                 }
 
                 if receive_flag(&rx_reload, false) {

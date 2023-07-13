@@ -43,6 +43,26 @@ impl CustomSerialise for Vec<ThemeConfigItem> {
     }
 }
 
+impl CustomSerialise for Vec<String> {
+    #[inline(always)]
+    fn custom_serialise(&self) -> String
+    where
+        Self: Sized,
+    {
+        let mut all_sensor_string = "{".to_owned();
+
+        for sensor in self {
+            all_sensor_string += &sensor;
+            all_sensor_string += ",";
+        }
+
+        all_sensor_string.pop();
+        all_sensor_string += "}";
+
+        all_sensor_string
+    }
+}
+
 impl CustomSerialise for Vec<SensorWithDetails> {
     #[inline(always)]
     fn custom_serialise(&self) -> String
@@ -53,9 +73,16 @@ impl CustomSerialise for Vec<SensorWithDetails> {
 
         for sensor in self {
             all_sensor_string += &("\"".to_owned() + &sensor.code_name + "\":");
-            let sensor_string = serde_json::to_string(&sensor)
-                .or::<Result<String, &'static str>>(Ok("{}".to_owned()))
+            let name = &sensor.sensor;
+            let r#type = &sensor.r#type;
+            let value = &sensor.value;
+            let parent_hw = (sensor.parent_hw_type.clone())
+                .or(Some("".to_string()))
                 .unwrap();
+
+            let sensor_string = format!(
+                r#"{{"sensor":"{name}","value":"{value}","type":"{type}","parent_hw_type":"{parent_hw}"}}"#
+            );
             all_sensor_string += &sensor_string;
             all_sensor_string += ",";
         }
@@ -71,6 +98,26 @@ pub trait Reassign<T> {
     fn reassign(self, channel: T) -> Self
     where
         Self: Sized;
+}
+
+impl Reassign<Result<Vec<String>, &'static str>> for Vec<String> {
+    #[inline(always)]
+    fn reassign(self, channel: Result<Vec<String>, &'static str>) -> Self
+    where
+        Self: Sized,
+    {
+        match channel {
+            Ok(result) => {
+                let checked = &result[0];
+                if checked.contains(r#"{"sensor": "noWayInFuckingHell", "value": "anyLegitimateSensorValue", "type": "WouldContainThis"}"#) {
+                    return self;
+                } else {
+                    return result;
+                }
+            }
+            Err(_) => return self,
+        }
+    }
 }
 
 impl Reassign<Result<Vec<SensorWithDetails>, &'static str>> for Vec<SensorWithDetails> {

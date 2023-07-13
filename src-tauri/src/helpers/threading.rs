@@ -9,9 +9,9 @@ mod helpers_traits;
 use helpers_traits::TryElapsed;
 
 #[inline(always)]
-pub fn receive_flag(channel: &Receiver<bool>, assume: bool) -> bool {
+pub fn receive_flag(channel: &kanal::Receiver<bool>, assume: bool) -> bool {
     match channel.try_recv() {
-        Ok(result) => return result,
+        Ok(result) => return result.or(Some(assume)).unwrap(),
         Err(_) => return assume,
     }
 }
@@ -83,6 +83,34 @@ impl ChangeFrequency<&Receiver<u64>> for EventTicker {
     fn change_frequency(&mut self, frequency: &Receiver<u64>) {
         match frequency.try_recv() {
             Ok(freq) => self.frequency = Duration::from_millis(freq),
+            Err(_) => {}
+        }
+    }
+}
+
+impl ChangeFrequency<&kanal::Receiver<Duration>> for EventTicker {
+    #[inline(always)]
+    fn change_frequency(&mut self, frequency: &kanal::Receiver<Duration>) {
+        match frequency.try_recv() {
+            Ok(freq) => {
+                if let Some(frequency) = freq {
+                    self.frequency = frequency;
+                }
+            }
+            Err(_) => {}
+        }
+    }
+}
+
+impl ChangeFrequency<&kanal::Receiver<u64>> for EventTicker {
+    #[inline(always)]
+    fn change_frequency(&mut self, frequency: &kanal::Receiver<u64>) {
+        match frequency.try_recv() {
+            Ok(freq) => {
+                if let Some(frequency) = freq {
+                    self.frequency = Duration::from_millis(frequency);
+                }
+            }
             Err(_) => {}
         }
     }

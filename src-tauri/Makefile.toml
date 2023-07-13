@@ -25,6 +25,7 @@ script_runner = "@shell"
 script = '''
     rm -rf ./bin
     rm -rf ./obj
+    exit 0
 '''
 
 [tasks.build-libre-lib]
@@ -41,6 +42,9 @@ script = '''
     cp ./*.dll ../../../../../../src-tauri/
 '''
 dependencies = ["build-libre-lib"]
+
+[tasks.libre-force]
+run_task = [{name="copy-libre-lib"}]
 
 [tasks.libre]
 run_task = [{ name="copy-libre-lib", condition = { files_modified = { input = ["../LibreHardwareMonitorNative/Class1.cs", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.sln"], output = ["../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.lib", "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.dll"] } } }]
