@@ -241,6 +241,7 @@ impl TryFrom<ULCommand> for GPUCommand {
     type Error = ();
 
     #[allow(non_upper_case_globals)]
+    #[inline]
     fn try_from(gc: ULCommand) -> Result<Self, Self::Error> {
         match gc.command_type as u32 {
             ULCommandType_kCommandType_DrawGeometry => Ok(GPUCommand::DrawGeometry {

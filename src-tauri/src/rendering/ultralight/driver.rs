@@ -1,5 +1,7 @@
 use std::{borrow::Cow, mem, rc::Rc};
 
+use rayon::prelude::*;
+
 use kanal::Receiver;
 use kanal::Sender;
 
@@ -249,6 +251,7 @@ impl GPUDriver for GPUDriverSender {
             .unwrap();
     }
 
+    #[inline]
     fn create_render_buffer(&mut self, render_buffer_id: u32, render_buffer: gpu::RenderBuffer) {
         self.sender
             .send(GPUDriverCommand::CreateRenderBuffer(
@@ -258,50 +261,59 @@ impl GPUDriver for GPUDriverSender {
             .unwrap();
     }
 
+    #[inline]
     fn create_texture(&mut self, texture_id: u32, bitmap: gpu::bitmap::OwnedBitmap) {
         self.sender
             .send(GPUDriverCommand::CreateTexture(texture_id, bitmap))
             .unwrap();
     }
 
+    #[inline]
     fn destroy_geometry(&mut self, geometry_id: u32) {
         self.sender
             .send(GPUDriverCommand::DestroyGeometry(geometry_id))
             .unwrap();
     }
 
+    #[inline]
     fn destroy_render_buffer(&mut self, render_buffer_id: u32) {
         self.sender
             .send(GPUDriverCommand::DestroyRenderBuffer(render_buffer_id))
             .unwrap();
     }
 
+    #[inline]
     fn destroy_texture(&mut self, texture_id: u32) {
         self.sender
             .send(GPUDriverCommand::DestroyTexture(texture_id))
             .unwrap();
     }
 
+    #[inline]
     fn end_synchronize(&mut self) {}
 
+    #[inline]
     fn next_geometry_id(&mut self) -> u32 {
         self.next_geometry_id += 1;
 
         self.next_geometry_id
     }
 
+    #[inline]
     fn next_render_buffer_id(&mut self) -> u32 {
         self.next_render_buffer_id += 1;
 
         self.next_render_buffer_id
     }
 
+    #[inline]
     fn next_texture_id(&mut self) -> u32 {
         self.next_texture_id += 1;
 
         self.next_texture_id
     }
 
+    #[inline]
     fn update_command_list(&mut self, command_list: Vec<gpu::GPUCommand>) {
         self.sender
             .send(GPUDriverCommand::UpdateCommandList(command_list))
@@ -353,6 +365,7 @@ impl GPUDriver for GPUDriverSender {
             .unwrap();
     }
 
+    #[inline]
     fn update_texture(&mut self, texture_id: u32, bitmap: OwnedBitmap) {
         self.sender
             .send(GPUDriverCommand::UpdateTexture(texture_id, bitmap))

@@ -9,6 +9,8 @@ use std::{
     },
 };
 
+use rayon::prelude::*;
+
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
@@ -151,14 +153,14 @@ impl Ultralight {
         Ok(())
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn update(&self) {
         unsafe {
             ulUpdate(self.renderer);
         }
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn render(&mut self) {
         unsafe {
             ulRender(self.renderer);
@@ -174,14 +176,16 @@ impl Ultralight {
 
         let mut dst = vec![0u8; 480 * 480 * 4];
 
-        for (output, chunk) in dst.chunks_exact_mut(3).zip(src.chunks_exact(4)) {
-            output.copy_from_slice(&chunk[0..3]);
-        }
+        dst.par_chunks_exact_mut(3)
+            .zip(src.par_chunks_exact(4))
+            .for_each(|chunk| {
+                chunk.0.copy_from_slice(&chunk.1[0..3]);
+            });
 
         Ok(dst)
     }
 
-    #[inline]
+    #[inline(always)]
     pub fn garbage_collect(&self) {
         unsafe {
             let context = ulViewLockJSContext(self.view);

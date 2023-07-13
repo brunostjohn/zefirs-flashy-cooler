@@ -89,6 +89,7 @@ dependencies = [
  "macros",
  "mime_guess",
  "once_cell",
+ "rayon",
  "reqwest",
  "rusb",
  "rustc-hash",
