@@ -4,13 +4,13 @@
 uniform vec4 State;
 uniform mat4 Transform;
 uniform Scalar {
-    float scalar[8];
+  float scalar[8];
 };
 uniform Clip {
-    mat4 clip[8];
+  mat4 clip[8];
 };
 uniform Vector {
-    vec4 vector[8];
+  vec4 vector[8];
 };
 uniform uint ClipSize;
 

@@ -41,7 +41,7 @@ impl Ultralight {
 
         unsafe { GPU_SENDER.set_tx(tx) };
 
-        let driver_recv = GPUDriverReceiver::new(rx).unwrap();
+        let driver_recv = GPUDriverReceiver::new(rx, app_folder.clone()).unwrap();
 
         unsafe {
             let config = ulCreateConfig();

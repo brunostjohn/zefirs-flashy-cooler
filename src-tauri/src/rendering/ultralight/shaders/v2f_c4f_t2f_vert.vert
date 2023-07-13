@@ -28,8 +28,8 @@ in vec2 in_TexCoord;
 
 // Out Params
 out vec4 ex_Color;
-out vec2 ex_ObjectCoord;
 out vec2 ex_ScreenCoord;
+out vec2 ex_ObjectCoord;
 
 void main(void)
 {

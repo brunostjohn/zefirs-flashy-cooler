@@ -1,0 +1,491 @@
+<?xml version="1.0" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" width="1200" height="358" onload="init(evt)" viewBox="0 0 1200 358" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:fg="http://github.com/jonhoo/inferno"><!--Flame graph stack visualization. See https://github.com/brendangregg/FlameGraph for latest version, and http://www.brendangregg.com/flamegraphs.html for examples.--><!--NOTES: --><defs><linearGradient id="background" y1="0" y2="1" x1="0" x2="0"><stop stop-color="#eeeeee" offset="5%"/><stop stop-color="#eeeeb0" offset="95%"/></linearGradient></defs><style type="text/css">
+text { font-family:monospace; font-size:12px }
+#title { text-anchor:middle; font-size:17px; }
+#matched { text-anchor:end; }
+#search { text-anchor:end; opacity:0.1; cursor:pointer; }
+#search:hover, #search.show { opacity:1; }
+#subtitle { text-anchor:middle; font-color:rgb(160,160,160); }
+#unzoom { cursor:pointer; }
+#frames > *:hover { stroke:black; stroke-width:0.5; cursor:pointer; }
+.hide { display:none; }
+.parent { opacity:0.5; }
+</style><script type="text/ecmascript"><![CDATA[
+        var nametype = 'Function:';
+        var fontsize = 12;
+        var fontwidth = 0.59;
+        var xpad = 10;
+        var inverted = false;
+        var searchcolor = 'rgb(230,0,230)';
+        var fluiddrawing = true;
+        var truncate_text_right = false;
+    ]]><![CDATA["use strict";
+var details, searchbtn, unzoombtn, matchedtxt, svg, searching, frames, known_font_width;
+function init(evt) {
+    details = document.getElementById("details").firstChild;
+    searchbtn = document.getElementById("search");
+    unzoombtn = document.getElementById("unzoom");
+    matchedtxt = document.getElementById("matched");
+    svg = document.getElementsByTagName("svg")[0];
+    frames = document.getElementById("frames");
+    known_font_width = get_monospace_width(frames);
+    total_samples = parseInt(frames.attributes.total_samples.value);
+    searching = 0;
+
+    // Use GET parameters to restore a flamegraph's state.
+    var restore_state = function() {
+        var params = get_params();
+        if (params.x && params.y)
+            zoom(find_group(document.querySelector('[*|x="' + params.x + '"][y="' + params.y + '"]')));
+        if (params.s)
+            search(params.s);
+    };
+
+    if (fluiddrawing) {
+        // Make width dynamic so the SVG fits its parent's width.
+        svg.removeAttribute("width");
+        // Edge requires us to have a viewBox that gets updated with size changes.
+        var isEdge = /Edge\/\d./i.test(navigator.userAgent);
+        if (!isEdge) {
+            svg.removeAttribute("viewBox");
+        }
+        var update_for_width_change = function() {
+            if (isEdge) {
+                svg.attributes.viewBox.value = "0 0 " + svg.width.baseVal.value + " " + svg.height.baseVal.value;
+            }
+
+            // Keep consistent padding on left and right of frames container.
+            frames.attributes.width.value = svg.width.baseVal.value - xpad * 2;
+
+            // Text truncation needs to be adjusted for the current width.
+            update_text_for_elements(frames.children);
+
+            // Keep search elements at a fixed distance from right edge.
+            var svgWidth = svg.width.baseVal.value;
+            searchbtn.attributes.x.value = svgWidth - xpad;
+            matchedtxt.attributes.x.value = svgWidth - xpad;
+        };
+        window.addEventListener('resize', function() {
+            update_for_width_change();
+        });
+        // This needs to be done asynchronously for Safari to work.
+        setTimeout(function() {
+            unzoom();
+            update_for_width_change();
+            restore_state();
+        }, 0);
+    } else {
+        restore_state();
+    }
+}
+// event listeners
+window.addEventListener("click", function(e) {
+    var target = find_group(e.target);
+    if (target) {
+        if (target.nodeName == "a") {
+            if (e.ctrlKey === false) return;
+            e.preventDefault();
+        }
+        if (target.classList.contains("parent")) unzoom();
+        zoom(target);
+
+        // set parameters for zoom state
+        var el = target.querySelector("rect");
+        if (el && el.attributes && el.attributes.y && el.attributes["fg:x"]) {
+            var params = get_params()
+            params.x = el.attributes["fg:x"].value;
+            params.y = el.attributes.y.value;
+            history.replaceState(null, null, parse_params(params));
+        }
+    }
+    else if (e.target.id == "unzoom") {
+        unzoom();
+
+        // remove zoom state
+        var params = get_params();
+        if (params.x) delete params.x;
+        if (params.y) delete params.y;
+        history.replaceState(null, null, parse_params(params));
+    }
+    else if (e.target.id == "search") search_prompt();
+}, false)
+// mouse-over for info
+// show
+window.addEventListener("mouseover", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = nametype + " " + g_to_text(target);
+}, false)
+// clear
+window.addEventListener("mouseout", function(e) {
+    var target = find_group(e.target);
+    if (target) details.nodeValue = ' ';
+}, false)
+// ctrl-F for search
+window.addEventListener("keydown",function (e) {
+    if (e.keyCode === 114 || (e.ctrlKey && e.keyCode === 70)) {
+        e.preventDefault();
+        search_prompt();
+    }
+}, false)
+// functions
+function get_params() {
+    var params = {};
+    var paramsarr = window.location.search.substr(1).split('&');
+    for (var i = 0; i < paramsarr.length; ++i) {
+        var tmp = paramsarr[i].split("=");
+        if (!tmp[0] || !tmp[1]) continue;
+        params[tmp[0]]  = decodeURIComponent(tmp[1]);
+    }
+    return params;
+}
+function parse_params(params) {
+    var uri = "?";
+    for (var key in params) {
+        uri += key + '=' + encodeURIComponent(params[key]) + '&';
+    }
+    if (uri.slice(-1) == "&")
+        uri = uri.substring(0, uri.length - 1);
+    if (uri == '?')
+        uri = window.location.href.split('?')[0];
+    return uri;
+}
+function find_child(node, selector) {
+    var children = node.querySelectorAll(selector);
+    if (children.length) return children[0];
+    return;
+}
+function find_group(node) {
+    var parent = node.parentElement;
+    if (!parent) return;
+    if (parent.id == "frames") return node;
+    return find_group(parent);
+}
+function orig_save(e, attr, val) {
+    if (e.attributes["fg:orig_" + attr] != undefined) return;
+    if (e.attributes[attr] == undefined) return;
+    if (val == undefined) val = e.attributes[attr].value;
+    e.setAttribute("fg:orig_" + attr, val);
+}
+function orig_load(e, attr) {
+    if (e.attributes["fg:orig_"+attr] == undefined) return;
+    e.attributes[attr].value = e.attributes["fg:orig_" + attr].value;
+    e.removeAttribute("fg:orig_" + attr);
+}
+function g_to_text(e) {
+    var text = find_child(e, "title").firstChild.nodeValue;
+    return (text)
+}
+function g_to_func(e) {
+    var func = g_to_text(e);
+    // if there's any manipulation we want to do to the function
+    // name before it's searched, do it here before returning.
+    return (func);
+}
+function get_monospace_width(frames) {
+    // Given the id="frames" element, return the width of text characters if
+    // this is a monospace font, otherwise return 0.
+    text = find_child(frames.children[0], "text");
+    originalContent = text.textContent;
+    text.textContent = "!";
+    bangWidth = text.getComputedTextLength();
+    text.textContent = "W";
+    wWidth = text.getComputedTextLength();
+    text.textContent = originalContent;
+    if (bangWidth === wWidth) {
+        return bangWidth;
+    } else {
+        return 0;
+    }
+}
+function update_text_for_elements(elements) {
+    // In order to render quickly in the browser, you want to do one pass of
+    // reading attributes, and one pass of mutating attributes. See
+    // https://web.dev/avoid-large-complex-layouts-and-layout-thrashing/ for details.
+
+    // Fall back to inefficient calculation, if we're variable-width font.
+    // TODO This should be optimized somehow too.
+    if (known_font_width === 0) {
+        for (var i = 0; i < elements.length; i++) {
+            update_text(elements[i]);
+        }
+        return;
+    }
+
+    var textElemNewAttributes = [];
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var r = find_child(e, "rect");
+        var t = find_child(e, "text");
+        var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+        var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+        var newX = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+        // Smaller than this size won't fit anything
+        if (w < 2 * known_font_width) {
+            textElemNewAttributes.push([newX, ""]);
+            continue;
+        }
+
+        // Fit in full text width
+        if (txt.length * known_font_width < w) {
+            textElemNewAttributes.push([newX, txt]);
+            continue;
+        }
+
+        var substringLength = Math.floor(w / known_font_width) - 2;
+        if (truncate_text_right) {
+            // Truncate the right side of the text.
+            textElemNewAttributes.push([newX, txt.substring(0, substringLength) + ".."]);
+            continue;
+        } else {
+            // Truncate the left side of the text.
+            textElemNewAttributes.push([newX, ".." + txt.substring(txt.length - substringLength, txt.length)]);
+            continue;
+        }
+    }
+
+    console.assert(textElemNewAttributes.length === elements.length, "Resize failed, please file a bug at https://github.com/jonhoo/inferno/");
+
+    // Now that we know new textContent, set it all in one go so we don't refresh a bazillion times.
+    for (var i = 0; i < elements.length; i++) {
+        var e = elements[i];
+        var values = textElemNewAttributes[i];
+        var t = find_child(e, "text");
+        t.attributes.x.value = values[0];
+        t.textContent = values[1];
+    }
+}
+
+function update_text(e) {
+    var r = find_child(e, "rect");
+    var t = find_child(e, "text");
+    var w = parseFloat(r.attributes.width.value) * frames.attributes.width.value / 100 - 3;
+    var txt = find_child(e, "title").textContent.replace(/\([^(]*\)$/,"");
+    t.attributes.x.value = format_percent((parseFloat(r.attributes.x.value) + (100 * 3 / frames.attributes.width.value)));
+
+    // Smaller than this size won't fit anything
+    if (w < 2 * fontsize * fontwidth) {
+        t.textContent = "";
+        return;
+    }
+    t.textContent = txt;
+    // Fit in full text width
+    if (t.getComputedTextLength() < w)
+        return;
+    if (truncate_text_right) {
+        // Truncate the right side of the text.
+        for (var x = txt.length - 2; x > 0; x--) {
+            if (t.getSubStringLength(0, x + 2) <= w) {
+                t.textContent = txt.substring(0, x) + "..";
+                return;
+            }
+        }
+    } else {
+        // Truncate the left side of the text.
+        for (var x = 2; x < txt.length; x++) {
+            if (t.getSubStringLength(x - 2, txt.length) <= w) {
+                t.textContent = ".." + txt.substring(x, txt.length);
+                return;
+            }
+        }
+    }
+    t.textContent = "";
+}
+// zoom
+function zoom_reset(e) {
+    if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * parseInt(e.attributes["fg:x"].value) / total_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / total_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_reset(c[i]);
+    }
+}
+function zoom_child(e, x, zoomed_width_samples) {
+    if (e.tagName == "text") {
+        var parent_x = parseFloat(find_child(e.parentNode, "rect[x]").attributes.x.value);
+        e.attributes.x.value = format_percent(parent_x + (100 * 3 / frames.attributes.width.value));
+    } else if (e.tagName == "rect") {
+        e.attributes.x.value = format_percent(100 * (parseInt(e.attributes["fg:x"].value) - x) / zoomed_width_samples);
+        e.attributes.width.value = format_percent(100 * parseInt(e.attributes["fg:w"].value) / zoomed_width_samples);
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_child(c[i], x, zoomed_width_samples);
+    }
+}
+function zoom_parent(e) {
+    if (e.attributes) {
+        if (e.attributes.x != undefined) {
+            e.attributes.x.value = "0.0%";
+        }
+        if (e.attributes.width != undefined) {
+            e.attributes.width.value = "100.0%";
+        }
+    }
+    if (e.childNodes == undefined) return;
+    for(var i = 0, c = e.childNodes; i < c.length; i++) {
+        zoom_parent(c[i]);
+    }
+}
+function zoom(node) {
+    var attr = find_child(node, "rect").attributes;
+    var width = parseInt(attr["fg:w"].value);
+    var xmin = parseInt(attr["fg:x"].value);
+    var xmax = xmin + width;
+    var ymin = parseFloat(attr.y.value);
+    unzoombtn.classList.remove("hide");
+    var el = frames.children;
+    var to_update_text = [];
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        var a = find_child(e, "rect").attributes;
+        var ex = parseInt(a["fg:x"].value);
+        var ew = parseInt(a["fg:w"].value);
+        // Is it an ancestor
+        if (!inverted) {
+            var upstack = parseFloat(a.y.value) > ymin;
+        } else {
+            var upstack = parseFloat(a.y.value) < ymin;
+        }
+        if (upstack) {
+            // Direct ancestor
+            if (ex <= xmin && (ex+ew) >= xmax) {
+                e.classList.add("parent");
+                zoom_parent(e);
+                to_update_text.push(e);
+            }
+            // not in current path
+            else
+                e.classList.add("hide");
+        }
+        // Children maybe
+        else {
+            // no common path
+            if (ex < xmin || ex >= xmax) {
+                e.classList.add("hide");
+            }
+            else {
+                zoom_child(e, xmin, width);
+                to_update_text.push(e);
+            }
+        }
+    }
+    update_text_for_elements(to_update_text);
+}
+function unzoom() {
+    unzoombtn.classList.add("hide");
+    var el = frames.children;
+    for(var i = 0; i < el.length; i++) {
+        el[i].classList.remove("parent");
+        el[i].classList.remove("hide");
+        zoom_reset(el[i]);
+    }
+    update_text_for_elements(el);
+}
+// search
+function reset_search() {
+    var el = document.querySelectorAll("#frames rect");
+    for (var i = 0; i < el.length; i++) {
+        orig_load(el[i], "fill")
+    }
+    var params = get_params();
+    delete params.s;
+    history.replaceState(null, null, parse_params(params));
+}
+function search_prompt() {
+    if (!searching) {
+        var term = prompt("Enter a search term (regexp " +
+            "allowed, eg: ^ext4_)", "");
+        if (term != null) {
+            search(term)
+        }
+    } else {
+        reset_search();
+        searching = 0;
+        searchbtn.classList.remove("show");
+        searchbtn.firstChild.nodeValue = "Search"
+        matchedtxt.classList.add("hide");
+        matchedtxt.firstChild.nodeValue = ""
+    }
+}
+function search(term) {
+    var re = new RegExp(term);
+    var el = frames.children;
+    var matches = new Object();
+    var maxwidth = 0;
+    for (var i = 0; i < el.length; i++) {
+        var e = el[i];
+        // Skip over frames which are either not visible, or below the zoomed-to frame
+        if (e.classList.contains("hide") || e.classList.contains("parent")) {
+            continue;
+        }
+        var func = g_to_func(e);
+        var rect = find_child(e, "rect");
+        if (func == null || rect == null)
+            continue;
+        // Save max width. Only works as we have a root frame
+        var w = parseInt(rect.attributes["fg:w"].value);
+        if (w > maxwidth)
+            maxwidth = w;
+        if (func.match(re)) {
+            // highlight
+            var x = parseInt(rect.attributes["fg:x"].value);
+            orig_save(rect, "fill");
+            rect.attributes.fill.value = searchcolor;
+            // remember matches
+            if (matches[x] == undefined) {
+                matches[x] = w;
+            } else {
+                if (w > matches[x]) {
+                    // overwrite with parent
+                    matches[x] = w;
+                }
+            }
+            searching = 1;
+        }
+    }
+    if (!searching)
+        return;
+    var params = get_params();
+    params.s = term;
+    history.replaceState(null, null, parse_params(params));
+
+    searchbtn.classList.add("show");
+    searchbtn.firstChild.nodeValue = "Reset Search";
+    // calculate percent matched, excluding vertical overlap
+    var count = 0;
+    var lastx = -1;
+    var lastw = 0;
+    var keys = Array();
+    for (k in matches) {
+        if (matches.hasOwnProperty(k))
+            keys.push(k);
+    }
+    // sort the matched frames by their x location
+    // ascending, then width descending
+    keys.sort(function(a, b){
+        return a - b;
+    });
+    // Step through frames saving only the biggest bottom-up frames
+    // thanks to the sort order. This relies on the tree property
+    // where children are always smaller than their parents.
+    for (var k in keys) {
+        var x = parseInt(keys[k]);
+        var w = matches[keys[k]];
+        if (x >= lastx + lastw) {
+            count += w;
+            lastx = x;
+            lastw = w;
+        }
+    }
+    // display matched percent
+    matchedtxt.classList.remove("hide");
+    var pct = 100 * count / maxwidth;
+    if (pct != 100) pct = pct.toFixed(1);
+    matchedtxt.firstChild.nodeValue = "Matched: " + pct + "%";
+}
+function format_percent(n) {
+    return n.toFixed(4) + "%";
+}
+]]></script><rect x="0" y="0" width="100%" height="358" fill="url(#background)"/><text id="title" fill="rgb(0,0,0)" x="50.0000%" y="24.00">Flame Graph</text><text id="details" fill="rgb(0,0,0)" x="10" y="341.00"> </text><text id="unzoom" class="hide" fill="rgb(0,0,0)" x="10" y="24.00">Reset Zoom</text><text id="search" fill="rgb(0,0,0)" x="1190" y="24.00">Search</text><text id="matched" fill="rgb(0,0,0)" x="1190" y="341.00"> </text><svg id="frames" x="10" width="1180" total_samples="1878"><g><title>0x7ff9f38dfdf1 (1 samples, 0.05%)</title><rect x="0.0000%" y="293" width="0.0532%" height="15" fill="rgb(227,0,7)" fg:x="0" fg:w="1"/><text x="0.2500%" y="303.50"></text></g><g><title>0x7ff9f38e29c5 (1 samples, 0.05%)</title><rect x="0.0000%" y="277" width="0.0532%" height="15" fill="rgb(217,0,24)" fg:x="0" fg:w="1"/><text x="0.2500%" y="287.50"></text></g><g><title>user32`SetWindowLongPtrW (1 samples, 0.05%)</title><rect x="0.0000%" y="261" width="0.0532%" height="15" fill="rgb(221,193,54)" fg:x="0" fg:w="1"/><text x="0.2500%" y="271.50"></text></g><g><title>win32u`NtUserSetWindowLongPtr (1 samples, 0.05%)</title><rect x="0.0000%" y="245" width="0.0532%" height="15" fill="rgb(248,212,6)" fg:x="0" fg:w="1"/><text x="0.2500%" y="255.50"></text></g><g><title>0x7ff9f39aba30 (1 samples, 0.05%)</title><rect x="0.0532%" y="293" width="0.0532%" height="15" fill="rgb(208,68,35)" fg:x="1" fg:w="1"/><text x="0.3032%" y="303.50"></text></g><g><title>0x7ff9f3adff55 (1 samples, 0.05%)</title><rect x="0.0532%" y="277" width="0.0532%" height="15" fill="rgb(232,128,0)" fg:x="1" fg:w="1"/><text x="0.3032%" y="287.50"></text></g><g><title>0x7ffa87910035 (1 samples, 0.05%)</title><rect x="0.1065%" y="293" width="0.0532%" height="15" fill="rgb(207,160,47)" fg:x="2" fg:w="1"/><text x="0.3565%" y="303.50"></text></g><g><title>0x7ffa87c0b724 (1 samples, 0.05%)</title><rect x="0.1597%" y="293" width="0.0532%" height="15" fill="rgb(228,23,34)" fg:x="3" fg:w="1"/><text x="0.4097%" y="303.50"></text></g><g><title>0x7ffa87f3d2a9 (1 samples, 0.05%)</title><rect x="0.2130%" y="293" width="0.0532%" height="15" fill="rgb(218,30,26)" fg:x="4" fg:w="1"/><text x="0.4630%" y="303.50"></text></g><g><title>KERNELBASE`SwitchToThread (1 samples, 0.05%)</title><rect x="0.2130%" y="277" width="0.0532%" height="15" fill="rgb(220,122,19)" fg:x="4" fg:w="1"/><text x="0.4630%" y="287.50"></text></g><g><title>0x7ffa88a8e5d0 (1 samples, 0.05%)</title><rect x="0.2662%" y="293" width="0.0532%" height="15" fill="rgb(250,228,42)" fg:x="5" fg:w="1"/><text x="0.5162%" y="303.50"></text></g><g><title>0x7ffa88abf062 (1 samples, 0.05%)</title><rect x="0.3195%" y="293" width="0.0532%" height="15" fill="rgb(240,193,28)" fg:x="6" fg:w="1"/><text x="0.5695%" y="303.50"></text></g><g><title>0x7ffa88ad05c7 (1 samples, 0.05%)</title><rect x="0.3727%" y="293" width="0.0532%" height="15" fill="rgb(216,20,37)" fg:x="7" fg:w="1"/><text x="0.6227%" y="303.50"></text></g><g><title>0x7ffa89133660 (1 samples, 0.05%)</title><rect x="0.4260%" y="293" width="0.0532%" height="15" fill="rgb(206,188,39)" fg:x="8" fg:w="1"/><text x="0.6760%" y="303.50"></text></g><g><title>0x7ffa89930967 (6 samples, 0.32%)</title><rect x="0.4792%" y="293" width="0.3195%" height="15" fill="rgb(217,207,13)" fg:x="9" fg:w="6"/><text x="0.7292%" y="303.50"></text></g><g><title>ntdll`TpSetWaitEx (6 samples, 0.32%)</title><rect x="0.4792%" y="277" width="0.3195%" height="15" fill="rgb(231,73,38)" fg:x="9" fg:w="6"/><text x="0.7292%" y="287.50"></text></g><g><title>ntdll`ZwAlertThreadByThreadId (6 samples, 0.32%)</title><rect x="0.4792%" y="261" width="0.3195%" height="15" fill="rgb(225,20,46)" fg:x="9" fg:w="6"/><text x="0.7292%" y="271.50"></text></g><g><title>0x7ffa8995eb19 (4 samples, 0.21%)</title><rect x="0.7987%" y="293" width="0.2130%" height="15" fill="rgb(210,31,41)" fg:x="15" fg:w="4"/><text x="1.0487%" y="303.50"></text></g><g><title>0x7ffac3aba02d (1 samples, 0.05%)</title><rect x="1.0117%" y="293" width="0.0532%" height="15" fill="rgb(221,200,47)" fg:x="19" fg:w="1"/><text x="1.2617%" y="303.50"></text></g><g><title>ntdll`EtwRegisterTraceGuidsW (1 samples, 0.05%)</title><rect x="1.0117%" y="277" width="0.0532%" height="15" fill="rgb(226,26,5)" fg:x="19" fg:w="1"/><text x="1.2617%" y="287.50"></text></g><g><title>ntdll`EtwNotificationRegister (1 samples, 0.05%)</title><rect x="1.0117%" y="261" width="0.0532%" height="15" fill="rgb(249,33,26)" fg:x="19" fg:w="1"/><text x="1.2617%" y="271.50"></text></g><g><title>ntdll`LdrGetDllPath (1 samples, 0.05%)</title><rect x="1.0117%" y="245" width="0.0532%" height="15" fill="rgb(235,183,28)" fg:x="19" fg:w="1"/><text x="1.2617%" y="255.50"></text></g><g><title>ntdll`NtTraceControl (1 samples, 0.05%)</title><rect x="1.0117%" y="229" width="0.0532%" height="15" fill="rgb(221,5,38)" fg:x="19" fg:w="1"/><text x="1.2617%" y="239.50"></text></g><g><title>0x7ffad5a0ff12 (1 samples, 0.05%)</title><rect x="1.0650%" y="293" width="0.0532%" height="15" fill="rgb(247,18,42)" fg:x="20" fg:w="1"/><text x="1.3150%" y="303.50"></text></g><g><title>ntdll`LdrResolveDelayLoadedAPI (1 samples, 0.05%)</title><rect x="1.0650%" y="277" width="0.0532%" height="15" fill="rgb(241,131,45)" fg:x="20" fg:w="1"/><text x="1.3150%" y="287.50"></text></g><g><title>ntdll`LdrpResGetMappingSize (1 samples, 0.05%)</title><rect x="1.0650%" y="261" width="0.0532%" height="15" fill="rgb(249,31,29)" fg:x="20" fg:w="1"/><text x="1.3150%" y="271.50"></text></g><g><title>ntdll`RtlInitUTF8String (1 samples, 0.05%)</title><rect x="1.0650%" y="245" width="0.0532%" height="15" fill="rgb(225,111,53)" fg:x="20" fg:w="1"/><text x="1.3150%" y="255.50"></text></g><g><title>ntdll`RtlUnicodeToCustomCPN (1 samples, 0.05%)</title><rect x="1.0650%" y="229" width="0.0532%" height="15" fill="rgb(238,160,17)" fg:x="20" fg:w="1"/><text x="1.3150%" y="239.50"></text></g><g><title>ntdll`RtlImageRvaToSection (1 samples, 0.05%)</title><rect x="1.0650%" y="213" width="0.0532%" height="15" fill="rgb(214,148,48)" fg:x="20" fg:w="1"/><text x="1.3150%" y="223.50"></text></g><g><title>ntdll`RtlQueryPerformanceCounter (1 samples, 0.05%)</title><rect x="1.0650%" y="197" width="0.0532%" height="15" fill="rgb(232,36,49)" fg:x="20" fg:w="1"/><text x="1.3150%" y="207.50"></text></g><g><title>ntdll`RtlQueryPerformanceCounter (1 samples, 0.05%)</title><rect x="1.0650%" y="181" width="0.0532%" height="15" fill="rgb(209,103,24)" fg:x="20" fg:w="1"/><text x="1.3150%" y="191.50"></text></g><g><title>ntdll`RtlQueryPerformanceCounter (1 samples, 0.05%)</title><rect x="1.0650%" y="165" width="0.0532%" height="15" fill="rgb(229,88,8)" fg:x="20" fg:w="1"/><text x="1.3150%" y="175.50"></text></g><g><title>ntdll`LdrControlFlowGuardEnforced (1 samples, 0.05%)</title><rect x="1.0650%" y="149" width="0.0532%" height="15" fill="rgb(213,181,19)" fg:x="20" fg:w="1"/><text x="1.3150%" y="159.50"></text></g><g><title>ntdll`RtlImageNtHeaderEx (1 samples, 0.05%)</title><rect x="1.0650%" y="133" width="0.0532%" height="15" fill="rgb(254,191,54)" fg:x="20" fg:w="1"/><text x="1.3150%" y="143.50"></text></g><g><title>ntdll`RtlFlsFree (1 samples, 0.05%)</title><rect x="1.0650%" y="117" width="0.0532%" height="15" fill="rgb(241,83,37)" fg:x="20" fg:w="1"/><text x="1.3150%" y="127.50"></text></g><g><title>KERNEL32`QuirkIsEnabled3Worker (1 samples, 0.05%)</title><rect x="1.0650%" y="101" width="0.0532%" height="15" fill="rgb(233,36,39)" fg:x="20" fg:w="1"/><text x="1.3150%" y="111.50"></text></g><g><title>ntdll`LdrResFindResourceDirectory (1 samples, 0.05%)</title><rect x="1.0650%" y="85" width="0.0532%" height="15" fill="rgb(226,3,54)" fg:x="20" fg:w="1"/><text x="1.3150%" y="95.50"></text></g><g><title>ntdll`LdrResSearchResource (1 samples, 0.05%)</title><rect x="1.0650%" y="69" width="0.0532%" height="15" fill="rgb(245,192,40)" fg:x="20" fg:w="1"/><text x="1.3150%" y="79.50"></text></g><g><title>ntdll`LdrResSearchResource (1 samples, 0.05%)</title><rect x="1.0650%" y="53" width="0.0532%" height="15" fill="rgb(238,167,29)" fg:x="20" fg:w="1"/><text x="1.3150%" y="63.50"></text></g><g><title>ntdll`LdrpResGetResourceDirectory (1 samples, 0.05%)</title><rect x="1.0650%" y="37" width="0.0532%" height="15" fill="rgb(232,182,51)" fg:x="20" fg:w="1"/><text x="1.3150%" y="47.50"></text></g><g><title>0x7ffaea6425d4 (1 samples, 0.05%)</title><rect x="1.1182%" y="293" width="0.0532%" height="15" fill="rgb(231,60,39)" fg:x="21" fg:w="1"/><text x="1.3682%" y="303.50"></text></g><g><title>ntdll`EtwEventSetInformation (1 samples, 0.05%)</title><rect x="1.1182%" y="277" width="0.0532%" height="15" fill="rgb(208,69,12)" fg:x="21" fg:w="1"/><text x="1.3682%" y="287.50"></text></g><g><title>ntdll`EtwEventSetInformation (1 samples, 0.05%)</title><rect x="1.1182%" y="261" width="0.0532%" height="15" fill="rgb(235,93,37)" fg:x="21" fg:w="1"/><text x="1.3682%" y="271.50"></text></g><g><title>ntdll`NtTraceControl (1 samples, 0.05%)</title><rect x="1.1182%" y="245" width="0.0532%" height="15" fill="rgb(213,116,39)" fg:x="21" fg:w="1"/><text x="1.3682%" y="255.50"></text></g><g><title>0x7ffaea887c69 (4 samples, 0.21%)</title><rect x="1.1715%" y="293" width="0.2130%" height="15" fill="rgb(222,207,29)" fg:x="22" fg:w="4"/><text x="1.4215%" y="303.50"></text></g><g><title>KERNELBASE`CreateFileW (4 samples, 0.21%)</title><rect x="1.1715%" y="277" width="0.2130%" height="15" fill="rgb(206,96,30)" fg:x="22" fg:w="4"/><text x="1.4215%" y="287.50"></text></g><g><title>KERNELBASE`CreateFileW (4 samples, 0.21%)</title><rect x="1.1715%" y="261" width="0.2130%" height="15" fill="rgb(218,138,4)" fg:x="22" fg:w="4"/><text x="1.4215%" y="271.50"></text></g><g><title>ntdll`NtCreateFile (4 samples, 0.21%)</title><rect x="1.1715%" y="245" width="0.2130%" height="15" fill="rgb(250,191,14)" fg:x="22" fg:w="4"/><text x="1.4215%" y="255.50"></text></g><g><title>0x7ffaebc17373 (1 samples, 0.05%)</title><rect x="1.3845%" y="293" width="0.0532%" height="15" fill="rgb(239,60,40)" fg:x="26" fg:w="1"/><text x="1.6345%" y="303.50"></text></g><g><title>ntdll`NtCreateFile (1 samples, 0.05%)</title><rect x="1.3845%" y="277" width="0.0532%" height="15" fill="rgb(206,27,48)" fg:x="26" fg:w="1"/><text x="1.6345%" y="287.50"></text></g><g><title>0x7ffaed4c9c91 (1 samples, 0.05%)</title><rect x="1.4377%" y="293" width="0.0532%" height="15" fill="rgb(225,35,8)" fg:x="27" fg:w="1"/><text x="1.6877%" y="303.50"></text></g><g><title>win32u`NtUserMsgWaitForMultipleObjectsEx (1 samples, 0.05%)</title><rect x="1.4377%" y="277" width="0.0532%" height="15" fill="rgb(250,213,24)" fg:x="27" fg:w="1"/><text x="1.6877%" y="287.50"></text></g><g><title>D3DCOMPILER_47`D3DDisassemble10Effect (1 samples, 0.05%)</title><rect x="1.4909%" y="293" width="0.0532%" height="15" fill="rgb(247,123,22)" fg:x="28" fg:w="1"/><text x="1.7409%" y="303.50"></text></g><g><title>DSOUND`DirectSoundCreate8 (1 samples, 0.05%)</title><rect x="1.5442%" y="293" width="0.0532%" height="15" fill="rgb(231,138,38)" fg:x="29" fg:w="1"/><text x="1.7942%" y="303.50"></text></g><g><title>KERNEL32`BaseThreadInitThunk (2 samples, 0.11%)</title><rect x="1.5974%" y="293" width="0.1065%" height="15" fill="rgb(231,145,46)" fg:x="30" fg:w="2"/><text x="1.8474%" y="303.50"></text></g><g><title>ntdll`RtlClearThreadWorkOnBehalfTicket (2 samples, 0.11%)</title><rect x="1.5974%" y="277" width="0.1065%" height="15" fill="rgb(251,118,11)" fg:x="30" fg:w="2"/><text x="1.8474%" y="287.50"></text></g><g><title>ntdll`NtWaitForWorkViaWorkerFactory (2 samples, 0.11%)</title><rect x="1.5974%" y="261" width="0.1065%" height="15" fill="rgb(217,147,25)" fg:x="30" fg:w="2"/><text x="1.8474%" y="271.50"></text></g><g><title>KERNEL32`Process32NextW (3 samples, 0.16%)</title><rect x="1.7039%" y="293" width="0.1597%" height="15" fill="rgb(247,81,37)" fg:x="32" fg:w="3"/><text x="1.9539%" y="303.50"></text></g><g><title>KERNEL32`VerifyVersionInfoW (1 samples, 0.05%)</title><rect x="1.8637%" y="293" width="0.0532%" height="15" fill="rgb(209,12,38)" fg:x="35" fg:w="1"/><text x="2.1137%" y="303.50"></text></g><g><title>ntdll`RtlSwitchedVVI (1 samples, 0.05%)</title><rect x="1.8637%" y="277" width="0.0532%" height="15" fill="rgb(227,1,9)" fg:x="35" fg:w="1"/><text x="2.1137%" y="287.50"></text></g><g><title>ntdll`RtlSwitchedVVI (1 samples, 0.05%)</title><rect x="1.8637%" y="261" width="0.0532%" height="15" fill="rgb(248,47,43)" fg:x="35" fg:w="1"/><text x="2.1137%" y="271.50"></text></g><g><title>ntdll`NtQueryLicenseValue (1 samples, 0.05%)</title><rect x="1.8637%" y="245" width="0.0532%" height="15" fill="rgb(221,10,30)" fg:x="35" fg:w="1"/><text x="2.1137%" y="255.50"></text></g><g><title>KERNELBASE`CompareStringOrdinal (2 samples, 0.11%)</title><rect x="1.9169%" y="293" width="0.1065%" height="15" fill="rgb(210,229,1)" fg:x="36" fg:w="2"/><text x="2.1669%" y="303.50"></text></g><g><title>KERNELBASE`CreateMutexExW (1 samples, 0.05%)</title><rect x="2.0234%" y="293" width="0.0532%" height="15" fill="rgb(222,148,37)" fg:x="38" fg:w="1"/><text x="2.2734%" y="303.50"></text></g><g><title>ntdll`NtCreateMutant (1 samples, 0.05%)</title><rect x="2.0234%" y="277" width="0.0532%" height="15" fill="rgb(234,67,33)" fg:x="38" fg:w="1"/><text x="2.2734%" y="287.50"></text></g><g><title>KERNELBASE`CreateRemoteThreadEx (1 samples, 0.05%)</title><rect x="2.0767%" y="293" width="0.0532%" height="15" fill="rgb(247,98,35)" fg:x="39" fg:w="1"/><text x="2.3267%" y="303.50"></text></g><g><title>ntdll`NtCreateThreadEx (1 samples, 0.05%)</title><rect x="2.0767%" y="277" width="0.0532%" height="15" fill="rgb(247,138,52)" fg:x="39" fg:w="1"/><text x="2.3267%" y="287.50"></text></g><g><title>KERNELBASE`GetFileAttributesExW (2 samples, 0.11%)</title><rect x="2.1299%" y="293" width="0.1065%" height="15" fill="rgb(213,79,30)" fg:x="40" fg:w="2"/><text x="2.3799%" y="303.50"></text></g><g><title>ntdll`NtQueryFullAttributesFile (2 samples, 0.11%)</title><rect x="2.1299%" y="277" width="0.1065%" height="15" fill="rgb(246,177,23)" fg:x="40" fg:w="2"/><text x="2.3799%" y="287.50"></text></g><g><title>KERNELBASE`GetFileSecurityW (1 samples, 0.05%)</title><rect x="2.2364%" y="293" width="0.0532%" height="15" fill="rgb(230,62,27)" fg:x="42" fg:w="1"/><text x="2.4864%" y="303.50"></text></g><g><title>ntdll`ZwQuerySecurityObject (1 samples, 0.05%)</title><rect x="2.2364%" y="277" width="0.0532%" height="15" fill="rgb(216,154,8)" fg:x="42" fg:w="1"/><text x="2.4864%" y="287.50"></text></g><g><title>KERNELBASE`GetVolumeNameForVolumeMountPointW (1 samples, 0.05%)</title><rect x="2.2897%" y="293" width="0.0532%" height="15" fill="rgb(244,35,45)" fg:x="43" fg:w="1"/><text x="2.5397%" y="303.50"></text></g><g><title>KERNELBASE`GetComputerNameExW (1 samples, 0.05%)</title><rect x="2.2897%" y="277" width="0.0532%" height="15" fill="rgb(251,115,12)" fg:x="43" fg:w="1"/><text x="2.5397%" y="287.50"></text></g><g><title>KERNELBASE`CreateFileW (1 samples, 0.05%)</title><rect x="2.2897%" y="261" width="0.0532%" height="15" fill="rgb(240,54,50)" fg:x="43" fg:w="1"/><text x="2.5397%" y="271.50"></text></g><g><title>KERNELBASE`CreateFileW (1 samples, 0.05%)</title><rect x="2.2897%" y="245" width="0.0532%" height="15" fill="rgb(233,84,52)" fg:x="43" fg:w="1"/><text x="2.5397%" y="255.50"></text></g><g><title>KERNELBASE`CreateFileW (1 samples, 0.05%)</title><rect x="2.2897%" y="229" width="0.0532%" height="15" fill="rgb(207,117,47)" fg:x="43" fg:w="1"/><text x="2.5397%" y="239.50"></text></g><g><title>ntdll`NtCreateFile (1 samples, 0.05%)</title><rect x="2.2897%" y="213" width="0.0532%" height="15" fill="rgb(249,43,39)" fg:x="43" fg:w="1"/><text x="2.5397%" y="223.50"></text></g><g><title>KERNELBASE`IsTimeZoneRedirectionEnabled (1 samples, 0.05%)</title><rect x="2.3429%" y="293" width="0.0532%" height="15" fill="rgb(209,38,44)" fg:x="44" fg:w="1"/><text x="2.5929%" y="303.50"></text></g><g><title>KERNELBASE`LoadLibraryExW (1 samples, 0.05%)</title><rect x="2.3429%" y="277" width="0.0532%" height="15" fill="rgb(236,212,23)" fg:x="44" fg:w="1"/><text x="2.5929%" y="287.50"></text></g><g><title>KERNELBASE`CloseHandle (1 samples, 0.05%)</title><rect x="2.3429%" y="261" width="0.0532%" height="15" fill="rgb(242,79,21)" fg:x="44" fg:w="1"/><text x="2.5929%" y="271.50"></text></g><g><title>KERNELBASE`CreateFileW (1 samples, 0.05%)</title><rect x="2.3429%" y="245" width="0.0532%" height="15" fill="rgb(211,96,35)" fg:x="44" fg:w="1"/><text x="2.5929%" y="255.50"></text></g><g><title>KERNELBASE`CreateFileW (1 samples, 0.05%)</title><rect x="2.3429%" y="229" width="0.0532%" height="15" fill="rgb(253,215,40)" fg:x="44" fg:w="1"/><text x="2.5929%" y="239.50"></text></g><g><title>ntdll`NtCreateFile (1 samples, 0.05%)</title><rect x="2.3429%" y="213" width="0.0532%" height="15" fill="rgb(211,81,21)" fg:x="44" fg:w="1"/><text x="2.5929%" y="223.50"></text></g><g><title>KERNELBASE`MapPredefinedHandleInternal (18 samples, 0.96%)</title><rect x="2.3962%" y="293" width="0.9585%" height="15" fill="rgb(208,190,38)" fg:x="45" fg:w="18"/><text x="2.6462%" y="303.50"></text></g><g><title>ntdll`NtOpenKeyEx (18 samples, 0.96%)</title><rect x="2.3962%" y="277" width="0.9585%" height="15" fill="rgb(235,213,38)" fg:x="45" fg:w="18"/><text x="2.6462%" y="287.50"></text></g><g><title>KERNELBASE`RegGetValueW (116 samples, 6.18%)</title><rect x="3.3546%" y="293" width="6.1768%" height="15" fill="rgb(237,122,38)" fg:x="63" fg:w="116"/><text x="3.6046%" y="303.50">KERNELBA..</text></g><g><title>ntdll`NtOpenKeyEx (116 samples, 6.18%)</title><rect x="3.3546%" y="277" width="6.1768%" height="15" fill="rgb(244,218,35)" fg:x="63" fg:w="116"/><text x="3.6046%" y="287.50">ntdll`Nt..</text></g><g><title>KERNELBASE`RegNotifyChangeKeyValue (2 samples, 0.11%)</title><rect x="9.5314%" y="293" width="0.1065%" height="15" fill="rgb(240,68,47)" fg:x="179" fg:w="2"/><text x="9.7814%" y="303.50"></text></g><g><title>ntdll`NtNotifyChangeKey (2 samples, 0.11%)</title><rect x="9.5314%" y="277" width="0.1065%" height="15" fill="rgb(210,16,53)" fg:x="179" fg:w="2"/><text x="9.7814%" y="287.50"></text></g><g><title>KERNELBASE`RegSetValueExW (1 samples, 0.05%)</title><rect x="9.6379%" y="293" width="0.0532%" height="15" fill="rgb(235,124,12)" fg:x="181" fg:w="1"/><text x="9.8879%" y="303.50"></text></g><g><title>ntdll`NtSetValueKey (1 samples, 0.05%)</title><rect x="9.6379%" y="277" width="0.0532%" height="15" fill="rgb(224,169,11)" fg:x="181" fg:w="1"/><text x="9.8879%" y="287.50"></text></g><g><title>KERNELBASE`SleepConditionVariableSRW (24 samples, 1.28%)</title><rect x="9.6912%" y="293" width="1.2780%" height="15" fill="rgb(250,166,2)" fg:x="182" fg:w="24"/><text x="9.9412%" y="303.50"></text></g><g><title>ntdll`RtlSleepConditionVariableSRW (24 samples, 1.28%)</title><rect x="9.6912%" y="277" width="1.2780%" height="15" fill="rgb(242,216,29)" fg:x="182" fg:w="24"/><text x="9.9412%" y="287.50"></text></g><g><title>ntdll`ZwWaitForAlertByThreadId (24 samples, 1.28%)</title><rect x="9.6912%" y="261" width="1.2780%" height="15" fill="rgb(230,116,27)" fg:x="182" fg:w="24"/><text x="9.9412%" y="271.50"></text></g><g><title>RPCRT4`I_RpcBCacheFree (7 samples, 0.37%)</title><rect x="10.9691%" y="293" width="0.3727%" height="15" fill="rgb(228,99,48)" fg:x="206" fg:w="7"/><text x="11.2191%" y="303.50"></text></g><g><title>ntdll`ZwAlpcSendWaitReceivePort (7 samples, 0.37%)</title><rect x="10.9691%" y="277" width="0.3727%" height="15" fill="rgb(253,11,6)" fg:x="206" fg:w="7"/><text x="11.2191%" y="287.50"></text></g><g><title>RPCRT4`NdrStubCall3 (1 samples, 0.05%)</title><rect x="11.3419%" y="293" width="0.0532%" height="15" fill="rgb(247,143,39)" fg:x="213" fg:w="1"/><text x="11.5919%" y="303.50"></text></g><g><title>RPCRT4`UuidCreate (1 samples, 0.05%)</title><rect x="11.3951%" y="293" width="0.0532%" height="15" fill="rgb(236,97,10)" fg:x="214" fg:w="1"/><text x="11.6451%" y="303.50"></text></g><g><title>ntdll`ZwAlpcCreateSecurityContext (1 samples, 0.05%)</title><rect x="11.3951%" y="277" width="0.0532%" height="15" fill="rgb(233,208,19)" fg:x="214" fg:w="1"/><text x="11.6451%" y="287.50"></text></g><g><title>UltralightCore` (1 samples, 0.05%)</title><rect x="11.4483%" y="293" width="0.0532%" height="15" fill="rgb(216,164,2)" fg:x="215" fg:w="1"/><text x="11.6983%" y="303.50"></text></g><g><title>WebCore`JSC::DFG::isCrashing (1 samples, 0.05%)</title><rect x="11.5016%" y="293" width="0.0532%" height="15" fill="rgb(220,129,5)" fg:x="216" fg:w="1"/><text x="11.7516%" y="303.50"></text></g><g><title>WebCore`JSC::VM::throwException (1 samples, 0.05%)</title><rect x="11.5548%" y="293" width="0.0532%" height="15" fill="rgb(242,17,10)" fg:x="217" fg:w="1"/><text x="11.8048%" y="303.50"></text></g><g><title>WebCore`WTF::Thread::~Thread (2 samples, 0.11%)</title><rect x="11.6081%" y="293" width="0.1065%" height="15" fill="rgb(242,107,0)" fg:x="218" fg:w="2"/><text x="11.8581%" y="303.50"></text></g><g><title>WebCore`WTF::Thread::~Thread (2 samples, 0.11%)</title><rect x="11.6081%" y="277" width="0.1065%" height="15" fill="rgb(251,28,31)" fg:x="218" fg:w="2"/><text x="11.8581%" y="287.50"></text></g><g><title>KERNELBASE`RaiseException (2 samples, 0.11%)</title><rect x="11.6081%" y="261" width="0.1065%" height="15" fill="rgb(233,223,10)" fg:x="218" fg:w="2"/><text x="11.8581%" y="271.50"></text></g><g><title>WebCore`WebCore::CachedResourceHandleBase::operator WebCore::CachedResource * __ptr64 WebCore::CachedResourceHandleBase::* __ptr64 (1 samples, 0.05%)</title><rect x="11.7146%" y="293" width="0.0532%" height="15" fill="rgb(215,21,27)" fg:x="220" fg:w="1"/><text x="11.9646%" y="303.50"></text></g><g><title>WebCore`WebCore::Element::invalidateStyleAndLayerComposition (1 samples, 0.05%)</title><rect x="11.7678%" y="293" width="0.0532%" height="15" fill="rgb(232,23,21)" fg:x="221" fg:w="1"/><text x="12.0178%" y="303.50"></text></g><g><title>WebCore`WebCore::SubresourceLoader::create (1 samples, 0.05%)</title><rect x="11.8211%" y="293" width="0.0532%" height="15" fill="rgb(244,5,23)" fg:x="222" fg:w="1"/><text x="12.0711%" y="303.50"></text></g><g><title>WebCore`WebCore::httpHeaderNameString (1 samples, 0.05%)</title><rect x="11.8743%" y="293" width="0.0532%" height="15" fill="rgb(226,81,46)" fg:x="223" fg:w="1"/><text x="12.1243%" y="303.50"></text></g><g><title>WebCore`WebCore::subdivide (1 samples, 0.05%)</title><rect x="11.9276%" y="293" width="0.0532%" height="15" fill="rgb(247,70,30)" fg:x="224" fg:w="1"/><text x="12.1776%" y="303.50"></text></g><g><title>app`RhpNewFast (1 samples, 0.05%)</title><rect x="11.9808%" y="293" width="0.0532%" height="15" fill="rgb(212,68,19)" fg:x="225" fg:w="1"/><text x="12.2308%" y="303.50"></text></g><g><title>app`S_P_CoreLib_System_SR__InternalGetResourceString (1 samples, 0.05%)</title><rect x="12.0341%" y="293" width="0.0532%" height="15" fill="rgb(240,187,13)" fg:x="226" fg:w="1"/><text x="12.2841%" y="303.50"></text></g><g><title>app`S_P_TypeLoader_Internal_TypeSystem_DefType__get_HasNativeLayout (1 samples, 0.05%)</title><rect x="12.0873%" y="293" width="0.0532%" height="15" fill="rgb(223,113,26)" fg:x="227" fg:w="1"/><text x="12.3373%" y="303.50"></text></g><g><title>app`WKS::gc_heap::seg_mapping_table_add_segment (1 samples, 0.05%)</title><rect x="12.1406%" y="293" width="0.0532%" height="15" fill="rgb(206,192,2)" fg:x="228" fg:w="1"/><text x="12.3906%" y="303.50"></text></g><g><title>app`alloc::vec::into_iter::impl$5::next&lt;tuple$ (1 samples, 0.05%)</title><rect x="12.1938%" y="293" width="0.0532%" height="15" fill="rgb(241,108,4)" fg:x="229" fg:w="1"/><text x="12.4438%" y="303.50"></text></g><g><title>app`core::cmp::impls::impl$9::eq (1 samples, 0.05%)</title><rect x="12.2471%" y="293" width="0.0532%" height="15" fill="rgb(247,173,49)" fg:x="230" fg:w="1"/><text x="12.4971%" y="303.50"></text></g><g><title>app`core::iter::adapters::filter::Filter&lt;core::iter::adapters::chain::Chain&lt;core::ops::range::Range&lt;usize&gt;,core::ops::range::Range&lt;usize&gt; &gt;,rayon_core::registry::impl$10::steal::closure_env$0&gt;::new&lt;core::iter::adapters::chain::Chain&lt;core::ops::range::Range (1 samples, 0.05%)</title><rect x="12.3003%" y="293" width="0.0532%" height="15" fill="rgb(224,114,35)" fg:x="231" fg:w="1"/><text x="12.5503%" y="303.50"></text></g><g><title>VCRUNTIME140`memcpy (1 samples, 0.05%)</title><rect x="12.3003%" y="277" width="0.0532%" height="15" fill="rgb(245,159,27)" fg:x="231" fg:w="1"/><text x="12.5503%" y="287.50"></text></g><g><title>app`core::iter::adapters::filter::filter_try_fold::closure$0&lt;usize,tuple$&lt;&gt;,enum2$&lt;core::ops::control_flow::ControlFlow&lt;rayon_core::job::JobRef,tuple$ (1 samples, 0.05%)</title><rect x="12.3536%" y="293" width="0.0532%" height="15" fill="rgb(245,172,44)" fg:x="232" fg:w="1"/><text x="12.6036%" y="303.50"></text></g><g><title>app`core::iter::adapters::zip::impl$5::next&lt;core::slice::iter::ChunksExactMut&lt;u8&gt;,core::slice::iter::ChunksExact (1 samples, 0.05%)</title><rect x="12.4068%" y="293" width="0.0532%" height="15" fill="rgb(236,23,11)" fg:x="233" fg:w="1"/><text x="12.6568%" y="303.50"></text></g><g><title>app`core::iter::traits::iterator::Iterator::chain&lt;std::sys_common::wtf8::EncodeWide,core::iter::sources::once::Once (1 samples, 0.05%)</title><rect x="12.4601%" y="293" width="0.0532%" height="15" fill="rgb(205,117,38)" fg:x="234" fg:w="1"/><text x="12.7101%" y="303.50"></text></g><g><title>app`core::iter::traits::iterator::Iterator::find_map::check::closure$0 (1 samples, 0.05%)</title><rect x="12.5133%" y="293" width="0.0532%" height="15" fill="rgb(237,72,25)" fg:x="235" fg:w="1"/><text x="12.7633%" y="303.50"></text></g><g><title>app`core::iter::traits::iterator::Iterator::fold&lt;core::iter::adapters::zip::Zip&lt;core::slice::iter::ChunksExactMut&lt;u8&gt;,core::slice::iter::ChunksExact&lt;u8&gt; &gt;,tuple$&lt;&gt;,core::iter::traits::iterator::Iterator::for_each::call::closure_env$0&lt;tuple$&lt;ref_mut$&lt;slice2$ (12 samples, 0.64%)</title><rect x="12.5666%" y="293" width="0.6390%" height="15" fill="rgb(244,70,9)" fg:x="236" fg:w="12"/><text x="12.8166%" y="303.50"></text></g><g><title>app`core::ops::control_flow::impl$0::branch&lt;rayon_core::job::JobRef,tuple$ (1 samples, 0.05%)</title><rect x="13.2055%" y="293" width="0.0532%" height="15" fill="rgb(217,125,39)" fg:x="248" fg:w="1"/><text x="13.4555%" y="303.50"></text></g><g><title>app`core::slice::index::impl$0::index&lt;u8,core::ops::range::Range (1 samples, 0.05%)</title><rect x="13.2588%" y="293" width="0.0532%" height="15" fill="rgb(235,36,10)" fg:x="249" fg:w="1"/><text x="13.5088%" y="303.50"></text></g><g><title>app`core::slice::index::impl$4::index (1 samples, 0.05%)</title><rect x="13.3120%" y="293" width="0.0532%" height="15" fill="rgb(251,123,47)" fg:x="250" fg:w="1"/><text x="13.5620%" y="303.50"></text></g><g><title>app`core::slice::iter::impl$89::__iterator_get_unchecked (1 samples, 0.05%)</title><rect x="13.3653%" y="293" width="0.0532%" height="15" fill="rgb(221,13,13)" fg:x="251" fg:w="1"/><text x="13.6153%" y="303.50"></text></g><g><title>app`core::sync::atomic::AtomicU32::fetch_add (1 samples, 0.05%)</title><rect x="13.4185%" y="293" width="0.0532%" height="15" fill="rgb(238,131,9)" fg:x="252" fg:w="1"/><text x="13.6685%" y="303.50"></text></g><g><title>app`core::sync::atomic::AtomicUsize::store (1 samples, 0.05%)</title><rect x="13.4718%" y="293" width="0.0532%" height="15" fill="rgb(211,50,8)" fg:x="253" fg:w="1"/><text x="13.7218%" y="303.50"></text></g><g><title>app`core::sync::atomic::atomic_compare_exchange (2 samples, 0.11%)</title><rect x="13.5250%" y="293" width="0.1065%" height="15" fill="rgb(245,182,24)" fg:x="254" fg:w="2"/><text x="13.7750%" y="303.50"></text></g><g><title>app`core::sync::atomic::atomic_load (6 samples, 0.32%)</title><rect x="13.6315%" y="293" width="0.3195%" height="15" fill="rgb(242,14,37)" fg:x="256" fg:w="6"/><text x="13.8815%" y="303.50"></text></g><g><title>app`core::sync::atomic::atomic_store (1 samples, 0.05%)</title><rect x="13.9510%" y="293" width="0.0532%" height="15" fill="rgb(246,228,12)" fg:x="262" fg:w="1"/><text x="14.2010%" y="303.50"></text></g><g><title>app`core::sync::atomic::fence (1 samples, 0.05%)</title><rect x="14.0043%" y="293" width="0.0532%" height="15" fill="rgb(213,55,15)" fg:x="263" fg:w="1"/><text x="14.2543%" y="303.50"></text></g><g><title>app`crossbeam_deque::deque::Block&lt;rayon_core::job::JobRef&gt;::new (1 samples, 0.05%)</title><rect x="14.0575%" y="293" width="0.0532%" height="15" fill="rgb(209,9,3)" fg:x="264" fg:w="1"/><text x="14.3075%" y="303.50"></text></g><g><title>app`crossbeam_deque::deque::Stealer&lt;rayon_core::job::JobRef&gt;::steal (1 samples, 0.05%)</title><rect x="14.1108%" y="293" width="0.0532%" height="15" fill="rgb(230,59,30)" fg:x="265" fg:w="1"/><text x="14.3608%" y="303.50"></text></g><g><title>app`crossbeam_epoch::default::with_handle (2 samples, 0.11%)</title><rect x="14.1640%" y="293" width="0.1065%" height="15" fill="rgb(209,121,21)" fg:x="266" fg:w="2"/><text x="14.4140%" y="303.50"></text></g><g><title>app`crossbeam_epoch::epoch::Epoch::pinned (1 samples, 0.05%)</title><rect x="14.2705%" y="293" width="0.0532%" height="15" fill="rgb(220,109,13)" fg:x="268" fg:w="1"/><text x="14.5205%" y="303.50"></text></g><g><title>app`crossbeam_epoch::guard::impl$1::drop (1 samples, 0.05%)</title><rect x="14.3237%" y="293" width="0.0532%" height="15" fill="rgb(232,18,1)" fg:x="269" fg:w="1"/><text x="14.5737%" y="303.50"></text></g><g><title>app`crossbeam_epoch::internal::Local::pin (1 samples, 0.05%)</title><rect x="14.3770%" y="293" width="0.0532%" height="15" fill="rgb(215,41,42)" fg:x="270" fg:w="1"/><text x="14.6270%" y="303.50"></text></g><g><title>app`crossbeam_epoch::internal::Local::unpin (1 samples, 0.05%)</title><rect x="14.4302%" y="293" width="0.0532%" height="15" fill="rgb(224,123,36)" fg:x="271" fg:w="1"/><text x="14.6802%" y="303.50"></text></g><g><title>app`crossbeam_utils::cache_padded::impl$3::deref&lt;crossbeam_deque::deque::Inner (1 samples, 0.05%)</title><rect x="14.4835%" y="293" width="0.0532%" height="15" fill="rgb(240,125,3)" fg:x="272" fg:w="1"/><text x="14.7335%" y="303.50"></text></g><g><title>app`enum2$&lt;core::option::Option&lt;alloc::boxed::Box&lt;dyn$&lt;core::any::Any,core::marker::Send&gt;,alloc::alloc::Global&gt; &gt; &gt;::is_none&lt;alloc::boxed::Box&lt;dyn$ (1 samples, 0.05%)</title><rect x="14.5367%" y="293" width="0.0532%" height="15" fill="rgb(205,98,50)" fg:x="273" fg:w="1"/><text x="14.7867%" y="303.50"></text></g><g><title>app`glium::gl::Gl::load_with&lt;glium::context::impl$0::new::closure_env$0 (1 samples, 0.05%)</title><rect x="14.5900%" y="293" width="0.0532%" height="15" fill="rgb(205,185,37)" fg:x="274" fg:w="1"/><text x="14.8400%" y="303.50"></text></g><g><title>app`hashbrown::raw::RawTable&lt;tuple$&lt;alloc::string::String,glium::program::reflection::Uniform&gt;,alloc::alloc::Global&gt;::into_iter_from&lt;tuple$ (1 samples, 0.05%)</title><rect x="14.6432%" y="293" width="0.0532%" height="15" fill="rgb(238,207,15)" fg:x="275" fg:w="1"/><text x="14.8932%" y="303.50"></text></g><g><title>app`hashbrown::raw::capacity_to_buckets (1 samples, 0.05%)</title><rect x="14.6965%" y="293" width="0.0532%" height="15" fill="rgb(213,199,42)" fg:x="276" fg:w="1"/><text x="14.9465%" y="303.50"></text></g><g><title>app`rayon_core::job::StackJob&lt;rayon_core::latch::SpinLatch,rayon_core::join::join_context::call_b::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$1&lt;rayon::iter::zip::ZipProducer (1 samples, 0.05%)</title><rect x="14.7497%" y="293" width="0.0532%" height="15" fill="rgb(235,201,11)" fg:x="277" fg:w="1"/><text x="14.9997%" y="303.50"></text></g><g><title>app`rayon_core::latch::CoreLatch::probe (1 samples, 0.05%)</title><rect x="14.8030%" y="293" width="0.0532%" height="15" fill="rgb(207,46,11)" fg:x="278" fg:w="1"/><text x="15.0530%" y="303.50"></text></g><g><title>app`rayon_core::registry::in_worker&lt;rayon_core::join::join_context::closure_env$0&lt;rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer (1 samples, 0.05%)</title><rect x="14.8562%" y="293" width="0.0532%" height="15" fill="rgb(241,35,35)" fg:x="279" fg:w="1"/><text x="15.1062%" y="303.50"></text></g><g><title>app`rayon_core::join::join_context::closure$0&lt;rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer&lt;u8&gt;,rayon::slice::chunks::ChunksExactProducer (1 samples, 0.05%)</title><rect x="14.8562%" y="277" width="0.0532%" height="15" fill="rgb(243,32,47)" fg:x="279" fg:w="1"/><text x="15.1062%" y="287.50"></text></g><g><title>app`rayon_core::unwind::halt_unwinding&lt;rayon_core::join::join_context::call_a::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="293" width="0.0532%" height="15" fill="rgb(247,202,23)" fg:x="280" fg:w="1"/><text x="15.1595%" y="303.50"></text></g><g><title>app`std::panic::catch_unwind&lt;core::panic::unwind_safe::AssertUnwindSafe&lt;rayon_core::join::join_context::call_a::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="277" width="0.0532%" height="15" fill="rgb(219,102,11)" fg:x="280" fg:w="1"/><text x="15.1595%" y="287.50"></text></g><g><title>app`std::panicking::try&lt;tuple$&lt;&gt;,core::panic::unwind_safe::AssertUnwindSafe&lt;rayon_core::join::join_context::call_a::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="261" width="0.0532%" height="15" fill="rgb(243,110,44)" fg:x="280" fg:w="1"/><text x="15.1595%" y="271.50"></text></g><g><title>app`std::panicking::try::do_catch&lt;core::panic::unwind_safe::AssertUnwindSafe&lt;tokio::runtime::task::harness::poll_future::closure_env$0&lt;core::pin::Pin&lt;alloc::boxed::Box&lt;enum2$&lt;tauri::hooks::impl$7::respond_async::async_block_env$0&lt;tauri_runtime_wry::Wry&lt;enum2$ (1 samples, 0.05%)</title><rect x="14.9095%" y="245" width="0.0532%" height="15" fill="rgb(222,74,54)" fg:x="280" fg:w="1"/><text x="15.1595%" y="255.50"></text></g><g><title>app`std::panicking::try::do_call&lt;core::panic::unwind_safe::AssertUnwindSafe&lt;rayon_core::join::join_context::call_a::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="229" width="0.0532%" height="15" fill="rgb(216,99,12)" fg:x="280" fg:w="1"/><text x="15.1595%" y="239.50"></text></g><g><title>app`core::panic::unwind_safe::impl$23::call_once&lt;tuple$&lt;&gt;,rayon_core::join::join_context::call_a::closure_env$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="213" width="0.0532%" height="15" fill="rgb(226,22,26)" fg:x="280" fg:w="1"/><text x="15.1595%" y="223.50"></text></g><g><title>app`rayon_core::join::join_context::call_a::closure$0&lt;tuple$&lt;&gt;,rayon::iter::plumbing::bridge_producer_consumer::helper::closure_env$0&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer&lt;u8&gt;,rayon::slice::chunks::ChunksExactProducer (1 samples, 0.05%)</title><rect x="14.9095%" y="197" width="0.0532%" height="15" fill="rgb(217,163,10)" fg:x="280" fg:w="1"/><text x="15.1595%" y="207.50"></text></g><g><title>app`rayon::iter::plumbing::bridge_producer_consumer::helper::closure$0&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer&lt;u8&gt;,rayon::slice::chunks::ChunksExactProducer&lt;u8&gt; &gt;,rayon::iter::for_each::ForEachConsumer (1 samples, 0.05%)</title><rect x="14.9095%" y="181" width="0.0532%" height="15" fill="rgb(213,25,53)" fg:x="280" fg:w="1"/><text x="15.1595%" y="191.50"></text></g><g><title>app`rayon::iter::plumbing::bridge_producer_consumer::helper&lt;rayon::iter::zip::ZipProducer&lt;rayon::slice::chunks::ChunksExactMutProducer&lt;u8&gt;,rayon::slice::chunks::ChunksExactProducer&lt;u8&gt; &gt;,rayon::iter::for_each::ForEachConsumer (1 samples, 0.05%)</title><rect x="14.9095%" y="165" width="0.0532%" height="15" fill="rgb(252,105,26)" fg:x="280" fg:w="1"/><text x="15.1595%" y="175.50"></text></g><g><title>app`schannel::tls_stream::TlsStream&lt;tokio_native_tls::AllowStd&lt;tokio::net::tcp::stream::TcpStream&gt; &gt;::initialize&lt;tokio_native_tls::AllowStd (1 samples, 0.05%)</title><rect x="14.9627%" y="293" width="0.0532%" height="15" fill="rgb(220,39,43)" fg:x="281" fg:w="1"/><text x="15.2127%" y="303.50"></text></g><g><title>app`std::sync::mutex::impl$12::drop (16 samples, 0.85%)</title><rect x="15.0160%" y="293" width="0.8520%" height="15" fill="rgb(229,68,48)" fg:x="282" fg:w="16"/><text x="15.2660%" y="303.50"></text></g><g><title>ntdll`TpSetWaitEx (16 samples, 0.85%)</title><rect x="15.0160%" y="277" width="0.8520%" height="15" fill="rgb(252,8,32)" fg:x="282" fg:w="16"/><text x="15.2660%" y="287.50"></text></g><g><title>ntdll`ZwAlertThreadByThreadId (16 samples, 0.85%)</title><rect x="15.0160%" y="261" width="0.8520%" height="15" fill="rgb(223,20,43)" fg:x="282" fg:w="16"/><text x="15.2660%" y="271.50"></text></g><g><title>app`std::thread::local::LocalKey&lt;crossbeam_epoch::collector::LocalHandle&gt;::try_with&lt;crossbeam_epoch::collector::LocalHandle,crossbeam_epoch::default::with_handle::closure_env$0 (2 samples, 0.11%)</title><rect x="15.8679%" y="293" width="0.1065%" height="15" fill="rgb(229,81,49)" fg:x="298" fg:w="2"/><text x="16.1179%" y="303.50"></text></g><g><title>app`tokio::runtime::task::harness::Harness&lt;hyper::client::pool::IdleTask&lt;hyper::client::client::PoolClient&lt;reqwest::async_impl::body::ImplStream&gt; &gt;,alloc::sync::Arc&lt;tokio::runtime::scheduler::multi_thread::handle::Handle&gt; &gt;::poll_inner (1 samples, 0.05%)</title><rect x="15.9744%" y="293" width="0.0532%" height="15" fill="rgb(236,28,36)" fg:x="300" fg:w="1"/><text x="16.2244%" y="303.50"></text></g><g><title>combase`CStdStubBuffer_DebugServerRelease (3 samples, 0.16%)</title><rect x="16.0277%" y="293" width="0.1597%" height="15" fill="rgb(249,185,26)" fg:x="301" fg:w="3"/><text x="16.2777%" y="303.50"></text></g><g><title>KERNELBASE`OutputDebugStringW (3 samples, 0.16%)</title><rect x="16.0277%" y="277" width="0.1597%" height="15" fill="rgb(249,174,33)" fg:x="301" fg:w="3"/><text x="16.2777%" y="287.50"></text></g><g><title>KERNELBASE`RaiseException (3 samples, 0.16%)</title><rect x="16.0277%" y="261" width="0.1597%" height="15" fill="rgb(233,201,37)" fg:x="301" fg:w="3"/><text x="16.2777%" y="271.50"></text></g><g><title>iphlpapi`GetAdaptersAddresses (1 samples, 0.05%)</title><rect x="16.1874%" y="293" width="0.0532%" height="15" fill="rgb(221,78,26)" fg:x="304" fg:w="1"/><text x="16.4374%" y="303.50"></text></g><g><title>ntdll`NtCreateFile (1 samples, 0.05%)</title><rect x="16.1874%" y="277" width="0.0532%" height="15" fill="rgb(250,127,30)" fg:x="304" fg:w="1"/><text x="16.4374%" y="287.50"></text></g><g><title>msvcrt`get_heap_handle (1 samples, 0.05%)</title><rect x="16.2407%" y="293" width="0.0532%" height="15" fill="rgb(230,49,44)" fg:x="305" fg:w="1"/><text x="16.4907%" y="303.50"></text></g><g><title>ntdll`LdrInitializeThunk (1 samples, 0.05%)</title><rect x="16.2939%" y="293" width="0.0532%" height="15" fill="rgb(229,67,23)" fg:x="306" fg:w="1"/><text x="16.5439%" y="303.50"></text></g><g><title>ntdll`LdrInitializeThunk (1 samples, 0.05%)</title><rect x="16.2939%" y="277" width="0.0532%" height="15" fill="rgb(249,83,47)" fg:x="306" fg:w="1"/><text x="16.5439%" y="287.50"></text></g><g><title>ntdll`EtwLogTraceEvent (1 samples, 0.05%)</title><rect x="16.2939%" y="261" width="0.0532%" height="15" fill="rgb(215,43,3)" fg:x="306" fg:w="1"/><text x="16.5439%" y="271.50"></text></g><g><title>ntdll`EtwLogTraceEvent (1 samples, 0.05%)</title><rect x="16.2939%" y="245" width="0.0532%" height="15" fill="rgb(238,154,13)" fg:x="306" fg:w="1"/><text x="16.5439%" y="255.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="229" width="0.0532%" height="15" fill="rgb(219,56,2)" fg:x="306" fg:w="1"/><text x="16.5439%" y="239.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="213" width="0.0532%" height="15" fill="rgb(233,0,4)" fg:x="306" fg:w="1"/><text x="16.5439%" y="223.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="197" width="0.0532%" height="15" fill="rgb(235,30,7)" fg:x="306" fg:w="1"/><text x="16.5439%" y="207.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="181" width="0.0532%" height="15" fill="rgb(250,79,13)" fg:x="306" fg:w="1"/><text x="16.5439%" y="191.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="165" width="0.0532%" height="15" fill="rgb(211,146,34)" fg:x="306" fg:w="1"/><text x="16.5439%" y="175.50"></text></g><g><title>ntdll`RtlEnumerateEntryHashTable (1 samples, 0.05%)</title><rect x="16.2939%" y="149" width="0.0532%" height="15" fill="rgb(228,22,38)" fg:x="306" fg:w="1"/><text x="16.5439%" y="159.50"></text></g><g><title>ntdll`RtlActivateActivationContextUnsafeFast (1 samples, 0.05%)</title><rect x="16.2939%" y="133" width="0.0532%" height="15" fill="rgb(235,168,5)" fg:x="306" fg:w="1"/><text x="16.5439%" y="143.50"></text></g><g><title>gio-2.0-0`g_file_monitor_source_handle_event (1 samples, 0.05%)</title><rect x="16.2939%" y="117" width="0.0532%" height="15" fill="rgb(221,155,16)" fg:x="306" fg:w="1"/><text x="16.5439%" y="127.50"></text></g><g><title>gio-2.0-0`g_io_error_quark (1 samples, 0.05%)</title><rect x="16.2939%" y="101" width="0.0532%" height="15" fill="rgb(215,215,53)" fg:x="306" fg:w="1"/><text x="16.5439%" y="111.50"></text></g><g><title>gio-2.0-0`g_app_info_get_recommended_for_type (1 samples, 0.05%)</title><rect x="16.2939%" y="85" width="0.0532%" height="15" fill="rgb(223,4,10)" fg:x="306" fg:w="1"/><text x="16.5439%" y="95.50"></text></g><g><title>gio-2.0-0`g_app_info_get_recommended_for_type (1 samples, 0.05%)</title><rect x="16.2939%" y="69" width="0.0532%" height="15" fill="rgb(234,103,6)" fg:x="306" fg:w="1"/><text x="16.5439%" y="79.50"></text></g><g><title>gio-2.0-0`g_win32_registry_key_watch (1 samples, 0.05%)</title><rect x="16.2939%" y="53" width="0.0532%" height="15" fill="rgb(227,97,0)" fg:x="306" fg:w="1"/><text x="16.5439%" y="63.50"></text></g><g><title>ntdll`ZwNotifyChangeMultipleKeys (1 samples, 0.05%)</title><rect x="16.2939%" y="37" width="0.0532%" height="15" fill="rgb(234,150,53)" fg:x="306" fg:w="1"/><text x="16.5439%" y="47.50"></text></g><g><title>ntdll`NtAllocateVirtualMemory (4 samples, 0.21%)</title><rect x="16.3472%" y="293" width="0.2130%" height="15" fill="rgb(228,201,54)" fg:x="307" fg:w="4"/><text x="16.5972%" y="303.50"></text></g><g><title>ntdll`NtClose (50 samples, 2.66%)</title><rect x="16.5602%" y="293" width="2.6624%" height="15" fill="rgb(222,22,37)" fg:x="311" fg:w="50"/><text x="16.8102%" y="303.50">nt..</text></g><g><title>ntdll`NtDelayExecution (778 samples, 41.43%)</title><rect x="19.2226%" y="293" width="41.4271%" height="15" fill="rgb(237,53,32)" fg:x="361" fg:w="778"/><text x="19.4726%" y="303.50">ntdll`NtDelayExecution</text></g><g><title>ntdll`NtDeviceIoControlFile (69 samples, 3.67%)</title><rect x="60.6496%" y="293" width="3.6741%" height="15" fill="rgb(233,25,53)" fg:x="1139" fg:w="69"/><text x="60.8996%" y="303.50">ntdl..</text></g><g><title>ntdll`NtDuplicateToken (1 samples, 0.05%)</title><rect x="64.3237%" y="293" width="0.0532%" height="15" fill="rgb(210,40,34)" fg:x="1208" fg:w="1"/><text x="64.5737%" y="303.50"></text></g><g><title>ntdll`NtEnumerateKey (10 samples, 0.53%)</title><rect x="64.3770%" y="293" width="0.5325%" height="15" fill="rgb(241,220,44)" fg:x="1209" fg:w="10"/><text x="64.6270%" y="303.50"></text></g><g><title>ntdll`NtEnumerateValueKey (3 samples, 0.16%)</title><rect x="64.9095%" y="293" width="0.1597%" height="15" fill="rgb(235,28,35)" fg:x="1219" fg:w="3"/><text x="65.1595%" y="303.50"></text></g><g><title>ntdll`NtOpenFile (9 samples, 0.48%)</title><rect x="65.0692%" y="293" width="0.4792%" height="15" fill="rgb(210,56,17)" fg:x="1222" fg:w="9"/><text x="65.3192%" y="303.50"></text></g><g><title>ntdll`NtQueryAttributesFile (25 samples, 1.33%)</title><rect x="65.5485%" y="293" width="1.3312%" height="15" fill="rgb(224,130,29)" fg:x="1231" fg:w="25"/><text x="65.7985%" y="303.50"></text></g><g><title>ntdll`NtQueryDirectoryFile (6 samples, 0.32%)</title><rect x="66.8797%" y="293" width="0.3195%" height="15" fill="rgb(235,212,8)" fg:x="1256" fg:w="6"/><text x="67.1297%" y="303.50"></text></g><g><title>ntdll`NtQueryInformationFile (2 samples, 0.11%)</title><rect x="67.1991%" y="293" width="0.1065%" height="15" fill="rgb(223,33,50)" fg:x="1262" fg:w="2"/><text x="67.4491%" y="303.50"></text></g><g><title>ntdll`NtQueryValueKey (26 samples, 1.38%)</title><rect x="67.3056%" y="293" width="1.3845%" height="15" fill="rgb(219,149,13)" fg:x="1264" fg:w="26"/><text x="67.5556%" y="303.50"></text></g><g><title>ntdll`NtReadFile (2 samples, 0.11%)</title><rect x="68.6901%" y="293" width="0.1065%" height="15" fill="rgb(250,156,29)" fg:x="1290" fg:w="2"/><text x="68.9401%" y="303.50"></text></g><g><title>ntdll`NtReleaseMutant (1 samples, 0.05%)</title><rect x="68.7966%" y="293" width="0.0532%" height="15" fill="rgb(216,193,19)" fg:x="1292" fg:w="1"/><text x="69.0466%" y="303.50"></text></g><g><title>ntdll`NtSetInformationThread (8 samples, 0.43%)</title><rect x="68.8498%" y="293" width="0.4260%" height="15" fill="rgb(216,135,14)" fg:x="1293" fg:w="8"/><text x="69.0998%" y="303.50"></text></g><g><title>ntdll`NtUnmapViewOfSection (7 samples, 0.37%)</title><rect x="69.2758%" y="293" width="0.3727%" height="15" fill="rgb(241,47,5)" fg:x="1301" fg:w="7"/><text x="69.5258%" y="303.50"></text></g><g><title>ntdll`NtWaitForSingleObject (9 samples, 0.48%)</title><rect x="69.6486%" y="293" width="0.4792%" height="15" fill="rgb(233,42,35)" fg:x="1308" fg:w="9"/><text x="69.8986%" y="303.50"></text></g><g><title>ntdll`NtWriteFile (61 samples, 3.25%)</title><rect x="70.1278%" y="293" width="3.2481%" height="15" fill="rgb(231,13,6)" fg:x="1317" fg:w="61"/><text x="70.3778%" y="303.50">ntd..</text></g><g><title>ntdll`EtwLogTraceEvent (17 samples, 0.91%)</title><rect x="73.4292%" y="229" width="0.9052%" height="15" fill="rgb(207,181,40)" fg:x="1379" fg:w="17"/><text x="73.6792%" y="239.50"></text></g><g><title>ntdll`RtlAllocateHeap (24 samples, 1.28%)</title><rect x="73.3759%" y="277" width="1.2780%" height="15" fill="rgb(254,173,49)" fg:x="1378" fg:w="24"/><text x="73.6259%" y="287.50"></text></g><g><title>ntdll`RtlAllocateHeap (24 samples, 1.28%)</title><rect x="73.3759%" y="261" width="1.2780%" height="15" fill="rgb(221,1,38)" fg:x="1378" fg:w="24"/><text x="73.6259%" y="271.50"></text></g><g><title>ntdll`RtlTryEnterCriticalSection (23 samples, 1.22%)</title><rect x="73.4292%" y="245" width="1.2247%" height="15" fill="rgb(206,124,46)" fg:x="1379" fg:w="23"/><text x="73.6792%" y="255.50"></text></g><g><title>ntdll`RtlTryEnterCriticalSection (6 samples, 0.32%)</title><rect x="74.3344%" y="229" width="0.3195%" height="15" fill="rgb(249,21,11)" fg:x="1396" fg:w="6"/><text x="74.5844%" y="239.50"></text></g><g><title>ntdll`RtlTryEnterCriticalSection (6 samples, 0.32%)</title><rect x="74.3344%" y="213" width="0.3195%" height="15" fill="rgb(222,201,40)" fg:x="1396" fg:w="6"/><text x="74.5844%" y="223.50"></text></g><g><title>ntdll`RtlEnterCriticalSection (19 samples, 1.01%)</title><rect x="74.6539%" y="277" width="1.0117%" height="15" fill="rgb(235,61,29)" fg:x="1402" fg:w="19"/><text x="74.9039%" y="287.50"></text></g><g><title>ntdll`RtlEnterCriticalSection (18 samples, 0.96%)</title><rect x="74.7071%" y="261" width="0.9585%" height="15" fill="rgb(219,207,3)" fg:x="1403" fg:w="18"/><text x="74.9571%" y="271.50"></text></g><g><title>ntdll`TpWorkOnBehalfClearTicket (17 samples, 0.91%)</title><rect x="74.7604%" y="245" width="0.9052%" height="15" fill="rgb(222,56,46)" fg:x="1404" fg:w="17"/><text x="75.0104%" y="255.50"></text></g><g><title>ntdll`ZwWaitForAlertByThreadId (17 samples, 0.91%)</title><rect x="74.7604%" y="229" width="0.9052%" height="15" fill="rgb(239,76,54)" fg:x="1404" fg:w="17"/><text x="75.0104%" y="239.50"></text></g><g><title>ntdll`RtlFreeHeap (2 samples, 0.11%)</title><rect x="75.6656%" y="277" width="0.1065%" height="15" fill="rgb(231,124,27)" fg:x="1421" fg:w="2"/><text x="75.9156%" y="287.50"></text></g><g><title>ntdll`RtlGetCurrentServiceSessionId (2 samples, 0.11%)</title><rect x="75.6656%" y="261" width="0.1065%" height="15" fill="rgb(249,195,6)" fg:x="1421" fg:w="2"/><text x="75.9156%" y="271.50"></text></g><g><title>ntdll`RtlDeleteBoundaryDescriptor (2 samples, 0.11%)</title><rect x="75.6656%" y="245" width="0.1065%" height="15" fill="rgb(237,174,47)" fg:x="1421" fg:w="2"/><text x="75.9156%" y="255.50"></text></g><g><title>ntdll`RtlCompareMemoryUlong (1 samples, 0.05%)</title><rect x="75.7188%" y="229" width="0.0532%" height="15" fill="rgb(206,201,31)" fg:x="1422" fg:w="1"/><text x="75.9688%" y="239.50"></text></g><g><title>ntdll`RtlRegisterSecureMemoryCacheCallback (60 samples, 3.19%)</title><rect x="73.3759%" y="293" width="3.1949%" height="15" fill="rgb(231,57,52)" fg:x="1378" fg:w="60"/><text x="73.6259%" y="303.50">ntd..</text></g><g><title>ntdll`RtlWakeAddressAll (15 samples, 0.80%)</title><rect x="75.7721%" y="277" width="0.7987%" height="15" fill="rgb(248,177,22)" fg:x="1423" fg:w="15"/><text x="76.0221%" y="287.50"></text></g><g><title>ntdll`ZwAlertThreadByThreadId (15 samples, 0.80%)</title><rect x="75.7721%" y="261" width="0.7987%" height="15" fill="rgb(215,211,37)" fg:x="1423" fg:w="15"/><text x="76.0221%" y="271.50"></text></g><g><title>ntdll`RtlUserThreadStart (11 samples, 0.59%)</title><rect x="76.5708%" y="293" width="0.5857%" height="15" fill="rgb(241,128,51)" fg:x="1438" fg:w="11"/><text x="76.8208%" y="303.50"></text></g><g><title>KERNEL32`BaseThreadInitThunk (7 samples, 0.37%)</title><rect x="76.7838%" y="277" width="0.3727%" height="15" fill="rgb(227,165,31)" fg:x="1442" fg:w="7"/><text x="77.0338%" y="287.50"></text></g><g><title>ntdll`RtlClearThreadWorkOnBehalfTicket (7 samples, 0.37%)</title><rect x="76.7838%" y="261" width="0.3727%" height="15" fill="rgb(228,167,24)" fg:x="1442" fg:w="7"/><text x="77.0338%" y="271.50"></text></g><g><title>ntdll`NtWaitForWorkViaWorkerFactory (7 samples, 0.37%)</title><rect x="76.7838%" y="245" width="0.3727%" height="15" fill="rgb(228,143,12)" fg:x="1442" fg:w="7"/><text x="77.0338%" y="255.50"></text></g><g><title>ntdll`ZwCreateEvent (2 samples, 0.11%)</title><rect x="77.1565%" y="293" width="0.1065%" height="15" fill="rgb(249,149,8)" fg:x="1449" fg:w="2"/><text x="77.4065%" y="303.50"></text></g><g><title>ntdll`ZwCreateKey (2 samples, 0.11%)</title><rect x="77.2630%" y="293" width="0.1065%" height="15" fill="rgb(243,35,44)" fg:x="1451" fg:w="2"/><text x="77.5130%" y="303.50"></text></g><g><title>ntdll`ZwFreeVirtualMemory (4 samples, 0.21%)</title><rect x="77.3695%" y="293" width="0.2130%" height="15" fill="rgb(246,89,9)" fg:x="1453" fg:w="4"/><text x="77.6195%" y="303.50"></text></g><g><title>ntdll`ZwMapViewOfSection (4 samples, 0.21%)</title><rect x="77.5825%" y="293" width="0.2130%" height="15" fill="rgb(233,213,13)" fg:x="1457" fg:w="4"/><text x="77.8325%" y="303.50"></text></g><g><title>ntdll`ZwOpenKey (28 samples, 1.49%)</title><rect x="77.7955%" y="293" width="1.4909%" height="15" fill="rgb(233,141,41)" fg:x="1461" fg:w="28"/><text x="78.0455%" y="303.50"></text></g><g><title>ntdll`ZwQueryInformationProcess (1 samples, 0.05%)</title><rect x="79.2865%" y="293" width="0.0532%" height="15" fill="rgb(239,167,4)" fg:x="1489" fg:w="1"/><text x="79.5365%" y="303.50"></text></g><g><title>ntdll`ZwQueryInformationToken (5 samples, 0.27%)</title><rect x="79.3397%" y="293" width="0.2662%" height="15" fill="rgb(209,217,16)" fg:x="1490" fg:w="5"/><text x="79.5897%" y="303.50"></text></g><g><title>ntdll`ZwQueryKey (106 samples, 5.64%)</title><rect x="79.6060%" y="293" width="5.6443%" height="15" fill="rgb(219,88,35)" fg:x="1495" fg:w="106"/><text x="79.8560%" y="303.50">ntdll`Z..</text></g><g><title>ntdll`ZwQueryPerformanceCounter (1 samples, 0.05%)</title><rect x="85.2503%" y="293" width="0.0532%" height="15" fill="rgb(220,193,23)" fg:x="1601" fg:w="1"/><text x="85.5003%" y="303.50"></text></g><g><title>ntdll`ZwQuerySystemInformation (7 samples, 0.37%)</title><rect x="85.3035%" y="293" width="0.3727%" height="15" fill="rgb(230,90,52)" fg:x="1602" fg:w="7"/><text x="85.5535%" y="303.50"></text></g><g><title>ntdll`ZwRemoveIoCompletion (1 samples, 0.05%)</title><rect x="85.6763%" y="293" width="0.0532%" height="15" fill="rgb(252,106,19)" fg:x="1609" fg:w="1"/><text x="85.9263%" y="303.50"></text></g><g><title>ntdll`ZwSetInformationProcess (1 samples, 0.05%)</title><rect x="85.7295%" y="293" width="0.0532%" height="15" fill="rgb(206,74,20)" fg:x="1610" fg:w="1"/><text x="85.9795%" y="303.50"></text></g><g><title>user32`GetLastActivePopup (1 samples, 0.05%)</title><rect x="85.7827%" y="293" width="0.0532%" height="15" fill="rgb(230,138,44)" fg:x="1611" fg:w="1"/><text x="86.0327%" y="303.50"></text></g><g><title>win32u`NtUserSetImeOwnerWindow (1 samples, 0.05%)</title><rect x="85.7827%" y="277" width="0.0532%" height="15" fill="rgb(235,182,43)" fg:x="1611" fg:w="1"/><text x="86.0327%" y="287.50"></text></g><g><title>win32u`NtGdiDdDDIDestroyAllocation (1 samples, 0.05%)</title><rect x="85.8360%" y="293" width="0.0532%" height="15" fill="rgb(242,16,51)" fg:x="1612" fg:w="1"/><text x="86.0860%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDIEnumAdapters (1 samples, 0.05%)</title><rect x="85.8892%" y="293" width="0.0532%" height="15" fill="rgb(248,9,4)" fg:x="1613" fg:w="1"/><text x="86.1392%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDIEscape (8 samples, 0.43%)</title><rect x="85.9425%" y="293" width="0.4260%" height="15" fill="rgb(210,31,22)" fg:x="1614" fg:w="8"/><text x="86.1925%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDILock2 (1 samples, 0.05%)</title><rect x="86.3685%" y="293" width="0.0532%" height="15" fill="rgb(239,54,39)" fg:x="1622" fg:w="1"/><text x="86.6185%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDIQueryAdapterInfo (5 samples, 0.27%)</title><rect x="86.4217%" y="293" width="0.2662%" height="15" fill="rgb(230,99,41)" fg:x="1623" fg:w="5"/><text x="86.6717%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDIQueryStatistics (208 samples, 11.08%)</title><rect x="86.6880%" y="293" width="11.0756%" height="15" fill="rgb(253,106,12)" fg:x="1628" fg:w="208"/><text x="86.9380%" y="303.50">win32u`NtGdiDdDD..</text></g><g><title>win32u`NtGdiDdDDISignalSynchronizationObjectFromGpu2 (2 samples, 0.11%)</title><rect x="97.7636%" y="293" width="0.1065%" height="15" fill="rgb(213,46,41)" fg:x="1836" fg:w="2"/><text x="98.0136%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDISubmitCommand (2 samples, 0.11%)</title><rect x="97.8701%" y="293" width="0.1065%" height="15" fill="rgb(215,133,35)" fg:x="1838" fg:w="2"/><text x="98.1201%" y="303.50"></text></g><g><title>win32u`NtGdiDdDDIWaitForSynchronizationObjectFromCpu (1 samples, 0.05%)</title><rect x="97.9766%" y="293" width="0.0532%" height="15" fill="rgb(213,28,5)" fg:x="1840" fg:w="1"/><text x="98.2266%" y="303.50"></text></g><g><title>win32u`NtGdiOpenDCW (2 samples, 0.11%)</title><rect x="98.0298%" y="293" width="0.1065%" height="15" fill="rgb(215,77,49)" fg:x="1841" fg:w="2"/><text x="98.2798%" y="303.50"></text></g><g><title>win32u`NtUserCreateWindowEx (8 samples, 0.43%)</title><rect x="98.1363%" y="293" width="0.4260%" height="15" fill="rgb(248,100,22)" fg:x="1843" fg:w="8"/><text x="98.3863%" y="303.50"></text></g><g><title>win32u`NtUserDestroyWindow (1 samples, 0.05%)</title><rect x="98.5623%" y="293" width="0.0532%" height="15" fill="rgb(208,67,9)" fg:x="1851" fg:w="1"/><text x="98.8123%" y="303.50"></text></g><g><title>win32u`NtUserEnumDisplayDevices (10 samples, 0.53%)</title><rect x="98.6155%" y="293" width="0.5325%" height="15" fill="rgb(219,133,21)" fg:x="1852" fg:w="10"/><text x="98.8655%" y="303.50"></text></g><g><title>win32u`NtUserEnumDisplayMonitors (1 samples, 0.05%)</title><rect x="99.1480%" y="293" width="0.0532%" height="15" fill="rgb(246,46,29)" fg:x="1862" fg:w="1"/><text x="99.3980%" y="303.50"></text></g><g><title>win32u`NtUserGetMessage (4 samples, 0.21%)</title><rect x="99.2013%" y="293" width="0.2130%" height="15" fill="rgb(246,185,52)" fg:x="1863" fg:w="4"/><text x="99.4513%" y="303.50"></text></g><g><title>ntdll`KiUserCallbackDispatcher (2 samples, 0.11%)</title><rect x="99.3078%" y="277" width="0.1065%" height="15" fill="rgb(252,136,11)" fg:x="1865" fg:w="2"/><text x="99.5578%" y="287.50"></text></g><g><title>win32u`NtUserGetProp (1 samples, 0.05%)</title><rect x="99.4143%" y="293" width="0.0532%" height="15" fill="rgb(219,138,53)" fg:x="1867" fg:w="1"/><text x="99.6643%" y="303.50"></text></g><g><title>win32u`NtUserMapVirtualKeyEx (3 samples, 0.16%)</title><rect x="99.4675%" y="293" width="0.1597%" height="15" fill="rgb(211,51,23)" fg:x="1868" fg:w="3"/><text x="99.7175%" y="303.50"></text></g><g><title>win32u`NtUserMessageCall (1 samples, 0.05%)</title><rect x="99.6273%" y="293" width="0.0532%" height="15" fill="rgb(247,221,28)" fg:x="1871" fg:w="1"/><text x="99.8773%" y="303.50"></text></g><g><title>win32u`NtUserPostMessage (1 samples, 0.05%)</title><rect x="99.6805%" y="293" width="0.0532%" height="15" fill="rgb(251,222,45)" fg:x="1872" fg:w="1"/><text x="99.9305%" y="303.50"></text></g><g><title>win32u`NtUserSetWindowPos (1 samples, 0.05%)</title><rect x="99.7338%" y="293" width="0.0532%" height="15" fill="rgb(217,162,53)" fg:x="1873" fg:w="1"/><text x="99.9838%" y="303.50"></text></g><g><title>win32u`NtUserShowWindow (1 samples, 0.05%)</title><rect x="99.7870%" y="293" width="0.0532%" height="15" fill="rgb(229,93,14)" fg:x="1874" fg:w="1"/><text x="100.0370%" y="303.50"></text></g><g><title>all (1,878 samples, 100%)</title><rect x="0.0000%" y="309" width="100.0000%" height="15" fill="rgb(209,67,49)" fg:x="0" fg:w="1878"/><text x="0.2500%" y="319.50"></text></g><g><title>win32u`NtUserToUnicodeEx (3 samples, 0.16%)</title><rect x="99.8403%" y="293" width="0.1597%" height="15" fill="rgb(213,87,29)" fg:x="1875" fg:w="3"/><text x="100.0903%" y="303.50"></text></g></svg></svg>

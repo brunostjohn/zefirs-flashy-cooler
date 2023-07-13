@@ -1,9 +1,13 @@
+use std::fs;
+use std::path::PathBuf;
 use std::{borrow::Cow, mem, rc::Rc};
 
-use rayon::prelude::*;
+use glium::program::{Binary, ProgramCreationInput};
+use glium::vertex::AttributeType;
 
 use kanal::Receiver;
 use kanal::Sender;
+use serde::{Deserialize, Serialize};
 
 use self::gpu::GPUDriver;
 
@@ -23,6 +27,110 @@ use glium::{
     vertex::VertexBufferAny,
     Blend, DrawParameters, HeadlessRenderer, Program, Surface, Texture2d,
 };
+
+static SMALL_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 3] = [
+    (
+        Cow::Borrowed("in_Position"),
+        0 as usize,
+        -1 as i32,
+        glium::vertex::AttributeType::F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Color"),
+        2 * ::std::mem::size_of::<f32>() as usize,
+        -1 as i32,
+        glium::vertex::AttributeType::U8U8U8U8,
+        true,
+    ),
+    (
+        Cow::Borrowed("in_TexCoord"),
+        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>() as usize,
+        -1 as i32,
+        glium::vertex::AttributeType::F32F32,
+        false,
+    ),
+];
+
+static LARGE_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 11] = [
+    (
+        Cow::Borrowed("in_Position"),
+        0,
+        -1,
+        glium::vertex::AttributeType::F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Color"),
+        2 * ::std::mem::size_of::<f32>(),
+        -1,
+        glium::vertex::AttributeType::U8U8U8U8,
+        true,
+    ),
+    (
+        Cow::Borrowed("in_TexCoord"),
+        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_ObjCoord"),
+        4 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data0"),
+        6 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data1"),
+        10 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data2"),
+        14 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data3"),
+        18 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data4"),
+        22 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data5"),
+        26 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+    (
+        Cow::Borrowed("in_Data6"),
+        30 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1,
+        glium::vertex::AttributeType::F32F32F32F32,
+        false,
+    ),
+];
 
 #[path = "./gpu.rs"]
 pub mod gpu;
@@ -45,117 +153,21 @@ impl GLVertexBuffer {
     {
         match self {
             GLVertexBuffer::Format2f4ub2f(buf) => {
-                let format = Cow::Owned(vec![
-                    (
-                        Cow::Borrowed("in_Position"),
-                        0,
-                        -1,
-                        glium::vertex::AttributeType::F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Color"),
-                        2 * ::std::mem::size_of::<f32>(),
-                        -1,
-                        glium::vertex::AttributeType::U8U8U8U8,
-                        true,
-                    ),
-                    (
-                        Cow::Borrowed("in_TexCoord"),
-                        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32,
-                        false,
-                    ),
-                ]);
                 let element_size = std::mem::size_of::<ULVertex_2f_4ub_2f>();
 
-                Ok(
-                    unsafe { glium::VertexBuffer::new_raw(context, &buf, format, element_size) }
-                        .or(Err("Failed to convert vertex"))?
-                        .into(),
-                )
+                Ok(unsafe {
+                    glium::VertexBuffer::new_raw(
+                        context,
+                        &buf,
+                        Cow::Borrowed(SMALL_VERTEX.as_slice()),
+                        element_size,
+                    )
+                }
+                .or(Err("Failed to convert vertex"))?
+                .into())
             }
             GLVertexBuffer::Format2f4ub2f2f28f(buf) => {
-                let format = Cow::Owned(vec![
-                    (
-                        Cow::Borrowed("in_Position"),
-                        0,
-                        -1,
-                        glium::vertex::AttributeType::F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Color"),
-                        2 * ::std::mem::size_of::<f32>(),
-                        -1,
-                        glium::vertex::AttributeType::U8U8U8U8,
-                        true,
-                    ),
-                    (
-                        Cow::Borrowed("in_TexCoord"),
-                        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_ObjCoord"),
-                        4 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data0"),
-                        6 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data1"),
-                        10 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data2"),
-                        14 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data3"),
-                        18 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data4"),
-                        22 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data5"),
-                        26 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                    (
-                        Cow::Borrowed("in_Data6"),
-                        30 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
-                        -1,
-                        glium::vertex::AttributeType::F32F32F32F32,
-                        false,
-                    ),
-                ]);
+                let format = Cow::Borrowed(LARGE_VERTEX.as_slice());
                 let element_size = std::mem::size_of::<ULVertex_2f_4ub_2f_2f_28f>();
 
                 Ok(
@@ -395,8 +407,17 @@ pub struct GPUDriverReceiver {
     rawdog: ContextWrapper<NotCurrent, ()>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ShaderCacheFormat {
+    pub fill_format: u32,
+    pub path_format: u32,
+}
+
 impl GPUDriverReceiver {
-    pub fn new(receiver: Receiver<GPUDriverCommand>) -> Result<Self, &'static str> {
+    pub fn new(
+        receiver: Receiver<GPUDriverCommand>,
+        app_folder: PathBuf,
+    ) -> Result<Self, &'static str> {
         let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
 
         let gl_ctx = HeadlessRenderer::with_debug::<NotCurrent>(
@@ -417,21 +438,118 @@ impl GPUDriverReceiver {
         let render_buffer_map = FxHashMap::default();
         let geometry_map = FxHashMap::default();
 
-        let path_program = program!(&context,
-        150 => {
-            vertex: include_str!("./shaders/v2f_c4f_t2f_vert.vert"),
-            fragment: include_str!("./shaders/path_frag.frag")
-        })
-        .or(Err("Failed to create path shader!"))
-        .unwrap();
+        let path_program;
+        let fill_program;
 
-        let fill_program = program!(&context,
-        150 => {
-            vertex: include_str!("./shaders/v2f_c4f_t2f_t2f_d28f_vert.vert"),
-            fragment: include_str!("./shaders/fill_frag.frag")
-        })
-        .or(Err("Failed to create fill shader!"))
-        .unwrap();
+        let shader_cache = {
+            let mut app_folder: PathBuf = app_folder.clone();
+            app_folder.push("shader_cache");
+            app_folder
+        };
+
+        let mut shader_cache_vers = {
+            let mut shaderc = shader_cache.clone();
+            shaderc.push("shader_binaries.json");
+
+            let vers = fs::read_to_string(shaderc)
+                .or::<Result<String, &'static str>>(Ok("".to_string()))
+                .unwrap();
+
+            let bins: ShaderCacheFormat = serde_json::from_str(&vers)
+                .or::<Result<ShaderCacheFormat, &'static str>>(Ok(ShaderCacheFormat {
+                    path_format: 0,
+                    fill_format: 0,
+                }))
+                .unwrap();
+
+            bins
+        };
+
+        if !shader_cache.exists() {
+            fs::create_dir(&shader_cache).unwrap();
+        }
+
+        let path_shader_location = {
+            let mut folder = shader_cache.clone();
+            folder.push("path.cached");
+            folder
+        };
+
+        if path_shader_location.exists() && shader_cache_vers.path_format != 0 {
+            let bin = fs::read(path_shader_location).unwrap();
+            let format = shader_cache_vers.path_format;
+
+            let binary = Binary {
+                format,
+                content: bin,
+            };
+
+            let creation_input = ProgramCreationInput::from(binary);
+
+            path_program = Program::new(&context, creation_input).unwrap();
+        } else {
+            path_program = program!(&context,
+            150 => {
+                vertex: include_str!("./shaders/v2f_c4f_t2f_vert.vert"),
+                fragment: include_str!("./shaders/path_frag.frag")
+            })
+            .unwrap();
+
+            let _ = path_program.get_binary().and_then(|binary| {
+                shader_cache_vers.path_format = binary.format;
+
+                let _ = fs::write(path_shader_location, binary.content);
+
+                Ok(())
+            });
+        }
+
+        let fill_shader_location = {
+            let mut folder = shader_cache.clone();
+            folder.push("fill.cached");
+            folder
+        };
+
+        if fill_shader_location.exists() && shader_cache_vers.fill_format != 0 {
+            let bin = fs::read(fill_shader_location).unwrap();
+            let format = shader_cache_vers.fill_format;
+
+            let binary = Binary {
+                format,
+                content: bin,
+            };
+
+            let creation_input = ProgramCreationInput::from(binary);
+
+            fill_program = Program::new(&context, creation_input).unwrap();
+        } else {
+            fill_program = program!(&context,
+            150 => {
+                vertex: include_str!("./shaders/v2f_c4f_t2f_t2f_d28f_vert.vert"),
+                fragment: include_str!("./shaders/fill_frag.frag")
+            })
+            .or(Err("Failed to create fill shader!"))
+            .unwrap();
+
+            let _ = fill_program.get_binary().and_then(|binary| {
+                shader_cache_vers.fill_format = binary.format;
+
+                let _ = fs::write(fill_shader_location, binary.content);
+
+                Ok(())
+            });
+        }
+
+        let updated_vers = serde_json::to_string(&shader_cache_vers).unwrap();
+
+        let _ = fs::write(
+            {
+                let mut sc = shader_cache;
+                sc.push("shader_binaries.json");
+                sc
+            },
+            updated_vers,
+        );
 
         Ok(Self {
             receiver,

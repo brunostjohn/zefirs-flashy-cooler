@@ -75,7 +75,6 @@ namespace LibreHardwareMonitorNative
             object ob = gch.Target;
             Computer computer = (Computer)ob;
 
-            computer.Accept(new UpdateVisitor());
             //if (sensorPathString == IntPtr.Zero) return Marshal.StringToHGlobalAnsi("failed");
             string sensor = Marshal.PtrToStringAnsi(sensorPathString) ?? "failed";
 
@@ -106,11 +105,13 @@ namespace LibreHardwareMonitorNative
                 if (splitPath[1] == "subhardware")
                 {
                     IHardware sub = parent.SubHardware.FirstOrDefault(x => x.Name == splitPath[2]) ?? parent.SubHardware.First();
+                    sub.Update();
                     hwType = sub.HardwareType.ToString();
                     sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
                 }
                 else
                 {
+                    parent.Update();
                     sensorClass = parent.Sensors.FirstOrDefault(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]) ?? parent.Sensors.First();
                     hwType = parent.HardwareType.ToString();
                 }

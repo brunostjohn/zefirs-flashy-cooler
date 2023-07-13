@@ -4,6 +4,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use rayon::prelude::{IndexedParallelIterator, IntoParallelIterator};
 use serde::{Deserialize, Serialize};
 
 #[path = "../helpers/threading.rs"]
@@ -62,6 +63,18 @@ pub struct SensorWithDetails {
     pub r#type: String,
     pub parent_hw_type: Option<String>,
     pub code_name: String,
+}
+
+impl SensorWithDetails {
+    pub fn new(code_name: String, old: Sensor) -> Self {
+        Self {
+            sensor: old.sensor,
+            value: old.value,
+            r#type: old.r#type,
+            parent_hw_type: old.parent_hw_type,
+            code_name,
+        }
+    }
 }
 
 pub struct Sensors {
@@ -216,30 +229,56 @@ impl Sensors {
             .try_recv()
             .or(Err("Failed to receive value."))?;
 
-        let mut details = vec![];
+        if self.sensor_names.len() > 10 {
+            let mut details = Vec::with_capacity(self.sensor_names.len());
 
-        for sensor in &sensor_pre {
-            let location = sensor_pre
-                .iter()
-                .position(|x| {
-                    x.sensor == sensor.sensor
-                        && x.parent_hw_type == sensor.parent_hw_type
-                        && x.r#type == sensor.r#type
-                })
-                .unwrap();
+            for sensor in (&sensor_pre).into_iter() {
+                let location = (*sensor_pre)
+                    .into_par_iter()
+                    .position_any(|x| {
+                        x.sensor == sensor.sensor
+                            && x.parent_hw_type == sensor.parent_hw_type
+                            && x.r#type == sensor.r#type
+                    })
+                    .unwrap();
 
-            let new_thing = SensorWithDetails {
-                value: sensor.value.clone(),
-                sensor: sensor.sensor.clone(),
-                parent_hw_type: sensor.parent_hw_type.clone(),
-                r#type: sensor.r#type.clone(),
-                code_name: self.sensor_names[location].clone(),
-            };
+                let new_thing =
+                    SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
+
+                details.push(new_thing);
+            }
+
+            Ok(details)
+        } else if self.sensor_names.len() > 1 {
+            let mut details = Vec::with_capacity(self.sensor_names.len());
+
+            for sensor in (&sensor_pre).into_iter() {
+                let location = (*sensor_pre)
+                    .into_iter()
+                    .position(|x| {
+                        x.sensor == sensor.sensor
+                            && x.parent_hw_type == sensor.parent_hw_type
+                            && x.r#type == sensor.r#type
+                    })
+                    .unwrap();
+
+                let new_thing =
+                    SensorWithDetails::new(self.sensor_names[location].clone(), sensor.clone());
+
+                details.push(new_thing);
+            }
+
+            Ok(details)
+        } else {
+            let mut details = Vec::with_capacity(1);
+
+            let new_thing =
+                SensorWithDetails::new(self.sensor_names[0].clone(), sensor_pre[0].clone());
 
             details.push(new_thing);
-        }
 
-        Ok(details)
+            Ok(details)
+        }
     }
 }
 

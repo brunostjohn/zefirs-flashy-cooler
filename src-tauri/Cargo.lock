@@ -93,6 +93,7 @@ dependencies = [
  "reqwest",
  "rusb",
  "rustc-hash",
+ "seq-macro",
  "serde",
  "serde_json",
  "tauri",
@@ -3314,6 +3315,12 @@ checksum = "bebd363326d05ec3e2f532ab7660680f3b02130d780c299bca73469d521bc0ed"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "seq-macro"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "63134939175b3131fe4d2c131b103fd42f25ccca89423d43b5e4f267920ccf03"
 
 [[package]]
 name = "serde"

@@ -8,6 +8,19 @@
 
 	<PropertyGroup>
 		<PublishAot>true</PublishAot>
+		<OptimizationPreference>Speed</OptimizationPreference>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<OptimizationPreference>Speed</OptimizationPreference>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<IlcInstructionSet>avx2,bmi2,fma,pclmul,popcnt,aes</IlcInstructionSet>
+	</PropertyGroup>
+
+	<PropertyGroup>
+		<InvariantGlobalization>true</InvariantGlobalization>
 	</PropertyGroup>
 
 	<ItemGroup>

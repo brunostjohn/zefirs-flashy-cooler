@@ -1,0 +1,78 @@
+[tasks.format]
+install_crate = "rustfmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clean]
+dependencies = [
+    "clean-rust",
+    "clean-libre-project"
+]
+
+[tasks.clean-rust]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build]
+install_crate = "tauri"
+command = "cargo"
+args = ["tauri", "build"]
+dependencies = ["clean"]
+
+[tasks.clean-libre-lib]
+cwd = "../LibreHardwareMonitorNative/"
+script_runner = "@shell"
+script = '''
+    rm -rf ./bin
+    rm -rf ./obj
+'''
+
+[tasks.build-libre-lib]
+cwd = "../LibreHardwareMonitorNative/"
+command = "dotnet"
+args = ["publish", "-r", "win-x64", "-c", "Release", "/p:NativeLib=Static", "/p:SelfContained=true"]
+dependencies = ["clean-libre-lib"]
+
+[tasks.copy-libre-lib]
+cwd = "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish"
+script_runner = "@shell"
+script = '''
+    cp ./LibreHardwareMonitorNative.lib ../../../../../../src-tauri/static-libs/
+    cp ./*.dll ../../../../../../src-tauri/
+'''
+dependencies = ["build-libre-lib"]
+
+[tasks.libre]
+run_task = [{ name="copy-libre-lib", condition = { files_modified = { input = ["../LibreHardwareMonitorNative/Class1.cs", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.sln"], output = ["../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.lib", "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.dll"] } } }]
+
+[tasks.release]
+dependencies = [
+    "format",
+    "libre",
+    "build"
+]
+
+[tasks.tauri-dev]
+install_crate = "tauri"
+command = "cargo"
+args = ["tauri", "dev"]
+
+[tasks.tauri-release]
+install_crate = "tauri"
+command = "cargo"
+args = ["tauri", "dev", "--release"]
+
+[tasks.dev]
+dependencies = [
+    "libre",
+    "tauri-dev"
+]
+
+[tasks.run]
+dependencies = [
+    "libre",
+    "tauri-release"
+]
+
+[tasks.default]
+alias = "dev"
