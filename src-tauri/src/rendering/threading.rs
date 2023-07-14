@@ -18,7 +18,7 @@ use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, RwLock};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::vec;
@@ -26,7 +26,7 @@ use std::vec;
 use crate::rendering::device::DeviceContainer;
 use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
 use crate::rendering::traits::{CustomSerialise, Reassign};
-use crate::sensors::Sensors;
+use crate::sensors::{SensorWithDetails, Sensors};
 use crate::server::Server;
 
 pub struct Renderer {
@@ -52,6 +52,7 @@ impl Renderer {
         themes_path: PathBuf,
         server: Arc<Mutex<Server>>,
         sensors: Arc<Mutex<Sensors>>,
+        rx_sensor: kanal::Receiver<String>,
     ) -> Self {
         let (tx_theme, rx_theme) = kanal::unbounded();
         let (tx_end, rx_end) = kanal::bounded(2);
@@ -81,7 +82,7 @@ impl Renderer {
                 .or_else(|_| Err(println!("Failed to initialise device.")));
 
             let mut sensor_flag = false;
-            let mut sensor_values = vec![];
+            let mut sensor_values: Vec<SensorWithDetails> = vec![];
 
             loop {
                 engine.update();
@@ -92,15 +93,21 @@ impl Renderer {
 
                 if frame_time.check_time() {
                     if sensor_time.check_time() && sensor_flag {
-                        let sensors = sensors.lock().unwrap();
+                        let value = rx_sensor.try_recv().unwrap();
 
-                        sensor_values = sensor_values.reassign(sensors.get_sensor_value());
+                        if let Some(result) = value {
+                            if !result.contains("FAILEDFAILEDFAILED") {
+                                let mut iterable = result.split("||");
 
-                        drop(sensors);
+                                for i in 0..sensor_values.len() {
+                                    sensor_values[i].value = iterable.next().unwrap().to_string();
+                                }
+                            }
+                        }
 
-                        engine.call_js_script(
-                            format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", sensor_values.custom_serialise()),
-                        );
+                        let script = format!("document.dispatchEvent(new CustomEvent('sensorUpdate', {{ detail: JSON.parse('{}') }}))", sensor_values.custom_serialise());
+
+                        engine.call_js_script(script);
                     }
 
                     engine.render();
@@ -169,7 +176,11 @@ impl Renderer {
 
                             let mut sensors = sensors.lock().unwrap();
 
-                            sensors.subscribe(sensor_paths, sensor_names);
+                            if let Ok(vals) =
+                                sensors.subscribe(sensor_paths.clone(), sensor_names.clone())
+                            {
+                                sensor_values = vals;
+                            }
 
                             drop(sensors);
                         } else {

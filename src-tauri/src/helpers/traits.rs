@@ -72,19 +72,10 @@ impl CustomSerialise for Vec<SensorWithDetails> {
         let mut all_sensor_string = "{".to_owned();
 
         for sensor in self {
-            all_sensor_string += &("\"".to_owned() + &sensor.code_name + "\":");
-            let name = &sensor.sensor;
-            let r#type = &sensor.r#type;
-            let value = &sensor.value;
-            let parent_hw = (sensor.parent_hw_type.clone())
-                .or(Some("".to_string()))
-                .unwrap();
-
-            let sensor_string = format!(
-                r#"{{"sensor":"{name}","value":"{value}","type":"{type}","parent_hw_type":"{parent_hw}"}}"#
-            );
-            all_sensor_string += &sensor_string;
-            all_sensor_string += ",";
+            all_sensor_string.push_str(&("\"".to_owned() + &sensor.code_name + "\":"));
+            let this_sensor = serde_json::to_string(sensor).unwrap();
+            all_sensor_string.push_str(&this_sensor);
+            all_sensor_string.push(',');
         }
 
         all_sensor_string.pop();
@@ -113,6 +104,31 @@ impl Reassign<Result<Vec<String>, &'static str>> for Vec<String> {
                     return self;
                 } else {
                     return result;
+                }
+            }
+            Err(_) => return self,
+        }
+    }
+}
+
+impl Reassign<Result<String, &'static str>> for Vec<SensorWithDetails> {
+    #[inline(always)]
+    fn reassign(mut self, channel: Result<String, &'static str>) -> Self
+    where
+        Self: Sized,
+    {
+        match channel {
+            Ok(result) => {
+                if result.contains("FAILEDFAILEDFAILED") {
+                    return self;
+                } else {
+                    let mut iterable = result.split("||");
+
+                    for i in 0..self.len() {
+                        self[i].value = iterable.next().unwrap().to_string();
+                    }
+
+                    self
                 }
             }
             Err(_) => return self,

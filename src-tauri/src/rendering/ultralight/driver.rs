@@ -233,8 +233,8 @@ impl GPUDriver for GPUDriverSender {
                         .align_to::<ULVertex_2f_4ub_2f>()
                 };
 
-                assert!(head.is_empty());
-                assert!(tail.is_empty());
+                debug_assert!(head.is_empty());
+                debug_assert!(tail.is_empty());
 
                 GLVertexBuffer::Format2f4ub2f(body.to_vec())
             }
@@ -247,8 +247,8 @@ impl GPUDriver for GPUDriverSender {
                         .align_to::<ULVertex_2f_4ub_2f_2f_28f>()
                 };
 
-                assert!(head.is_empty());
-                assert!(tail.is_empty());
+                debug_assert!(head.is_empty());
+                debug_assert!(tail.is_empty());
 
                 GLVertexBuffer::Format2f4ub2f2f28f(body.to_vec())
             }
@@ -347,8 +347,8 @@ impl GPUDriver for GPUDriverSender {
                         .align_to::<ULVertex_2f_4ub_2f>()
                 };
 
-                assert!(head.is_empty());
-                assert!(tail.is_empty());
+                debug_assert!(head.is_empty());
+                debug_assert!(tail.is_empty());
 
                 GLVertexBuffer::Format2f4ub2f(body.to_vec())
             }
@@ -361,8 +361,8 @@ impl GPUDriver for GPUDriverSender {
                         .align_to::<ULVertex_2f_4ub_2f_2f_28f>()
                 };
 
-                assert!(head.is_empty());
-                assert!(tail.is_empty());
+                debug_assert!(head.is_empty());
+                debug_assert!(tail.is_empty());
 
                 GLVertexBuffer::Format2f4ub2f2f28f(body.to_vec())
             }
@@ -676,7 +676,7 @@ impl GPUDriverReceiver {
     }
 
     fn update_texture(&mut self, id: u32, bitmap: OwnedBitmap) -> Result<(), &'static str> {
-        assert!(self.texture_map.contains_key(&id));
+        debug_assert!(self.texture_map.contains_key(&id));
 
         let tex = self.create_texture(id, bitmap)?;
 
@@ -691,7 +691,7 @@ impl GPUDriverReceiver {
 
     #[inline]
     fn destroy_texture(&mut self, id: u32) -> Result<(), &'static str> {
-        assert!(self.texture_map.contains_key(&id));
+        debug_assert!(self.texture_map.contains_key(&id));
 
         self.texture_map.remove(&id);
 
@@ -710,8 +710,8 @@ impl GPUDriverReceiver {
 
         tex.1 = Some(id);
 
-        assert!(tex.0.width() == render_buffer.width);
-        assert!(tex.0.height() == render_buffer.height);
+        debug_assert!(tex.0.width() == render_buffer.width);
+        debug_assert!(tex.0.height() == render_buffer.height);
 
         self.render_buffer_map.insert(id, render_buffer);
 
@@ -719,7 +719,7 @@ impl GPUDriverReceiver {
     }
 
     fn destroy_render_buffer(&mut self, id: u32) -> Result<(), &'static str> {
-        assert!(self.render_buffer_map.contains_key(&id));
+        debug_assert!(self.render_buffer_map.contains_key(&id));
 
         let render_buffer = self
             .render_buffer_map
@@ -760,7 +760,7 @@ impl GPUDriverReceiver {
         vertex: GLVertexBuffer,
         index: IndexBuffer,
     ) -> Result<(), &'static str> {
-        assert!(self.geometry_map.contains_key(&id));
+        debug_assert!(self.geometry_map.contains_key(&id));
 
         let index_buffer = glium::IndexBuffer::new(
             &self.context,
@@ -780,7 +780,7 @@ impl GPUDriverReceiver {
 
     #[inline]
     fn destroy_geometry(&mut self, id: u32) -> Result<(), &'static str> {
-        assert!(self.geometry_map.contains_key(&id));
+        debug_assert!(self.geometry_map.contains_key(&id));
 
         self.geometry_map.remove(&id);
 
@@ -808,7 +808,7 @@ impl GPUDriverReceiver {
     }
 
     fn clear_render_buffer(&mut self, render_buffer_id: u32) -> Result<(), &'static str> {
-        assert!(self.render_buffer_map.contains_key(&render_buffer_id));
+        debug_assert!(self.render_buffer_map.contains_key(&render_buffer_id));
 
         let render_buffer = self
             .render_buffer_map
@@ -835,14 +835,14 @@ impl GPUDriverReceiver {
         indices_offset: u32,
         indices_count: u32,
     ) -> Result<(), &'static str> {
-        assert!(self.geometry_map.contains_key(&geometry_id));
+        debug_assert!(self.geometry_map.contains_key(&geometry_id));
 
         let (vertex_buffer, index_buffer) = self
             .geometry_map
             .get(&geometry_id)
             .expect("Failed to get vert, i for draw");
 
-        assert!(self
+        debug_assert!(self
             .render_buffer_map
             .contains_key(&gpu_state.render_buffer_id));
 

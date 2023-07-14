@@ -59,7 +59,11 @@ only-ul-deps = ["ul-sys/only-ul-deps"]
 dhat-heap = []    # if you are doing heap profiling
 dhat-ad-hoc = []  # if you are doing ad hoc profiling
 
+[profile.dev]
+debug = true
+
 [profile.release]
+debug = false
 lto = true
 opt-level= 3
 incremental = true

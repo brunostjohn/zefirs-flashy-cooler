@@ -24,11 +24,40 @@ public struct PreSensor
     public IntPtr sensor, value, type, parent_hw_type;
 }
 
+[StructLayout(LayoutKind.Explicit, Size = 32)]
+public struct Subscription
+{
+    [FieldOffset(0)]
+    [MarshalAs(UnmanagedType.LPUTF8Str, SizeConst = 16)]
+    public string code_name;
+
+    [FieldOffset(16)]
+    [MarshalAs(UnmanagedType.LPUTF8Str, SizeConst = 16)]
+    public string path;
+}
+
+public struct SensorContainer
+{
+    public IHardware parent;
+    public ISensor sensor;
+}
+
 namespace LibreHardwareMonitorNative
 {
-
-    public class LibreHardwareMonitorNative
+    public static class LibreHardwareMonitorNative
     {
+        private static List<SensorContainer> sensorCache = new List<SensorContainer>();
+        private static Computer computer = new Computer
+        {
+            IsCpuEnabled = true,
+            IsGpuEnabled = true,
+            IsMemoryEnabled = true,
+            IsMotherboardEnabled = true,
+            IsControllerEnabled = true,
+            IsNetworkEnabled = true,
+            IsStorageEnabled = true
+        };
+
         [UnmanagedCallersOnly(EntryPoint = "free_mem")]
         public static void Free(IntPtr ptr)
         {
@@ -36,105 +65,119 @@ namespace LibreHardwareMonitorNative
         }
 
         [UnmanagedCallersOnly(EntryPoint = "open_computer")]
-        public static IntPtr OpenComputer()
+        public static void OpenComputer()
         {
-            Computer computer = new Computer
-            {
-                IsCpuEnabled = true,
-                IsGpuEnabled = true,
-                IsMemoryEnabled = true,
-                IsMotherboardEnabled = true,
-                IsControllerEnabled = true,
-                IsNetworkEnabled = true,
-                IsStorageEnabled = true
-            };
-
             computer.Open();
             computer.Accept(new UpdateVisitor());
-
-            GCHandle gch = GCHandle.Alloc(computer, GCHandleType.Normal);
-            gch.Target = computer;
-            IntPtr objectPtr = GCHandle.ToIntPtr(gch);
-            return objectPtr;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "close_computer")]
-        public static void CloseComputer(IntPtr gchPtr)
+        public static void CloseComputer()
         {
-            GCHandle gch = GCHandle.FromIntPtr(gchPtr);
-            object ob = gch.Target;
-            Computer computer = (Computer)ob;
             computer.Close();
-            gch.Free();
         }
 
-        [UnmanagedCallersOnly(EntryPoint = "get_single_sensor_ptrs")]
-        public static IntPtr GetSingleSensor(IntPtr sensorPathString, IntPtr gchPtr)
+        [UnmanagedCallersOnly(EntryPoint = "subscribe")]
+        public static IntPtr Subscribe(IntPtr inStructs, uint count)
         {
-            GCHandle gch = GCHandle.FromIntPtr(gchPtr);
-            object ob = gch.Target;
-            Computer computer = (Computer)ob;
+            Subscription[] subs = new Subscription[count];
 
-            string sensor = Marshal.PtrToStringAnsi(sensorPathString) ?? "failed";
+            string subscribed = "";
 
-            if (sensor == "failed" || sensor.Length < 1)
+            for (int i = 0; i < count; i++)
             {
-                return Marshal.StringToHGlobalAnsi("v"); ;
-            }
+                subs[i] = Marshal.PtrToStructure<Subscription>(inStructs + i * Marshal.SizeOf<Subscription>());
+                string s_value = GetSingleSensor(subs[i].path);
+                subscribed += s_value + "****";
 
-            if (sensor != "failed")
-            {
-                try
+                string[] splitPath = subs[i].path.Split("/");
+
+                SensorContainer cached = new SensorContainer();
+
+                IHardware parent = computer.Hardware.Where(x => x.Name == splitPath[0]).FirstOrDefault() ?? computer.Hardware.First();
+
+                ISensor sensorClass;
+
+                if (splitPath[1] == "subhardware")
                 {
-                    string[] splitPath = sensor.Split("/");
-
-                    IHardware parent = computer.Hardware.Where(x => x.Name == splitPath[0]).FirstOrDefault() ?? computer.Hardware.First();
-
-                    ISensor sensorClass;
-                    string hwType = "";
-
-                    if (splitPath[1] == "subhardware")
-                    {
-                        IHardware sub = parent.SubHardware.Where(x => x.Name == splitPath[2]).FirstOrDefault() ?? parent.SubHardware.First();
-                        sub.Update();
-                        hwType = sub.HardwareType.ToString();
-                        sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
-                    }
-                    else
-                    {
-                        parent.Update();
-                        sensorClass = parent.Sensors.Where(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]).FirstOrDefault() ?? parent.Sensors.First();
-                        hwType = parent.HardwareType.ToString();
-                    }
-
-                    string serialised = sensorClass.Name + "||" + sensorClass.Value + "||" + sensorClass.SensorType + "||" + hwType;
-
-                    // PreSensor alter = new PreSensor();
-                    // alter.sensor = Marshal.StringToHGlobalAnsi(sensorClass.Name);
-                    // alter.value = Marshal.StringToHGlobalAnsi(sensorClass.Value.ToString());
-                    // alter.type = Marshal.StringToHGlobalAnsi(sensorClass.SensorType.ToString());
-                    // alter.parent_hw_type = Marshal.StringToHGlobalAnsi(hwType);
-
-                    // return alter;
-
-                    return Marshal.StringToHGlobalAnsi(serialised);
+                    IHardware sub = parent.SubHardware.Where(x => x.Name == splitPath[2]).FirstOrDefault() ?? parent.SubHardware.First();
+                    sub.Update();
+                    cached.parent = sub;
+                    sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
+                    cached.sensor = sensorClass;
                 }
-                catch
+                else
                 {
-                    return Marshal.StringToHGlobalAnsi("v");
+                    parent.Update();
+                    cached.parent = parent;
+                    sensorClass = parent.Sensors.Where(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]).FirstOrDefault() ?? parent.Sensors.First();
+                    cached.sensor = sensorClass;
                 }
 
+                sensorCache.Add(cached);
             }
 
-            return Marshal.StringToHGlobalAnsi("v");
+            subscribed.Remove(subscribed.Length - 5);
+
+            return Marshal.StringToHGlobalAnsi(subscribed);
         }
+
+        [UnmanagedCallersOnly(EntryPoint = "get_subscribed_ptr")]
+        public static IntPtr GetSubscribedPtr()
+        {
+
+            string finalSerialised = "";
+
+            foreach (SensorContainer sensor in sensorCache)
+            {
+                sensor.parent.Update();
+                finalSerialised += sensor.sensor.Value.ToString() + "||";
+            }
+
+            if (finalSerialised.Length == 0)
+            {
+                return Marshal.StringToHGlobalAnsi("FAILEDFAILEDFAILED");
+            }
+
+            finalSerialised.Remove(finalSerialised.Length - 3);
+
+            return Marshal.StringToHGlobalAnsi(finalSerialised);
+
+        }
+
+        public static string GetSingleSensor(string sensorPathString)
+        {
+
+            string[] splitPath = sensorPathString.Split("/");
+
+            IHardware parent = computer.Hardware.Where(x => x.Name == splitPath[0]).FirstOrDefault() ?? computer.Hardware.First();
+
+            ISensor sensorClass;
+            string hwType = "";
+
+            if (splitPath[1] == "subhardware")
+            {
+                IHardware sub = parent.SubHardware.Where(x => x.Name == splitPath[2]).FirstOrDefault() ?? parent.SubHardware.First();
+                sub.Update();
+                hwType = sub.HardwareType.ToString();
+                sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
+            }
+            else
+            {
+                parent.Update();
+                sensorClass = parent.Sensors.Where(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]).FirstOrDefault() ?? parent.Sensors.First();
+                hwType = parent.HardwareType.ToString();
+            }
+
+            string serialised = sensorClass.Name + "||" + sensorClass.Value + "||" + sensorClass.SensorType + "||" + hwType;
+
+            return serialised;
+        }
+
 
         [UnmanagedCallersOnly(EntryPoint = "get_all_sensors")]
-        public static IntPtr GetAllSensors(IntPtr gchPtr)
+        public static IntPtr GetAllSensors()
         {
-            GCHandle gch = GCHandle.FromIntPtr(gchPtr);
-            object ob = gch.Target;
-            Computer computer = (Computer)ob;
             string serialised = "[";
 
             computer.Accept(new UpdateVisitor());

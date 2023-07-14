@@ -3,7 +3,6 @@ fn main() {
     println!("cargo:rustc-link-lib=LibreHardwareMonitorNative");
 
     println!("cargo:rustc-link-search=/Users/bruno/.nuget/packages/runtime.win-x64.microsoft.dotnet.ilcompiler/7.0.8/sdk");
-    println!("cargo:rustc-link-search=/VulkanSDK/1.3.250.1/Lib");
     println!("cargo:rustc-link-arg-bins=/INCLUDE:NativeAOT_StaticInitialization");
 
     let mut windows = tauri_build::WindowsAttributes::default();
