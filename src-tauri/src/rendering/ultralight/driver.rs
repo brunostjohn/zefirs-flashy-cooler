@@ -11,7 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use self::gpu::GPUDriver;
 
-use rustc_hash::FxHashMap;
+use nohash_hasher::BuildNoHashHasher;
+use std::collections::HashMap;
 
 use ul_sys::*;
 
@@ -28,6 +29,7 @@ use glium::{
     Blend, DrawParameters, HeadlessRenderer, Program, Surface, Texture2d,
 };
 
+const SMALL_VERTEX_SIZE: usize = mem::size_of::<ULVertex_2f_4ub_2f>();
 static SMALL_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 3] = [
     (
         Cow::Borrowed("in_Position"),
@@ -52,6 +54,7 @@ static SMALL_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 3] =
     ),
 ];
 
+const LARGE_VERTEX_SIZE: usize = mem::size_of::<ULVertex_2f_4ub_2f_2f_28f>();
 static LARGE_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 11] = [
     (
         Cow::Borrowed("in_Position"),
@@ -152,30 +155,26 @@ impl GLVertexBuffer {
         F: Facade,
     {
         match self {
-            GLVertexBuffer::Format2f4ub2f(buf) => {
-                let element_size = std::mem::size_of::<ULVertex_2f_4ub_2f>();
-
-                Ok(unsafe {
-                    glium::VertexBuffer::new_raw(
-                        context,
-                        &buf,
-                        Cow::Borrowed(SMALL_VERTEX.as_slice()),
-                        element_size,
-                    )
-                }
-                .or(Err("Failed to convert vertex"))?
-                .into())
-            }
-            GLVertexBuffer::Format2f4ub2f2f28f(buf) => {
-                let format = Cow::Borrowed(LARGE_VERTEX.as_slice());
-                let element_size = std::mem::size_of::<ULVertex_2f_4ub_2f_2f_28f>();
-
-                Ok(
-                    unsafe { glium::VertexBuffer::new_raw(context, &buf, format, element_size) }
-                        .or(Err("Failed to convert vertex buffer."))?
-                        .into(),
+            GLVertexBuffer::Format2f4ub2f(buf) => Ok(unsafe {
+                glium::VertexBuffer::new_raw(
+                    context,
+                    &buf,
+                    Cow::Borrowed(&SMALL_VERTEX),
+                    SMALL_VERTEX_SIZE,
                 )
             }
+            .or(Err("Failed to convert vertex"))?
+            .into()),
+            GLVertexBuffer::Format2f4ub2f2f28f(buf) => Ok(unsafe {
+                glium::VertexBuffer::new_raw(
+                    context,
+                    &buf,
+                    Cow::Borrowed(&LARGE_VERTEX),
+                    LARGE_VERTEX_SIZE,
+                )
+            }
+            .or(Err("Failed to convert vertex buffer."))?
+            .into()),
         }
     }
 }
@@ -398,10 +397,10 @@ pub struct GPUDriverReceiver {
     receiver: Receiver<GPUDriverCommand>,
     context: Rc<Context>,
     head: HeadlessRenderer,
-    texture_map: FxHashMap<u32, (EitherTexture, Option<u32>)>,
+    texture_map: HashMap<u32, (EitherTexture, Option<u32>), BuildNoHashHasher<u32>>,
     empty_texture: EitherTexture,
-    render_buffer_map: FxHashMap<u32, RenderBuffer>,
-    geometry_map: FxHashMap<u32, (VertexBufferAny, glium::IndexBuffer<u32>)>,
+    render_buffer_map: HashMap<u32, RenderBuffer, BuildNoHashHasher<u32>>,
+    geometry_map: HashMap<u32, (VertexBufferAny, glium::IndexBuffer<u32>), BuildNoHashHasher<u32>>,
     path_program: Program,
     fill_program: Program,
     rawdog: ContextWrapper<NotCurrent, ()>,
@@ -434,9 +433,9 @@ impl GPUDriverReceiver {
                 .unwrap(),
         );
 
-        let texture_map = FxHashMap::default();
-        let render_buffer_map = FxHashMap::default();
-        let geometry_map = FxHashMap::default();
+        let texture_map = HashMap::with_capacity_and_hasher(10, BuildNoHashHasher::default());
+        let render_buffer_map = HashMap::with_capacity_and_hasher(10, BuildNoHashHasher::default());
+        let geometry_map = HashMap::with_capacity_and_hasher(10, BuildNoHashHasher::default());
 
         let path_program;
         let fill_program;

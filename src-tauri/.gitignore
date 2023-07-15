@@ -5,3 +5,4 @@
 *.lib
 *.dll
 *.pem
+/.idea/

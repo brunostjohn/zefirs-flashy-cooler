@@ -10,10 +10,14 @@ use helpers_traits::TryElapsed;
 
 #[inline(always)]
 pub fn receive_flag(channel: &kanal::Receiver<bool>, assume: bool) -> bool {
-    match channel.try_recv() {
-        Ok(result) => result.unwrap_or(assume),
-        Err(_) => assume,
+    if !channel.is_empty() {
+        return match channel.try_recv() {
+            Ok(result) => result.unwrap_or(assume),
+            Err(_) => assume,
+        };
     }
+
+    assume
 }
 
 pub struct EventTicker {

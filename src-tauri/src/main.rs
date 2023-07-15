@@ -77,7 +77,8 @@ fn main() {
 
     let (sensors, rx_val) = Sensors::new(Some(config.poll_rate));
 
-    let sensor_tree = sensors.get_all_sensors().unwrap();
+    // let sensor_tree = sensors.get_all_sensors().unwrap();
+    let sensor_tree: Vec<Hardware> = vec![];
     let sensor_tree_am = Arc::new(Mutex::new(sensor_tree));
 
     let sensors_am = Arc::new(Mutex::new(sensors));

@@ -140,8 +140,8 @@ pub struct IndexBuffer {
 impl From<ULIndexBuffer> for IndexBuffer {
     #[inline(always)]
     fn from(vb: ULIndexBuffer) -> Self {
-        assert!(vb.size % 4 == 0);
-        assert!(!vb.data.is_null());
+        debug_assert!(vb.size % 4 == 0);
+        debug_assert!(!vb.data.is_null());
         let index_slice = unsafe { slice::from_raw_parts(vb.data as _, vb.size as usize / 4) };
         IndexBuffer {
             buffer: index_slice.to_vec(),
