@@ -877,11 +877,10 @@ impl GPUDriverReceiver {
             [0., 0., 0., 0.],
         ];
 
-        for i in 0..4 {
-            for j in 0..4 {
+        for (i, row) in transformation.iter_mut().enumerate() {
+            for (j, column) in row.iter_mut().enumerate() {
                 for k in 0..4 {
-                    transformation[i][j] +=
-                        gpu_state.transform[i * 4 + k] * orth_projection_matrix[k][j];
+                    *column += gpu_state.transform[i * 4 + k] * orth_projection_matrix[k][j];
                 }
             }
         }

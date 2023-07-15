@@ -100,8 +100,8 @@ impl Renderer {
                             if !result.contains("FAILEDFAILEDFAILED") {
                                 let mut iterable = result.split("||");
 
-                                for i in 0..sensor_values.len() {
-                                    sensor_values[i].value = iterable.next().unwrap().to_string();
+                                for item in &mut sensor_values {
+                                    item.value = iterable.next().unwrap().to_string();
                                 }
                             }
                         }
@@ -150,9 +150,7 @@ impl Renderer {
                                 fs::read_to_string(theme_path).unwrap_or("".to_owned());
 
                             let theme_config_parsed: Vec<ThemeConfigItem> =
-                                serde_json::from_str(&theme_config_unparsed)
-                                    .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
-                                    .unwrap();
+                                serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
 
                             let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
                                 .iter()
@@ -202,7 +200,7 @@ impl Renderer {
                     frame_time.change_frequency(&rx_fps);
                 }
 
-                thread::sleep(Duration::from_millis(5));
+                thread::sleep(Duration::from_millis(7));
             }
         });
 

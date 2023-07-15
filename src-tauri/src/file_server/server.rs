@@ -38,13 +38,8 @@ impl Server {
             for stream in listener.incoming() {
                 let stream = stream.unwrap();
 
-                match rx_path.try_recv() {
-                    Ok(path) => {
-                        if let Some(path_opt) = path {
-                            fs_path = path_opt;
-                        }
-                    }
-                    _ => {}
+                if let Ok(Some(path)) = rx_path.try_recv() {
+                    fs_path = path;
                 };
 
                 match &fs_path {
@@ -140,9 +135,8 @@ impl Server {
 
     #[allow(dead_code)]
     pub fn stop(&mut self) {
-        match self.end_channel.send(true) {
-            Err(_) => println!("Failed to send end signal to thread: server."),
-            _ => {}
+        if self.end_channel.send(true).is_err() {
+            println!("Failed to send end signal to thread: server.");
         };
     }
 

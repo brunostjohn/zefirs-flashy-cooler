@@ -59,18 +59,16 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
     let filename = uuid::Uuid::new_v4().to_string() + "." + &ext;
     theme_path.push(&filename);
 
-    match fs::copy(picked, theme_path) {
-        Err(_) => return Ok(()),
-        Ok(_) => {}
-    };
+    if fs::copy(picked, theme_path).is_err() {
+        return Ok(());
+    }
 
     let value = format!("/{filename}");
 
     let theme_config_unparsed = fs::read_to_string(&config_path).unwrap_or("".to_owned());
 
-    let theme_config_parsed: Vec<ThemeConfigItem> = serde_json::from_str(&theme_config_unparsed)
-        .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
-        .unwrap();
+    let theme_config_parsed: Vec<ThemeConfigItem> =
+        serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
 
     let mut config_without_param: Vec<ThemeConfigItem> = theme_config_parsed
         .iter()
@@ -90,8 +88,7 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
             version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
             tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
-                .or::<Vec<Parameter>>(Ok(vec![]))
-                .unwrap(),
+                .unwrap_or(Vec::new()),
         },
         Err(_) => Theme {
             name: "".to_owned(),
@@ -148,9 +145,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
         let theme_config_unparsed = fs::read_to_string(config_path).unwrap_or("".to_owned());
 
         let theme_config_parsed: Vec<ThemeConfigItem> =
-            serde_json::from_str(&theme_config_unparsed)
-                .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
-                .unwrap();
+            serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
 
         let config_item = theme_config_parsed
             .iter()
@@ -158,11 +153,8 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
             .cloned()
             .collect::<Vec<ThemeConfigItem>>();
 
-        match config_item.first() {
-            Some(item) => {
-                return item.clone();
-            }
-            None => {}
+        if let Some(item) = config_item.first() {
+            return item.clone();
         }
     }
 
@@ -178,8 +170,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
             version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
             tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
-                .or::<Vec<Parameter>>(Ok(vec![]))
-                .unwrap(),
+                .unwrap_or(Vec::new()),
         },
         Err(_) => Theme {
             name: "".to_owned(),
@@ -222,9 +213,8 @@ pub fn apply_theme_parameter(name: String, value: String) {
 
     let theme_config_unparsed = fs::read_to_string(&config_path).unwrap_or("".to_owned());
 
-    let theme_config_parsed: Vec<ThemeConfigItem> = serde_json::from_str(&theme_config_unparsed)
-        .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
-        .unwrap();
+    let theme_config_parsed: Vec<ThemeConfigItem> =
+        serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
 
     let mut config_without_param: Vec<ThemeConfigItem> = theme_config_parsed
         .iter()
@@ -244,8 +234,7 @@ pub fn apply_theme_parameter(name: String, value: String) {
             version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
             tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
-                .or::<Vec<Parameter>>(Ok(vec![]))
-                .unwrap(),
+                .unwrap_or(Vec::new()),
         },
         Err(_) => Theme {
             name: "".to_owned(),
@@ -651,8 +640,7 @@ pub fn get_theme_inner(mut theme_path: PathBuf, fs_name: String) -> Result<Theme
             version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
             tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
-                .or::<Vec<Parameter>>(Ok(vec![]))
-                .unwrap(),
+                .unwrap_or(Vec::new()),
         },
         Err(_) => Theme {
             name: fs_name.clone(),
