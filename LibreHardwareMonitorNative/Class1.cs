@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 using LibreHardwareMonitor;
 using LibreHardwareMonitor.Hardware;
 
@@ -38,15 +39,16 @@ public struct Subscription
 
 public struct SensorContainer
 {
-    public IHardware parent;
-    public ISensor sensor;
+    public int parentIndex;
+    public int subhardwareIndex;
+    public int sensorIndex;
 }
 
 namespace LibreHardwareMonitorNative
 {
     public static class LibreHardwareMonitorNative
     {
-        private static List<SensorContainer> sensorCache = new List<SensorContainer>();
+        private static SensorContainer[] sensorCache;
         private static Computer computer = new Computer
         {
             IsCpuEnabled = true,
@@ -82,6 +84,8 @@ namespace LibreHardwareMonitorNative
         {
             Subscription[] subs = new Subscription[count];
 
+            SensorContainer[] cont = new SensorContainer[count];
+
             string subscribed = "";
 
             for (int i = 0; i < count; i++)
@@ -95,6 +99,8 @@ namespace LibreHardwareMonitorNative
                 SensorContainer cached = new SensorContainer();
 
                 IHardware parent = computer.Hardware.Where(x => x.Name == splitPath[0]).FirstOrDefault() ?? computer.Hardware.First();
+                var hardwareIndex = Array.FindIndex(computer.Hardware.ToArray(), x => x == parent);
+                cached.parentIndex = hardwareIndex;
 
                 ISensor sensorClass;
 
@@ -102,46 +108,67 @@ namespace LibreHardwareMonitorNative
                 {
                     IHardware sub = parent.SubHardware.Where(x => x.Name == splitPath[2]).FirstOrDefault() ?? parent.SubHardware.First();
                     sub.Update();
-                    cached.parent = sub;
+                    var subHardwareIndex = Array.FindIndex(parent.SubHardware.ToArray(), x => x == sub);
+                    cached.subhardwareIndex = subHardwareIndex;
                     sensorClass = sub.Sensors.Where(x => x.Name == splitPath[4] && x.SensorType.ToString() == splitPath[3]).FirstOrDefault() ?? sub.Sensors.First();
-                    cached.sensor = sensorClass;
+                    var sensorIndex = Array.FindIndex(sub.Sensors.ToArray(), x => x == sensorClass);
+                    cached.sensorIndex = sensorIndex;
                 }
                 else
                 {
                     parent.Update();
-                    cached.parent = parent;
+                    cached.subhardwareIndex = 2137;
                     sensorClass = parent.Sensors.Where(x => x.Name == splitPath[2] && x.SensorType.ToString() == splitPath[1]).FirstOrDefault() ?? parent.Sensors.First();
-                    cached.sensor = sensorClass;
+                    var sensorIndex = Array.FindIndex(parent.Sensors.ToArray(), x => x == sensorClass);
+                    cached.sensorIndex = sensorIndex;
                 }
 
-                sensorCache.Add(cached);
+                cont[i] = cached;
             }
+
+            sensorCache = cont;
 
             subscribed.Remove(subscribed.Length - 5);
 
             return Marshal.StringToHGlobalAnsi(subscribed);
         }
 
+        private static StringBuilder sb = new StringBuilder();
+
         [UnmanagedCallersOnly(EntryPoint = "get_subscribed_ptr")]
         public static IntPtr GetSubscribedPtr()
         {
+            sb.Clear();
 
-            string finalSerialised = "";
-
-            foreach (SensorContainer sensor in sensorCache)
-            {
-                sensor.parent.Update();
-                finalSerialised += sensor.sensor.Value.ToString() + "||";
-            }
-
-            if (finalSerialised.Length == 0)
+            if (sensorCache == null)
             {
                 return Marshal.StringToHGlobalAnsi("FAILEDFAILEDFAILED");
             }
 
-            finalSerialised.Remove(finalSerialised.Length - 3);
+            for (int i = 0; i < sensorCache.Length; i++)
+            {
+                var sensor = sensorCache[i];
+                if (sensor.subhardwareIndex == 2137)
+                {
+                    computer.Hardware[sensor.parentIndex].Update();
+                    sb.Append(computer.Hardware[sensor.parentIndex].Sensors[sensor.sensorIndex].Value.ToString());
+                }
+                else
+                {
+                    computer.Hardware[sensor.parentIndex].SubHardware[sensor.subhardwareIndex].Update();
+                    sb.Append(computer.Hardware[sensor.parentIndex].SubHardware[sensor.subhardwareIndex].Sensors[sensor.sensorIndex].Value.ToString());
+                }
+                sb.Append("||");
+            }
 
-            return Marshal.StringToHGlobalAnsi(finalSerialised);
+            if (sb.Length == 0)
+            {
+                return Marshal.StringToHGlobalAnsi("FAILEDFAILEDFAILED");
+            }
+
+            sb.Length -= 2;
+
+            return Marshal.StringToHGlobalAnsi(sb.ToString());
 
         }
 
