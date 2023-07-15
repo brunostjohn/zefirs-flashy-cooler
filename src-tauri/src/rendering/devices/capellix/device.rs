@@ -28,25 +28,25 @@ impl DeviceCreator for Capellix {
         let mut device_handle: Option<HidDevice> = None;
 
         for device in api.device_list() {
-            if device.vendor_id() == VENDOR_ID {
-                if device.product_id() == PRODUCT_ID || device.product_id() == PRODUCT_ID_V2 {
-                    device_handle = Some(match device.open_device(&api) {
-                        Ok(device) => device,
-                        Err(_) => return Err("Failed to open device!"),
-                    });
-                }
+            if device.vendor_id() == VENDOR_ID
+                && (device.product_id() == PRODUCT_ID || device.product_id() == PRODUCT_ID_V2)
+            {
+                device_handle = Some(match device.open_device(&api) {
+                    Ok(device) => device,
+                    Err(_) => return Err("Failed to open device!"),
+                });
             }
         }
 
         if device_handle.is_none() {
-            return Err("Failed to find device!");
+            Err("Failed to find device!")
         } else {
-            return Ok(Capellix {
-                api: api,
+            Ok(Capellix {
+                api,
                 device: Some(device_handle.unwrap()),
                 init_time: SystemTime::now(),
                 unfucks_sent: 0,
-            });
+            })
         }
     }
     fn device_info() -> super::DeviceInfo
@@ -160,18 +160,18 @@ impl Device for Capellix {
         let mut device_handle: Option<HidDevice> = None;
 
         for device in self.api.device_list() {
-            if device.vendor_id() == VENDOR_ID {
-                if device.product_id() == PRODUCT_ID || device.product_id() == PRODUCT_ID_V2 {
-                    device_handle = Some(match device.open_device(&self.api) {
-                        Ok(device) => device,
-                        Err(_) => return Err("Failed to open device!"),
-                    });
-                }
+            if device.vendor_id() == VENDOR_ID
+                && (device.product_id() == PRODUCT_ID || device.product_id() == PRODUCT_ID_V2)
+            {
+                device_handle = Some(match device.open_device(&self.api) {
+                    Ok(device) => device,
+                    Err(_) => return Err("Failed to open device!"),
+                });
             }
         }
 
         if device_handle.is_none() {
-            return Err("Failed to find device!");
+            Err("Failed to find device!")
         } else {
             self.device = device_handle;
             Ok(())

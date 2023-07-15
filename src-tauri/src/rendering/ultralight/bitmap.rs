@@ -75,7 +75,7 @@ impl Deref for PixelsGuard<'_> {
 
 impl DerefMut for PixelsGuard<'_> {
     fn deref_mut(&mut self) -> &mut [u8] {
-        &mut self.pixels
+        self.pixels
     }
 }
 
@@ -205,7 +205,7 @@ impl Bitmap {
     }
 
     pub fn bytes_size(&self) -> u32 {
-        unsafe { ulBitmapGetSize(self.internal.into()) }
+        unsafe { ulBitmapGetSize(self.internal) }
     }
 
     #[inline]

@@ -31,22 +31,22 @@ use glium::{
 static SMALL_VERTEX: [(Cow<'static, str>, usize, i32, AttributeType, bool); 3] = [
     (
         Cow::Borrowed("in_Position"),
-        0 as usize,
-        -1 as i32,
+        0_usize,
+        -1_i32,
         glium::vertex::AttributeType::F32F32,
         false,
     ),
     (
         Cow::Borrowed("in_Color"),
-        2 * ::std::mem::size_of::<f32>() as usize,
-        -1 as i32,
+        2 * ::std::mem::size_of::<f32>(),
+        -1_i32,
         glium::vertex::AttributeType::U8U8U8U8,
         true,
     ),
     (
         Cow::Borrowed("in_TexCoord"),
-        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>() as usize,
-        -1 as i32,
+        2 * ::std::mem::size_of::<f32>() + 4 * ::std::mem::size_of::<u8>(),
+        -1_i32,
         glium::vertex::AttributeType::F32F32,
         false,
     ),
@@ -451,16 +451,13 @@ impl GPUDriverReceiver {
             let mut shaderc = shader_cache.clone();
             shaderc.push("shader_binaries.json");
 
-            let vers = fs::read_to_string(shaderc)
-                .or::<Result<String, &'static str>>(Ok("".to_string()))
-                .unwrap();
+            let vers = fs::read_to_string(shaderc).unwrap_or("".to_string());
 
-            let bins: ShaderCacheFormat = serde_json::from_str(&vers)
-                .or::<Result<ShaderCacheFormat, &'static str>>(Ok(ShaderCacheFormat {
+            let bins: ShaderCacheFormat =
+                serde_json::from_str(&vers).unwrap_or(ShaderCacheFormat {
                     path_format: 0,
                     fill_format: 0,
-                }))
-                .unwrap();
+                });
 
             bins
         };
@@ -495,12 +492,10 @@ impl GPUDriverReceiver {
             })
             .unwrap();
 
-            let _ = path_program.get_binary().and_then(|binary| {
+            let _ = path_program.get_binary().map(|binary| {
                 shader_cache_vers.path_format = binary.format;
 
                 let _ = fs::write(path_shader_location, binary.content);
-
-                Ok(())
             });
         }
 
@@ -531,12 +526,10 @@ impl GPUDriverReceiver {
             .or(Err("Failed to create fill shader!"))
             .unwrap();
 
-            let _ = fill_program.get_binary().and_then(|binary| {
+            let _ = fill_program.get_binary().map(|binary| {
                 shader_cache_vers.fill_format = binary.format;
 
                 let _ = fs::write(fill_shader_location, binary.content);
-
-                Ok(())
             });
         }
 
@@ -631,7 +624,7 @@ impl GPUDriverReceiver {
         if bitmap.is_empty() {
             tex = Texture2d::empty(&self.context, bitmap.width(), bitmap.height())
                 .map_err(|_| "Failed to create texture")
-                .map(|t| EitherTexture::Regular2d(t))?;
+                .map(EitherTexture::Regular2d)?;
         } else {
             let bitmap_pixels = bitmap.pixels().unwrap();
             match bitmap.format() {
@@ -650,7 +643,7 @@ impl GPUDriverReceiver {
                         MipmapsOption::NoMipmap,
                     )
                     .map_err(|_| "Failed to create texture")
-                    .map(|t| EitherTexture::Regular2d(t))?;
+                    .map(EitherTexture::Regular2d)?;
                 }
                 BitmapFormat::Bgra8UnormSrgb => {
                     let img = RawImage2d {
@@ -667,7 +660,7 @@ impl GPUDriverReceiver {
                         MipmapsOption::NoMipmap,
                     )
                     .map_err(|_| "Failed to create texture")
-                    .map(|t| EitherTexture::Srgb2d(t))?;
+                    .map(EitherTexture::Srgb2d)?;
                 }
             }
         }
@@ -680,11 +673,10 @@ impl GPUDriverReceiver {
 
         let tex = self.create_texture(id, bitmap)?;
 
-        (*self
-            .texture_map
+        self.texture_map
             .get_mut(&id)
-            .expect("Failed to get updated texture"))
-        .0 = tex;
+            .expect("Failed to get updated texture")
+            .0 = tex;
 
         Ok(())
     }

@@ -11,8 +11,8 @@ use helpers_traits::TryElapsed;
 #[inline(always)]
 pub fn receive_flag(channel: &kanal::Receiver<bool>, assume: bool) -> bool {
     match channel.try_recv() {
-        Ok(result) => return result.or(Some(assume)).unwrap(),
-        Err(_) => return assume,
+        Ok(result) => result.unwrap_or(assume),
+        Err(_) => assume,
     }
 }
 

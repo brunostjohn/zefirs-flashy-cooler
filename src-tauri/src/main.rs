@@ -75,7 +75,7 @@ fn main() {
     let config = Config::load_from_drive(app_folder.clone());
     config.write_to_drive(app_folder.clone());
 
-    let (sensors, rx_val) = Sensors::new(Some(config.poll_rate.clone()));
+    let (sensors, rx_val) = Sensors::new(Some(config.poll_rate));
 
     let sensor_tree = sensors.get_all_sensors().unwrap();
     let sensor_tree_am = Arc::new(Mutex::new(sensor_tree));
@@ -104,7 +104,7 @@ fn main() {
     let server_am = Arc::new(Mutex::new(server));
 
     let renderer = Renderer::new(
-        config.fps.clone(),
+        config.fps,
         app_folder.clone(),
         themes_path.clone(),
         server_am.clone(),

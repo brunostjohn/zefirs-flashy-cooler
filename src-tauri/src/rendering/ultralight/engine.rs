@@ -95,11 +95,11 @@ impl Ultralight {
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
         };
 
-        return Ultralight {
+        Ultralight {
             renderer,
             view,
             driver_recv,
-        };
+        }
     }
 
     #[allow(dead_code)]

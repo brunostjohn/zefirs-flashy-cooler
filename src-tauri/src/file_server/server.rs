@@ -2,7 +2,6 @@ use std::{
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
     path::PathBuf,
-    sync::mpsc::{self},
     thread::{self},
 };
 
@@ -27,13 +26,7 @@ impl Server {
             Some(path) => {
                 let local_p = path.clone();
 
-                local_p
-                    .into_iter()
-                    .last()
-                    .unwrap()
-                    .to_str()
-                    .unwrap()
-                    .to_owned()
+                local_p.iter().last().unwrap().to_str().unwrap().to_owned()
             }
             None => "__DEFAULT__".to_string(),
         };
@@ -140,7 +133,7 @@ impl Server {
     }
 
     fn return_404(mut stream: TcpStream) {
-        let response_header = format!("HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n");
+        let response_header = "HTTP/1.1 404 Not Found\r\nConnection: close\r\n\r\n".to_string();
 
         stream.write_all(response_header.as_bytes()).unwrap();
     }
@@ -178,13 +171,13 @@ impl Server {
     }
 
     pub fn now_serving(&self) -> String {
-        return self.serving_fs_name.clone();
+        self.serving_fs_name.clone()
     }
 }
 
-static OK_STATUS: &'static str = "HTTP/1.1 200 OK";
+static OK_STATUS: &str = "HTTP/1.1 200 OK";
 
-static DEFAULT_HTML: &'static str = r#"
+static DEFAULT_HTML: &str = r#"
     <html>
         <head>
             <style>

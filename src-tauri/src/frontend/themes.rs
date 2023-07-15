@@ -37,7 +37,7 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
     let now_serving = server.now_serving();
     drop(server);
 
-    let current = current.replace("/", "");
+    let current = current.replace('/', "");
 
     let mut config_path = themes_path.clone();
     config_path.push(now_serving);
@@ -66,9 +66,7 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
 
     let value = format!("/{filename}");
 
-    let theme_config_unparsed = fs::read_to_string(&config_path)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let theme_config_unparsed = fs::read_to_string(&config_path).unwrap_or("".to_owned());
 
     let theme_config_parsed: Vec<ThemeConfigItem> = serde_json::from_str(&theme_config_unparsed)
         .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
@@ -80,9 +78,7 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
         .map(|x| x.to_owned())
         .collect();
 
-    let manifest_unparsed = fs::read_to_string(manifest_path)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let manifest_unparsed = fs::read_to_string(manifest_path).unwrap_or("".to_owned());
 
     let manifest: Theme = match serde_json::from_str::<Value>(&manifest_unparsed) {
         Ok(res) => Theme {
@@ -91,14 +87,8 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
             colour: None,
             description: res["description"].as_str().unwrap().to_string(),
             author: res["author"].as_str().unwrap().to_string(),
-            version: res["version"]
-                .as_str()
-                .or(Some("1.0.0"))
-                .unwrap()
-                .to_string(),
-            tested_on: serde_json::from_value(res["tested_on"].clone())
-                .or::<Option<Vec<String>>>(Ok(None))
-                .unwrap(),
+            version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
+            tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
                 .or::<Vec<Parameter>>(Ok(vec![]))
                 .unwrap(),
@@ -126,14 +116,12 @@ pub fn select_file_and_save(name: String, current: String, window: Window) -> Re
     let item = ThemeConfigItem {
         r#type: config_item.r#type.clone(),
         value: value.clone(),
-        name: name,
+        name,
     };
 
     config_without_param.push(item);
 
-    let updated_stringified = serde_json::to_string(&config_without_param)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let updated_stringified = serde_json::to_string(&config_without_param).unwrap_or("".to_owned());
 
     let _ = fs::write(config_path, updated_stringified);
 
@@ -157,9 +145,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
     manifest_path.push("theme.json");
 
     if config_path.exists() {
-        let theme_config_unparsed = fs::read_to_string(config_path)
-            .or::<Result<String, &'static str>>(Ok("".to_owned()))
-            .unwrap();
+        let theme_config_unparsed = fs::read_to_string(config_path).unwrap_or("".to_owned());
 
         let theme_config_parsed: Vec<ThemeConfigItem> =
             serde_json::from_str(&theme_config_unparsed)
@@ -169,7 +155,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
         let config_item = theme_config_parsed
             .iter()
             .filter(|x| x.name == name)
-            .map(|x| x.clone())
+            .cloned()
             .collect::<Vec<ThemeConfigItem>>();
 
         match config_item.first() {
@@ -180,9 +166,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
         }
     }
 
-    let manifest_unparsed = fs::read_to_string(manifest_path)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let manifest_unparsed = fs::read_to_string(manifest_path).unwrap_or("".to_owned());
 
     let manifest: Theme = match serde_json::from_str::<Value>(&manifest_unparsed) {
         Ok(res) => Theme {
@@ -191,14 +175,8 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
             colour: None,
             description: res["description"].as_str().unwrap().to_string(),
             author: res["author"].as_str().unwrap().to_string(),
-            version: res["version"]
-                .as_str()
-                .or(Some("1.0.0"))
-                .unwrap()
-                .to_string(),
-            tested_on: serde_json::from_value(res["tested_on"].clone())
-                .or::<Option<Vec<String>>>(Ok(None))
-                .unwrap(),
+            version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
+            tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
                 .or::<Vec<Parameter>>(Ok(vec![]))
                 .unwrap(),
@@ -225,7 +203,7 @@ pub fn get_current_theme_parameter(name: String) -> ThemeConfigItem {
 
     ThemeConfigItem {
         r#type: config_item.r#type.clone(),
-        value: config_item.default.clone().or(Some("".to_owned())).unwrap(),
+        value: config_item.default.clone().unwrap_or("".to_owned()),
         name: config_item.name.clone(),
     }
 }
@@ -242,9 +220,7 @@ pub fn apply_theme_parameter(name: String, value: String) {
     config_path.push("config.json");
     manifest_path.push("theme.json");
 
-    let theme_config_unparsed = fs::read_to_string(&config_path)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let theme_config_unparsed = fs::read_to_string(&config_path).unwrap_or("".to_owned());
 
     let theme_config_parsed: Vec<ThemeConfigItem> = serde_json::from_str(&theme_config_unparsed)
         .or::<Vec<ThemeConfigItem>>(Ok(vec![]))
@@ -256,9 +232,7 @@ pub fn apply_theme_parameter(name: String, value: String) {
         .map(|x| x.to_owned())
         .collect();
 
-    let manifest_unparsed = fs::read_to_string(manifest_path)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let manifest_unparsed = fs::read_to_string(manifest_path).unwrap_or("".to_owned());
 
     let manifest: Theme = match serde_json::from_str::<Value>(&manifest_unparsed) {
         Ok(res) => Theme {
@@ -267,14 +241,8 @@ pub fn apply_theme_parameter(name: String, value: String) {
             colour: None,
             description: res["description"].as_str().unwrap().to_string(),
             author: res["author"].as_str().unwrap().to_string(),
-            version: res["version"]
-                .as_str()
-                .or(Some("1.0.0"))
-                .unwrap()
-                .to_string(),
-            tested_on: serde_json::from_value(res["tested_on"].clone())
-                .or::<Option<Vec<String>>>(Ok(None))
-                .unwrap(),
+            version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
+            tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
                 .or::<Vec<Parameter>>(Ok(vec![]))
                 .unwrap(),
@@ -301,15 +269,13 @@ pub fn apply_theme_parameter(name: String, value: String) {
 
     let item = ThemeConfigItem {
         r#type: config_item.r#type.clone(),
-        value: value,
-        name: name,
+        value,
+        name,
     };
 
     config_without_param.push(item);
 
-    let updated_stringified = serde_json::to_string(&config_without_param)
-        .or::<Result<String, &'static str>>(Ok("".to_owned()))
-        .unwrap();
+    let updated_stringified = serde_json::to_string(&config_without_param).unwrap_or("".to_owned());
 
     let _ = fs::write(config_path, updated_stringified);
 
@@ -381,17 +347,16 @@ pub async fn install_theme(
     let mut themes_path = themes_path.clone().lock().unwrap().to_owned();
     themes_path.push(&fs_name);
 
-    let manifest_file = match reqwest::get(
-        "https://zfcapi.brunostjohn.com/theme/".to_string() + &encode(&fs_name).into_owned(),
-    )
-    .await
-    {
-        Ok(resp) => match resp.text().await {
-            Ok(file) => file,
-            Err(_) => return Err("Failed to convert theme manifest to string!"),
-        },
-        Err(_) => return Err("Failed to fetch theme manifest!"),
-    };
+    let manifest_file =
+        match reqwest::get("https://zfcapi.brunostjohn.com/theme/".to_string() + &encode(&fs_name))
+            .await
+        {
+            Ok(resp) => match resp.text().await {
+                Ok(file) => file,
+                Err(_) => return Err("Failed to convert theme manifest to string!"),
+            },
+            Err(_) => return Err("Failed to fetch theme manifest!"),
+        };
 
     let manifest: ThemeManifest =
         serde_json::from_str(&manifest_file).or(Err("Failed to deserialise manifest!"))?;
@@ -412,12 +377,9 @@ pub async fn install_theme(
             .await
             .or(Err("Failed to start download of files!"))?;
 
-        let total_size = match res.content_length() {
-            Some(len) => len,
-            None => 0,
-        };
+        let total_size = res.content_length().unwrap_or(0);
 
-        let mut paths: Vec<&str> = file.ghPath.split("/").into_iter().collect();
+        let mut paths: Vec<&str> = file.ghPath.split('/').collect();
         paths.remove(0);
         paths.remove(0);
 
@@ -447,7 +409,7 @@ pub async fn install_theme(
                     "download-progress",
                     ProgressEvent {
                         total_size: total_theme_size,
-                        tx_so_far: dld + downloaded as u64,
+                        tx_so_far: dld + downloaded,
                         file_name: file.ghPath.clone(),
                         file_count: dl_list_len as u64,
                         current_file: file_count as u64,
@@ -464,9 +426,7 @@ pub async fn install_theme(
         .or(Err("failed to emit event"))?;
 
     let _ = reqwest::get(
-        "https://zfcapi.brunostjohn.com/theme/counts/".to_string()
-            + &encode(&fs_name).into_owned()
-            + "/fetch",
+        "https://zfcapi.brunostjohn.com/theme/counts/".to_string() + &encode(&fs_name) + "/fetch",
     )
     .await;
     Ok(())
@@ -688,21 +648,15 @@ pub fn get_theme_inner(mut theme_path: PathBuf, fs_name: String) -> Result<Theme
             colour: None,
             description: res["description"].as_str().unwrap().to_string(),
             author: res["author"].as_str().unwrap().to_string(),
-            version: res["version"]
-                .as_str()
-                .or(Some("1.0.0"))
-                .unwrap()
-                .to_string(),
-            tested_on: serde_json::from_value(res["tested_on"].clone())
-                .or::<Option<Vec<String>>>(Ok(None))
-                .unwrap(),
+            version: res["version"].as_str().unwrap_or("1.0.0").to_string(),
+            tested_on: serde_json::from_value(res["tested_on"].clone()).unwrap_or(None),
             customisable_parameters: serde_json::from_value(res["customisable_parameters"].clone())
                 .or::<Vec<Parameter>>(Ok(vec![]))
                 .unwrap(),
         },
         Err(_) => Theme {
             name: fs_name.clone(),
-            fs_name: fs_name,
+            fs_name,
             colour: None,
             description: "Failed to load theme.json".to_string(),
             author: "Failed to load".to_string(),
@@ -735,5 +689,5 @@ pub fn get_theme_inner(mut theme_path: PathBuf, fs_name: String) -> Result<Theme
             manifest.colour = Some(image_colour);
         }
     }
-    return Ok(manifest);
+    Ok(manifest)
 }

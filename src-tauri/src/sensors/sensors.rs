@@ -82,7 +82,7 @@ impl Sensors {
         let (tx_subscribed, rx_subscribed) = kanal::unbounded();
 
         let sensor_thread = thread::spawn(move || {
-            let mut poll = EventTicker::new(poll.or(Some(3000)).unwrap());
+            let mut poll = EventTicker::new(poll.unwrap_or(3000));
 
             unsafe { open_computer() };
 
@@ -100,7 +100,7 @@ impl Sensors {
 
                     let _ = tx_sensor_list
                         .send(sensor_list)
-                        .or_else(|_| Err(println!("Failed to send sensor list!")));
+                        .map_err(|_| println!("Failed to send sensor list!"));
                 }
 
                 poll.change_frequency(&rx_poll);

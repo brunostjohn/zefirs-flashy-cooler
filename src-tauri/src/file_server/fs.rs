@@ -14,7 +14,7 @@ pub fn read_http_file(filename: &str, path: PathBuf) -> Option<HTTPFile> {
         name => name.to_owned(),
     };
 
-    for separated in filename.split("/") {
+    for separated in filename.split('/') {
         path.push(separated);
     }
 
@@ -26,10 +26,7 @@ pub fn read_http_file(filename: &str, path: PathBuf) -> Option<HTTPFile> {
     let mime = match infer::get(&file) {
         Some(kind) => kind.mime_type().to_owned(),
         None => match mime_guess::from_path(path.as_path()).first() {
-            Some(kind) => {
-                let kind = kind.to_string();
-                kind
-            }
+            Some(kind) => kind.to_string(),
             None => "application/octet-stream".to_owned(),
         },
     };

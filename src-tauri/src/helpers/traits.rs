@@ -29,9 +29,8 @@ impl CustomSerialise for Vec<ThemeConfigItem> {
 
         for item in everything_else {
             serialised += &("\"".to_owned() + &item.name.clone() + "\":");
-            let item_string = serde_json::to_string::<ThemeConfigItem>(&item)
-                .or::<Result<String, &'static str>>(Ok("[]".to_string()))
-                .unwrap();
+            let item_string =
+                serde_json::to_string::<ThemeConfigItem>(&item).unwrap_or("[]".to_string());
             serialised += &item_string;
             serialised += ",";
         }
@@ -52,7 +51,7 @@ impl CustomSerialise for Vec<String> {
         let mut all_sensor_string = "{".to_owned();
 
         for sensor in self {
-            all_sensor_string += &sensor;
+            all_sensor_string += sensor;
             all_sensor_string += ",";
         }
 
@@ -101,12 +100,12 @@ impl Reassign<Result<Vec<String>, &'static str>> for Vec<String> {
             Ok(result) => {
                 let checked = &result[0];
                 if checked.contains(r#"{"sensor": "noWayInFuckingHell", "value": "anyLegitimateSensorValue", "type": "WouldContainThis"}"#) {
-                    return self;
+                    self
                 } else {
-                    return result;
+                    result
                 }
             }
-            Err(_) => return self,
+            Err(_) => self,
         }
     }
 }
@@ -120,7 +119,7 @@ impl Reassign<Result<String, &'static str>> for Vec<SensorWithDetails> {
         match channel {
             Ok(result) => {
                 if result.contains("FAILEDFAILEDFAILED") {
-                    return self;
+                    self
                 } else {
                     let mut iterable = result.split("||");
 
@@ -131,7 +130,7 @@ impl Reassign<Result<String, &'static str>> for Vec<SensorWithDetails> {
                     self
                 }
             }
-            Err(_) => return self,
+            Err(_) => self,
         }
     }
 }
@@ -145,12 +144,12 @@ impl Reassign<Result<Vec<SensorWithDetails>, &'static str>> for Vec<SensorWithDe
         match channel {
             Ok(result) => {
                 if result[0].value != "a" && result[0].r#type != "a" && result[0].value != "3" {
-                    return result;
+                    result
                 } else {
-                    return self;
+                    self
                 }
             }
-            Err(_) => return self,
+            Err(_) => self,
         }
     }
 }
@@ -162,8 +161,8 @@ impl Reassign<&Receiver<Duration>> for Duration {
         Self: Sized,
     {
         match channel.try_recv() {
-            Ok(result) => return Self::from(result),
-            Err(_) => return self,
+            Ok(result) => result,
+            Err(_) => self,
         }
     }
 }
@@ -181,16 +180,8 @@ impl TryElapsed<u64> for SystemTime {
         Self: Sized,
     {
         match self.elapsed() {
-            Ok(time) => {
-                if time >= Duration::from_millis(duration_ms) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-            Err(_) => {
-                return false;
-            }
+            Ok(time) => time >= Duration::from_millis(duration_ms),
+            Err(_) => false,
         }
     }
 }
@@ -202,16 +193,8 @@ impl TryElapsed<Duration> for SystemTime {
         Self: Sized,
     {
         match self.elapsed() {
-            Ok(time) => {
-                if time >= duration {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
-            Err(_) => {
-                return false;
-            }
+            Ok(time) => time >= duration,
+            Err(_) => false,
         }
     }
 }

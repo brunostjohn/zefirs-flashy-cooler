@@ -18,14 +18,14 @@ use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 use std::vec;
 
 use crate::rendering::device::DeviceContainer;
 use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
-use crate::rendering::traits::{CustomSerialise, Reassign};
+use crate::rendering::traits::CustomSerialise;
 use crate::sensors::{SensorWithDetails, Sensors};
 use crate::server::Server;
 
@@ -79,7 +79,7 @@ impl Renderer {
 
             let _ = device
                 .init()
-                .or_else(|_| Err(println!("Failed to initialise device.")));
+                .map_err(|_| println!("Failed to initialise device."));
 
             let mut sensor_flag = false;
             let mut sensor_values: Vec<SensorWithDetails> = vec![];
@@ -114,14 +114,14 @@ impl Renderer {
                     let image = engine.get_bitmap().unwrap();
 
                     let _: Option<usize> = RgbImage::from_raw(480, 480, image).and_then(|image| {
-                        let _ = device.send_image(&image).or_else(|_| {
+                        let _ = device.send_image(&image).map_err(|_| {
                             thread::sleep(Duration::from_secs(7));
-                            if let Ok(_) = device.reopen() {
+                            if device.reopen().is_ok() {
                                 let _ = device
                                     .init()
-                                    .or_else(|_| Err(println!("Failed to re-init device!")));
+                                    .map_err(|_| println!("Failed to re-init device!"));
                             }
-                            Err("")
+                            ""
                         });
                         None
                     });
@@ -131,14 +131,14 @@ impl Renderer {
                 if receive_flag(&rx_theme, false) {
                     let _ = engine
                         .load_url("http://127.0.0.1:2137/")
-                        .or_else(|_| Err(println!("Failed to reload theme!")));
+                        .map_err(|_| println!("Failed to reload theme!"));
                 }
 
                 if let Ok(port_opt) = rx_port.try_recv() {
                     if let Some(port) = port_opt {
                         let _ = engine
                             .load_url(&format!("http://127.0.0.1:{port}"))
-                            .or_else(|_| Err(println!("Failed to reload theme!")));
+                            .map_err(|_| println!("Failed to reload theme!"));
                     }
                 }
 
@@ -151,9 +151,8 @@ impl Renderer {
                     theme_path.push("config.json");
 
                     if theme_path.exists() {
-                        let theme_config_unparsed = fs::read_to_string(theme_path)
-                            .or::<Result<String, &'static str>>(Ok("".to_owned()))
-                            .unwrap();
+                        let theme_config_unparsed =
+                            fs::read_to_string(theme_path).unwrap_or("".to_owned());
 
                         let theme_config_parsed: Vec<ThemeConfigItem> =
                             serde_json::from_str(&theme_config_unparsed)
@@ -166,7 +165,7 @@ impl Renderer {
                             .map(|x| x.to_owned())
                             .collect::<Vec<ThemeConfigItem>>();
 
-                        if sensors_only.len() > 0 {
+                        if !sensors_only.is_empty() {
                             sensor_flag = true;
                             let sensor_paths: Vec<String> =
                                 sensors_only.iter().map(|x| x.value.clone()).collect();
@@ -200,7 +199,7 @@ impl Renderer {
 
                     let _ = device
                         .close()
-                        .or_else(|_| Err(println!("Failed to close device!")));
+                        .map_err(|_| println!("Failed to close device!"));
 
                     break;
                 }
@@ -231,15 +230,12 @@ impl Renderer {
         };
 
         match self.thread.take() {
-            Some(thread) => {
-                match thread.join() {
-                    Ok(_) => {}
-                    Err(_) => {
-                        println!("Failed to join renderer thread.");
-                        return;
-                    }
-                };
-            }
+            Some(thread) => match thread.join() {
+                Ok(_) => {}
+                Err(_) => {
+                    println!("Failed to join renderer thread.");
+                }
+            },
             None => {}
         }
     }

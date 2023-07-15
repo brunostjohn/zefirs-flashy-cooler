@@ -26,7 +26,7 @@ impl Config {
     pub fn load_from_drive(mut load_path: PathBuf) -> Self {
         load_path.push("config.json");
 
-        let loaded_config = {
+        {
             let config_string = match fs::read_to_string(load_path) {
                 Ok(result) => result,
                 Err(_) => {
@@ -42,9 +42,7 @@ impl Config {
                     Config::default()
                 }
             }
-        };
-
-        loaded_config
+        }
     }
 
     #[inline(always)]
