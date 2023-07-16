@@ -1,9 +1,10 @@
+use std::borrow::Cow;
+
 use self::constants::constants::*;
 use super::{Device, DeviceCreator};
 mod constants;
 
 use hidapi::{HidApi, HidDevice};
-use image::RgbImage;
 
 pub struct TTUltra {
     pub device: Option<HidDevice>,
@@ -54,19 +55,31 @@ impl Device for TTUltra {
         Ok(())
     }
 
-    fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
-        let mut packets_sent = 0;
+    fn send_image(&mut self, img: Cow<'_, [u8]>) -> Result<(), &'static str> {
         let mut last_image: Vec<u8> = vec![];
-        let image = turbojpeg::compress_image(img, 95, turbojpeg::Subsamp::Sub2x2)
-            .unwrap()
-            .to_vec();
+
+        let mut compressor = turbojpeg::Compressor::new().unwrap();
+        compressor.set_quality(95);
+        compressor.set_subsamp(turbojpeg::Subsamp::Sub2x2);
+
+        let image_struct = turbojpeg::Image {
+            pixels: &*img,
+            width: 480,
+            pitch: 480 * 4,
+            height: 480,
+            format: turbojpeg::PixelFormat::RGBA,
+        };
+
+        let mut image = turbojpeg::OutputBuf::new_owned();
+
+        compressor.compress(image_struct, &mut image).unwrap();
 
         let handle = match &self.device {
             Some(device) => device,
             None => return Err("No device initialised!"),
         };
 
-        for chunk in image.chunks(1016) {
+        for (packets_sent, chunk) in image.chunks(1016).enumerate() {
             let chunk_length = chunk.len() as u16;
 
             let mut packet = vec![
@@ -76,7 +89,7 @@ impl Device for TTUltra {
                 0x00,
                 (chunk_length & 0xff) as u8,
                 (chunk_length >> 8 & 0xff) as u8,
-                packets_sent,
+                packets_sent.try_into().unwrap(),
                 0x00,
             ];
 
@@ -89,11 +102,9 @@ impl Device for TTUltra {
 
             last_image = chunk.to_vec();
 
-            match handle.write(&packet) {
-                Err(_) => return Err("Failed to write to device!"),
-                _ => {}
+            if handle.write(&packet).is_err() {
+                return Err("Failed to write to device!");
             };
-            packets_sent += 1;
         }
 
         Ok(())

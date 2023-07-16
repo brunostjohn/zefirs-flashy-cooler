@@ -2,6 +2,8 @@ use std::fs;
 use std::path::PathBuf;
 use std::{borrow::Cow, mem, rc::Rc};
 
+use glium::buffer::ReadMapping;
+use glium::pixel_buffer::PixelBuffer;
 use glium::program::{Binary, ProgramCreationInput};
 use glium::vertex::AttributeType;
 

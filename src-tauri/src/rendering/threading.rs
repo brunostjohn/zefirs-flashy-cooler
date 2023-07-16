@@ -65,10 +65,11 @@ impl Renderer {
 
             println!("Received {:?} fps", fps);
 
-            let mut gc_time = EventTicker::new(15 * 1000);
+            // let mut gc_time = EventTicker::new(15 * 1000);
             let mut frame_time = EventTicker::new(1000 / fps);
             let mut sensor_time = EventTicker::new(3000);
             let mut channel_scan = EventTicker::new(250);
+            let mut gc_time = EventTicker::new(1000 * 30);
 
             let mut device = match DeviceContainer::new() {
                 Err(error) => {
@@ -84,6 +85,8 @@ impl Renderer {
 
             let mut sensor_flag = false;
             let mut sensor_values: Vec<SensorWithDetails> = vec![];
+
+            thread::sleep(Duration::from_millis(300));
 
             loop {
                 engine.update();
@@ -110,103 +113,97 @@ impl Renderer {
 
                         engine.call_js_script(script);
                     }
-
                     engine.render();
-                    let image = engine.get_bitmap().unwrap();
+                    let mut image = engine.get_bitmap().unwrap();
 
-                    let _: Option<usize> = RgbImage::from_raw(480, 480, image).and_then(|image| {
-                        let _ = device.send_image(&image).map_err(|_| {
-                            thread::sleep(Duration::from_secs(7));
-                            if device.reopen().is_ok() {
-                                let _ = device
-                                    .init()
-                                    .map_err(|_| println!("Failed to re-init device!"));
-                            }
-                            ""
-                        });
-                        None
+                    let _ = device.send_image(image).map_err(|_| {
+                        thread::sleep(Duration::from_secs(7));
+                        if device.reopen().is_ok() {
+                            let _ = device
+                                .init()
+                                .map_err(|_| println!("Failed to re-init device!"));
+                        }
+                        ""
                     });
-                }
 
-                if channel_scan.check_time() {
-                    if let Ok(port_opt) = rx_port.try_recv() {
-                        if let Some(port) = port_opt {
+                    if channel_scan.check_time() {
+                        if let Ok(Some(port)) = rx_port.try_recv() {
                             let _ = engine
                                 .load_url(&format!("http://127.0.0.1:{port}"))
                                 .map_err(|_| println!("Failed to reload theme!"));
                         }
-                    }
 
-                    if receive_flag(&rx_reload, false) {
-                        let server = server.lock().unwrap();
-                        let now_serving = server.now_serving();
-                        drop(server);
-                        let mut theme_path = themes_path.clone();
-                        theme_path.push(now_serving);
-                        theme_path.push("config.json");
+                        if receive_flag(&rx_reload, false) {
+                            let server = server.lock().unwrap();
+                            let now_serving = server.now_serving();
+                            drop(server);
+                            let mut theme_path = themes_path.clone();
+                            theme_path.push(now_serving);
+                            theme_path.push("config.json");
 
-                        if theme_path.exists() {
-                            let theme_config_unparsed =
-                                fs::read_to_string(theme_path).unwrap_or("".to_owned());
+                            if theme_path.exists() {
+                                let theme_config_unparsed =
+                                    fs::read_to_string(theme_path).unwrap_or("".to_owned());
 
-                            let theme_config_parsed: Vec<ThemeConfigItem> =
-                                serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
+                                let theme_config_parsed: Vec<ThemeConfigItem> =
+                                    serde_json::from_str(&theme_config_unparsed)
+                                        .unwrap_or(Vec::new());
 
-                            let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
-                                .iter()
-                                .filter(|x| x.r#type == "sensor")
-                                .map(|x| x.to_owned())
-                                .collect::<Vec<ThemeConfigItem>>();
+                                let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
+                                    .iter()
+                                    .filter(|x| x.r#type == "sensor")
+                                    .map(|x| x.to_owned())
+                                    .collect::<Vec<ThemeConfigItem>>();
 
-                            if !sensors_only.is_empty() {
-                                sensor_flag = true;
-                                let sensor_paths: Vec<String> =
-                                    sensors_only.iter().map(|x| x.value.clone()).collect();
+                                if !sensors_only.is_empty() {
+                                    sensor_flag = true;
+                                    let sensor_paths: Vec<String> =
+                                        sensors_only.iter().map(|x| x.value.clone()).collect();
 
-                                let sensor_names: Vec<String> =
-                                    sensors_only.iter().map(|x| x.name.clone()).collect();
+                                    let sensor_names: Vec<String> =
+                                        sensors_only.iter().map(|x| x.name.clone()).collect();
 
-                                let mut sensors = sensors.lock().unwrap();
+                                    let mut sensors = sensors.lock().unwrap();
 
-                                if let Ok(vals) =
-                                    sensors.subscribe(sensor_paths.clone(), sensor_names.clone())
-                                {
-                                    sensor_values = vals;
+                                    if let Ok(vals) = sensors
+                                        .subscribe(sensor_paths.clone(), sensor_names.clone())
+                                    {
+                                        sensor_values = vals;
+                                    }
+
+                                    drop(sensors);
+                                } else {
+                                    sensor_flag = false;
                                 }
 
-                                drop(sensors);
-                            } else {
-                                sensor_flag = false;
-                            }
+                                let serialised = theme_config_parsed.custom_serialise();
 
-                            let serialised = theme_config_parsed.custom_serialise();
-
-                            engine.call_js_script(
+                                engine.call_js_script(
                                 format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &serialised),
                             );
+                            }
                         }
+
+                        if receive_flag(&rx_end, false) {
+                            println!("Received end signal. Thread: renderer.");
+
+                            let _ = device
+                                .close()
+                                .map_err(|_| println!("Failed to close device!"));
+
+                            break;
+                        }
+
+                        frame_time.change_frequency(&rx_fps);
                     }
 
-                    if receive_flag(&rx_end, false) {
-                        println!("Received end signal. Thread: renderer.");
-
-                        let _ = device
-                            .close()
-                            .map_err(|_| println!("Failed to close device!"));
-
-                        break;
-                    }
-
-                    frame_time.change_frequency(&rx_fps);
+                    thread::sleep(Duration::from_millis(7));
                 }
-
-                thread::sleep(Duration::from_millis(7));
             }
         });
 
         Renderer {
             thread: Some(render),
-            // theme_channel: tx_theme,
             end_channel: tx_end,
             fps_channel: tx_fps,
             reload_config_channel: tx_reload,

@@ -1,4 +1,6 @@
-use image::RgbImage;
+use std::borrow::Cow;
+
+use glium::buffer::ReadMapping;
 
 use self::{capellix::Capellix, thermaltake::TTUltra};
 
@@ -51,7 +53,7 @@ impl DeviceContainer {
     }
 
     #[inline(always)]
-    pub fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
+    pub fn send_image(&mut self, img: Cow<'_, [u8]>) -> Result<(), &'static str> {
         self.device.send_image(img)
     }
 }
@@ -75,5 +77,5 @@ pub trait Device {
     fn init(&mut self) -> Result<(), &'static str>;
     fn close(&mut self) -> Result<(), &'static str>;
     fn reopen(&mut self) -> Result<(), &'static str>;
-    fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str>;
+    fn send_image(&mut self, img: Cow<'_, [u8]>) -> Result<(), &'static str>;
 }

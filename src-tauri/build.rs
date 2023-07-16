@@ -5,6 +5,14 @@ fn main() {
     println!("cargo:rustc-link-search=/Users/bruno/.nuget/packages/runtime.win-x64.microsoft.dotnet.ilcompiler/7.0.8/sdk");
     println!("cargo:rustc-link-arg-bins=/INCLUDE:NativeAOT_StaticInitialization");
 
+    println!("cargo:rerun-if-changed=build.rs");
+    println!("cargo:rerun-if-changed=./static-libs/AppCore.lib");
+    println!("cargo:rerun-if-changed=./static-libs/LibreHardwareMonitorNative.lib");
+    println!("cargo:rerun-if-changed=./static-libs/shaderc_shared.lib");
+    println!("cargo:rerun-if-changed=./static-libs/Ultralight.lib");
+    println!("cargo:rerun-if-changed=./static-libs/UltralightCore.lib");
+    println!("cargo:rerun-if-changed=./static-libs/WebCore.lib");
+
     let mut windows = tauri_build::WindowsAttributes::default();
     windows = windows.app_manifest(
         r#"

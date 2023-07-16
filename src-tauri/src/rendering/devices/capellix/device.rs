@@ -1,8 +1,10 @@
 use std::{
+    borrow::Cow,
     thread,
     time::{Duration, SystemTime},
 };
 
+use glium::{buffer::ReadMapping, texture::Texture1dDataSource};
 use hidapi::{HidApi, HidDevice};
 use image::RgbImage;
 
@@ -178,12 +180,24 @@ impl Device for Capellix {
         }
     }
 
-    fn send_image(&mut self, img: &RgbImage) -> Result<(), &'static str> {
+    fn send_image(&mut self, img: Cow<'_, [u8]>) -> Result<(), &'static str> {
         let mut packets_sent = 0;
         let mut last_image: Vec<u8> = vec![];
-        let image = turbojpeg::compress_image(img, 95, turbojpeg::Subsamp::Sub2x2)
-            .unwrap()
-            .to_vec();
+        let mut compressor = turbojpeg::Compressor::new().unwrap();
+        compressor.set_quality(95);
+        compressor.set_subsamp(turbojpeg::Subsamp::Sub2x2);
+
+        let image_struct = turbojpeg::Image {
+            pixels: &*img,
+            width: 480,
+            pitch: 480 * 4,
+            height: 480,
+            format: turbojpeg::PixelFormat::RGBA,
+        };
+
+        let mut image = turbojpeg::OutputBuf::new_owned();
+
+        compressor.compress(image_struct, &mut image).unwrap();
 
         let handle = match &self.device {
             Some(device) => device,

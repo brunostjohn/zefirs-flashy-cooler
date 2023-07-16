@@ -1,4 +1,5 @@
 use std::{
+    borrow::Cow,
     ffi::{c_ulonglong, c_void, CString},
     path::PathBuf,
     ptr::null_mut,
@@ -9,6 +10,7 @@ use std::{
     },
 };
 
+use glium::{buffer::ReadMapping, pixel_buffer::PixelBuffer, texture::RawImage2d};
 use rayon::prelude::*;
 
 use once_cell::sync::Lazy;
@@ -170,19 +172,11 @@ impl Ultralight {
     }
 
     #[inline]
-    pub fn get_bitmap(&mut self) -> Result<Vec<u8>, &'static str> {
+    pub fn get_bitmap(&mut self) -> Result<Cow<'_, [u8]>, &'static str> {
         let render_target = unsafe { ulViewGetRenderTarget(self.view) };
         let src = self.driver_recv.render_bitmap(render_target.texture_id)?;
 
-        let mut dst = vec![0u8; 480 * 480 * 4];
-
-        dst.par_chunks_exact_mut(3)
-            .zip(src.par_chunks_exact(4))
-            .for_each(|chunk| {
-                chunk.0.copy_from_slice(&chunk.1[0..3]);
-            });
-
-        Ok(dst)
+        Ok(src)
     }
 
     #[inline(always)]
