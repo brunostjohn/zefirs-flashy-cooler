@@ -56,7 +56,6 @@ impl Renderer {
         sensors: Arc<Mutex<Sensors>>,
         rx_sensor: kanal::Receiver<String>,
     ) -> Self {
-        // let (tx_theme, rx_theme) = kanal::unbounded();
         let (tx_end, rx_end) = kanal::bounded(2);
         let (tx_fps, rx_fps) = kanal::unbounded();
         let (tx_reload, rx_reload) = kanal::unbounded();
@@ -67,23 +66,22 @@ impl Renderer {
 
             println!("Received {:?} fps", fps);
 
-            // let mut gc_time = EventTicker::new(15 * 1000);
             let mut frame_time = EventTicker::new(1000 / fps);
             let mut sensor_time = EventTicker::new(3000);
             let mut channel_scan = EventTicker::new(250);
             let mut gc_time = EventTicker::new(1000 * 30);
 
-            // let mut device = match DeviceContainer::new() {
-            //     Err(error) => {
-            //         println!("{:?}", error);
-            //         return;
-            //     }
-            //     Ok(result) => result,
-            // };
+            let mut device = match DeviceContainer::new() {
+                Err(error) => {
+                    println!("{:?}", error);
+                    return;
+                }
+                Ok(result) => result,
+            };
 
-            // let _ = device
-            //     .init()
-            //     .map_err(|_| println!("Failed to initialise device."));
+            let _ = device
+                .init()
+                .map_err(|_| println!("Failed to initialise device."));
 
             let mut sensor_flag = false;
             let mut sensor_values: Vec<SensorWithDetails> = vec![];
@@ -95,7 +93,6 @@ impl Renderer {
                 .map_err(|_| println!("Failed to reload theme!"));
 
             loop {
-                // let time = SystemTime::now();
                 engine.update();
 
                 if frame_time.check_time() {
@@ -203,12 +200,6 @@ impl Renderer {
                 } else {
                     thread::sleep(Duration::from_millis(10));
                 }
-
-                // let elapsed = time
-                //     .elapsed()
-                //     .unwrap_or(Duration::from_micros(0))
-                //     .as_millis();
-                // println!("ms: {elapsed}");
             }
         });
 
