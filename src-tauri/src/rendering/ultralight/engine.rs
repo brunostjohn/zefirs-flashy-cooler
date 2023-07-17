@@ -11,7 +11,7 @@ use std::{
     },
 };
 
-use heapless::spsc::Queue;
+use heapless::spsc::{Consumer, Producer, Queue};
 
 use glium::{buffer::ReadMapping, pixel_buffer::PixelBuffer, texture::RawImage2d};
 use rayon::prelude::*;
@@ -24,29 +24,29 @@ use self::driver::{
     GPUDriverCommand, GPUDriverReceiver, GPUDriverSender,
 };
 
+static mut QUEUE: Queue<GPUDriverCommand, 32> = Queue::new();
+
 #[path = "./driver.rs"]
 mod driver;
 
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static mut GPU_SENDER: Lazy<GPUDriverSender> = Lazy::new(|| GPUDriverSender::new(0, 0, 0));
 
-pub struct Ultralight<'a> {
+pub struct Ultralight {
     renderer: ULRenderer,
     view: ULView,
-    driver_recv: GPUDriverReceiver<'a>,
+    driver_recv: GPUDriverReceiver,
 }
 
-impl<'a> Ultralight<'a> {
+impl Ultralight {
     #[allow(unused_mut)]
-    pub fn new(app_folder: PathBuf, queue: &mut Queue<GPUDriverCommand, 32>) -> Ultralight<'a> {
+    pub fn new(app_folder: PathBuf) -> Ultralight {
         let mut renderer;
         let mut view;
 
-        let (mut producer, mut consumer) = queue.split();
+        // unsafe { GPU_SENDER.set_tx(producer) };
 
-        unsafe { GPU_SENDER.set_tx(&producer) };
-
-        let driver_recv = GPUDriverReceiver::new(consumer, app_folder.clone()).unwrap();
+        let driver_recv = GPUDriverReceiver::new(app_folder.clone()).unwrap();
 
         unsafe {
             let config = ulCreateConfig();

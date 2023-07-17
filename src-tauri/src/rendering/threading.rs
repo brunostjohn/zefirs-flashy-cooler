@@ -63,7 +63,7 @@ impl Renderer {
         let (tx_port, rx_port) = kanal::unbounded();
 
         let render = thread::spawn(move || {
-            let mut engine = Ultralight::new(app_folder, &mut Queue::new());
+            let mut engine = Ultralight::new(app_folder);
 
             println!("Received {:?} fps", fps);
 
@@ -73,17 +73,17 @@ impl Renderer {
             let mut channel_scan = EventTicker::new(250);
             let mut gc_time = EventTicker::new(1000 * 30);
 
-            let mut device = match DeviceContainer::new() {
-                Err(error) => {
-                    println!("{:?}", error);
-                    return;
-                }
-                Ok(result) => result,
-            };
+            // let mut device = match DeviceContainer::new() {
+            //     Err(error) => {
+            //         println!("{:?}", error);
+            //         return;
+            //     }
+            //     Ok(result) => result,
+            // };
 
-            let _ = device
-                .init()
-                .map_err(|_| println!("Failed to initialise device."));
+            // let _ = device
+            //     .init()
+            //     .map_err(|_| println!("Failed to initialise device."));
 
             let mut sensor_flag = false;
             let mut sensor_values: Vec<SensorWithDetails> = vec![];
@@ -126,7 +126,7 @@ impl Renderer {
                             device.init().unwrap();
                         }
                     }
-                    if false && channel_scan.check_time() {
+                    if channel_scan.check_time() {
                         if gc_time.check_time() {
                             engine.garbage_collect();
                         }

@@ -151,6 +151,8 @@ pub mod tex;
 use tex::*;
 use windows::Win32::UI::WindowsAndMessaging::GetDesktopWindow;
 
+use super::QUEUE;
+
 #[derive(Debug)]
 pub enum GLVertexBuffer {
     Format2f4ub2f(Vec<ULVertex_2f_4ub_2f>),
@@ -200,29 +202,23 @@ pub enum GPUDriverCommand {
     UpdateCommandList(Vec<GPUCommand>),
 }
 
-pub struct GPUDriverSender<'a> {
+pub struct GPUDriverSender {
     next_texture_id: u32,
     next_render_buffer_id: u32,
     next_geometry_id: u32,
-    queue: Option<&'a Producer<'a, GPUDriverCommand, 32>>,
 }
 
-impl<'a> GPUDriverSender<'a> {
+impl GPUDriverSender {
     pub fn new(next_texture_id: u32, next_render_buffer_id: u32, next_geometry_id: u32) -> Self {
         Self {
             next_texture_id,
             next_render_buffer_id,
             next_geometry_id,
-            queue: None,
         }
-    }
-
-    pub fn set_tx(&mut self, sender: &Producer<'a, GPUDriverCommand, 32>) {
-        self.queue = Some(sender);
     }
 }
 
-impl GPUDriver for GPUDriverSender<'_> {
+impl GPUDriver for GPUDriverSender {
     fn begin_synchronize(&mut self) {}
 
     fn create_geometry(
@@ -261,51 +257,43 @@ impl GPUDriver for GPUDriverSender<'_> {
             }
         };
 
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::CreateGeometry(
+        unsafe {
+            QUEUE.enqueue(GPUDriverCommand::CreateGeometry(
                 geometry_id,
                 gl_vertex_buffer,
                 index_buffer,
-            ));
-        }
+            ))
+        };
     }
 
     #[inline]
     fn create_render_buffer(&mut self, render_buffer_id: u32, render_buffer: gpu::RenderBuffer) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::CreateRenderBuffer(
+        unsafe {
+            QUEUE.enqueue(GPUDriverCommand::CreateRenderBuffer(
                 render_buffer_id,
                 render_buffer,
-            ));
-        }
+            ))
+        };
     }
 
     #[inline]
     fn create_texture(&mut self, texture_id: u32, bitmap: gpu::bitmap::OwnedBitmap) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::CreateTexture(texture_id, bitmap));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::CreateTexture(texture_id, bitmap)) };
     }
 
     #[inline]
     fn destroy_geometry(&mut self, geometry_id: u32) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::DestroyGeometry(geometry_id));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::DestroyGeometry(geometry_id)) };
     }
 
     #[inline]
     fn destroy_render_buffer(&mut self, render_buffer_id: u32) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::DestroyRenderBuffer(render_buffer_id));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::DestroyRenderBuffer(render_buffer_id)) };
     }
 
     #[inline]
     fn destroy_texture(&mut self, texture_id: u32) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::DestroyTexture(texture_id));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::DestroyTexture(texture_id)) };
     }
 
     #[inline]
@@ -334,9 +322,7 @@ impl GPUDriver for GPUDriverSender<'_> {
 
     #[inline]
     fn update_command_list(&mut self, command_list: Vec<gpu::GPUCommand>) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::UpdateCommandList(command_list));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::UpdateCommandList(command_list)) };
     }
 
     fn update_geometry(
@@ -375,20 +361,18 @@ impl GPUDriver for GPUDriverSender<'_> {
             }
         };
 
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::UpdateGeometry(
+        unsafe {
+            QUEUE.enqueue(GPUDriverCommand::UpdateGeometry(
                 geometry_id,
                 gl_vertex_buffer,
                 index_buffer,
-            ));
-        }
+            ))
+        };
     }
 
     #[inline]
     fn update_texture(&mut self, texture_id: u32, bitmap: OwnedBitmap) {
-        if let Some(ref mut queue) = self.queue {
-            queue.enqueue(GPUDriverCommand::UpdateTexture(texture_id, bitmap));
-        }
+        unsafe { QUEUE.enqueue(GPUDriverCommand::UpdateTexture(texture_id, bitmap)) };
     }
 }
 
@@ -401,7 +385,7 @@ struct RenderVertex {
 implement_vertex!(RenderVertex, position, tex_coords);
 
 #[allow(dead_code)]
-pub struct GPUDriverReceiver<'a> {
+pub struct GPUDriverReceiver {
     context: Rc<Context>,
     head: HeadlessRenderer,
     texture_map: HashMap<u32, (EitherTexture, Option<u32>), BuildNoHashHasher<u32>>,
@@ -411,7 +395,6 @@ pub struct GPUDriverReceiver<'a> {
     path_program: Program,
     fill_program: Program,
     rawdog: ContextWrapper<NotCurrent, ()>,
-    queue: Consumer<'a, GPUDriverCommand, 32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -420,11 +403,8 @@ pub struct ShaderCacheFormat {
     pub path_format: u32,
 }
 
-impl<'a> GPUDriverReceiver<'a> {
-    pub fn new(
-        queue: Consumer<'a, GPUDriverCommand, 32>,
-        app_folder: PathBuf,
-    ) -> Result<Self, &'static str> {
+impl GPUDriverReceiver {
+    pub fn new(app_folder: PathBuf) -> Result<Self, &'static str> {
         let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
 
         let gl_ctx = HeadlessRenderer::with_debug::<NotCurrent>(
@@ -562,7 +542,6 @@ impl<'a> GPUDriverReceiver<'a> {
             fill_program,
             head: gl_ctx,
             rawdog: ctx,
-            queue,
         })
     }
 
@@ -584,7 +563,7 @@ impl<'a> GPUDriverReceiver<'a> {
 
     #[inline]
     pub fn render(&mut self) -> Result<(), &'static str> {
-        while let Some(cmd) = self.queue.dequeue() {
+        while let Some(cmd) = unsafe { QUEUE.dequeue() } {
             // println!("{:?}", &cmd);
             thread::sleep(Duration::from_millis(5));
             match cmd {
