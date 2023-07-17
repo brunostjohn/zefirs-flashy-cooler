@@ -1,6 +1,5 @@
 use std::{
     borrow::Cow,
-    cell::RefCell,
     ffi::{c_ulonglong, c_void, CString},
     path::PathBuf,
     ptr::null_mut,
@@ -11,9 +10,9 @@ use std::{
     },
 };
 
-use heapless::spsc::{Consumer, Producer, Queue};
+use heapless::spsc::{Queue};
 
-use glium::{buffer::ReadMapping, pixel_buffer::PixelBuffer, texture::RawImage2d};
+
 use rayon::prelude::*;
 
 use once_cell::sync::Lazy;

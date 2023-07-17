@@ -13,17 +13,17 @@ mod traits;
 // use traits::{Reassign, TryElapsed};
 
 use engine::Ultralight;
-use image::{self, RgbImage};
+
 use serde::{Deserialize, Serialize};
 
 use std::fs::{self};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, SystemTime};
+use std::time::{Duration};
 use std::vec;
 
-use heapless::spsc::Queue;
+
 
 use crate::rendering::device::DeviceContainer;
 use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
@@ -89,7 +89,7 @@ impl Renderer {
             thread::sleep(Duration::from_millis(300));
 
             let _ = engine
-                .load_url(&format!("http://127.0.0.1:2137"))
+                .load_url("http://127.0.0.1:2137")
                 .map_err(|_| println!("Failed to reload theme!"));
 
             loop {
