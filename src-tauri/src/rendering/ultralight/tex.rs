@@ -1,7 +1,7 @@
 use glium::{
     framebuffer::ToColorAttachment,
     pixel_buffer::PixelBuffer,
-    texture::SrgbTexture2d,
+    texture::{RawImage2d, SrgbTexture2d},
     uniforms::{AsUniformValue, Sampler, UniformValue},
     Texture2d,
 };
@@ -56,6 +56,14 @@ impl EitherTexture {
         match self {
             EitherTexture::Regular2d(t) => t.read_to_pixel_buffer(),
             EitherTexture::Srgb2d(t) => t.read_to_pixel_buffer(),
+        }
+    }
+
+    #[inline]
+    pub fn read(&'_ self) -> RawImage2d<'_, u8> {
+        match self {
+            EitherTexture::Regular2d(t) => t.read(),
+            EitherTexture::Srgb2d(t) => t.read(),
         }
     }
 }

@@ -20,8 +20,10 @@ use std::fs::{self};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 use std::vec;
+
+use heapless::spsc::Queue;
 
 use crate::rendering::device::DeviceContainer;
 use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
@@ -61,7 +63,7 @@ impl Renderer {
         let (tx_port, rx_port) = kanal::unbounded();
 
         let render = thread::spawn(move || {
-            let mut engine = Ultralight::new(app_folder);
+            let mut engine = Ultralight::new(app_folder, &mut Queue::new());
 
             println!("Received {:?} fps", fps);
 
@@ -88,12 +90,13 @@ impl Renderer {
 
             thread::sleep(Duration::from_millis(300));
 
-            loop {
-                engine.update();
+            let _ = engine
+                .load_url(&format!("http://127.0.0.1:2137"))
+                .map_err(|_| println!("Failed to reload theme!"));
 
-                if gc_time.check_time() {
-                    engine.garbage_collect();
-                }
+            loop {
+                // let time = SystemTime::now();
+                engine.update();
 
                 if frame_time.check_time() {
                     if sensor_time.check_time() && sensor_flag {
@@ -114,19 +117,20 @@ impl Renderer {
                         engine.call_js_script(script);
                     }
                     engine.render();
-                    let mut image = engine.get_bitmap().unwrap();
+                    let image = engine.get_bitmap().unwrap();
 
-                    let _ = device.send_image(image).map_err(|_| {
+                    if device.send_image(&image).is_err() {
                         thread::sleep(Duration::from_secs(7));
-                        if device.reopen().is_ok() {
-                            let _ = device
-                                .init()
-                                .map_err(|_| println!("Failed to re-init device!"));
-                        }
-                        ""
-                    });
 
-                    if channel_scan.check_time() {
+                        if device.reopen().is_ok() {
+                            device.init().unwrap();
+                        }
+                    }
+                    if false && channel_scan.check_time() {
+                        if gc_time.check_time() {
+                            engine.garbage_collect();
+                        }
+
                         if let Ok(Some(port)) = rx_port.try_recv() {
                             let _ = engine
                                 .load_url(&format!("http://127.0.0.1:{port}"))
@@ -196,9 +200,15 @@ impl Renderer {
 
                         frame_time.change_frequency(&rx_fps);
                     }
-
-                    thread::sleep(Duration::from_millis(7));
+                } else {
+                    thread::sleep(Duration::from_millis(10));
                 }
+
+                // let elapsed = time
+                //     .elapsed()
+                //     .unwrap_or(Duration::from_micros(0))
+                //     .as_millis();
+                // println!("ms: {elapsed}");
             }
         });
 

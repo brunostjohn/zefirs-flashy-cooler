@@ -269,6 +269,7 @@ impl Drop for Bitmap {
     }
 }
 
+#[derive(Debug)]
 pub struct OwnedBitmap {
     width: u32,
     height: u32,

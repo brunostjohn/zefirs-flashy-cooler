@@ -87,6 +87,8 @@ impl Sensors {
             unsafe { open_computer() };
 
             loop {
+                let _ = tx_sensor_val.try_send_realtime(get_subscribed());
+
                 if receive_flag(&rx_end, false) {
                     println!("Received end signal!");
                     unsafe {
@@ -105,66 +107,61 @@ impl Sensors {
 
                 poll.change_frequency(&rx_poll);
 
-                if let Ok(sub_send) = rx_subscribe.try_recv() {
-                    if let Some(sub) = sub_send {
-                        let (mut paths, mut names) = sub;
-                        let sensor_count = paths.len();
+                if let Ok(Some(sub)) = rx_subscribe.try_recv() {
+                    let (mut paths, mut names) = sub;
+                    let sensor_count = paths.len();
 
-                        let sensors;
-                        let mut names_copy = names.clone();
-                        names.reverse();
+                    let sensors;
+                    let mut names_copy = names.clone();
+                    names.reverse();
 
-                        if sensor_count > 1 {
-                            let mut subs: Vec<Subscription> = Vec::with_capacity(paths.len());
+                    if sensor_count > 1 {
+                        let mut subs: Vec<Subscription> = Vec::with_capacity(paths.len());
 
-                            for _ in 0..sensor_count {
-                                let new_sub = Subscription {
-                                    code_name: CString::new(names.pop().unwrap()).unwrap(),
-                                    path: CString::new(paths.pop().unwrap()).unwrap(),
-                                };
-
-                                subs.push(new_sub);
-                            }
-
-                            sensors = unsafe {
-                                subscribe(subs.as_mut_ptr() as *mut u8, paths.len() as u8)
-                            };
-                        } else {
-                            let mut subs = [Subscription {
+                        for _ in 0..sensor_count {
+                            let new_sub = Subscription {
                                 code_name: CString::new(names.pop().unwrap()).unwrap(),
                                 path: CString::new(paths.pop().unwrap()).unwrap(),
-                            }];
+                            };
 
-                            sensors = unsafe { subscribe(subs.as_mut_ptr() as *mut u8, 1) };
+                            subs.push(new_sub);
                         }
 
-                        let csensors = unsafe { CStr::from_ptr(sensors as *const i8) }
-                            .to_str()
-                            .unwrap();
+                        sensors =
+                            unsafe { subscribe(subs.as_mut_ptr() as *mut u8, paths.len() as u8) };
+                    } else {
+                        let mut subs = [Subscription {
+                            code_name: CString::new(names.pop().unwrap()).unwrap(),
+                            path: CString::new(paths.pop().unwrap()).unwrap(),
+                        }];
 
-                        let mut deets = vec![];
-
-                        for element in csensors.split("****").collect::<Vec<&str>>() {
-                            let mut fields: Vec<&str> = element.split("||").collect();
-
-                            if fields.len() == 4 {
-                                let with_details = SensorWithDetails {
-                                    parent_hw_type: Some(fields.pop().unwrap().to_owned()),
-                                    r#type: fields.pop().unwrap().to_owned(),
-                                    value: fields.pop().unwrap().to_owned(),
-                                    sensor: fields.pop().unwrap().to_owned(),
-                                    code_name: names_copy.pop().unwrap(),
-                                };
-
-                                deets.push(with_details);
-                            }
-                        }
-
-                        tx_subscribed.send(deets).unwrap();
+                        sensors = unsafe { subscribe(subs.as_mut_ptr() as *mut u8, 1) };
                     }
-                }
 
-                let _ = tx_sensor_val.send(get_subscribed());
+                    let csensors = unsafe { CStr::from_ptr(sensors as *const i8) }
+                        .to_str()
+                        .unwrap();
+
+                    let mut deets = vec![];
+
+                    for element in csensors.split("****").collect::<Vec<&str>>() {
+                        let mut fields: Vec<&str> = element.split("||").collect();
+
+                        if fields.len() == 4 {
+                            let with_details = SensorWithDetails {
+                                parent_hw_type: Some(fields.pop().unwrap().to_owned()),
+                                r#type: fields.pop().unwrap().to_owned(),
+                                value: fields.pop().unwrap().to_owned(),
+                                sensor: fields.pop().unwrap().to_owned(),
+                                code_name: names_copy.pop().unwrap(),
+                            };
+
+                            deets.push(with_details);
+                        }
+                    }
+
+                    tx_subscribed.send(deets).unwrap();
+                }
 
                 poll.wait_for_next();
             }

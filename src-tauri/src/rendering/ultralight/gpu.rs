@@ -68,6 +68,7 @@ macro_rules! from_ul_arr {
     };
 }
 
+#[derive(Debug)]
 pub struct RenderBuffer {
     pub texture_id: u32,
     pub width: u32,
@@ -133,6 +134,7 @@ impl TryFrom<ULVertexBuffer> for VertexBuffer {
     }
 }
 
+#[derive(Debug)]
 pub struct IndexBuffer {
     pub buffer: Vec<u32>,
 }
@@ -149,6 +151,7 @@ impl From<ULIndexBuffer> for IndexBuffer {
     }
 }
 
+#[derive(Debug)]
 pub enum ShaderType {
     Fill = ULShaderType_kShaderType_Fill as isize,
     FillPath = ULShaderType_kShaderType_FillPath as isize,
@@ -168,6 +171,7 @@ impl TryFrom<ULShaderType> for ShaderType {
     }
 }
 
+#[derive(Debug)]
 pub struct GPUState {
     pub viewport_width: u32,
     pub viewport_height: u32,
@@ -225,6 +229,7 @@ impl TryFrom<ULGPUState> for GPUState {
     }
 }
 
+#[derive(Debug)]
 pub enum GPUCommand {
     ClearRenderBuffer {
         render_buffer_id: u32,
@@ -258,6 +263,7 @@ impl TryFrom<ULCommand> for GPUCommand {
     }
 }
 
+#[derive(Debug)]
 pub struct Rect<T> {
     pub left: T,
     pub top: T,

@@ -1,5 +1,6 @@
 use std::{
     borrow::Cow,
+    cell::RefCell,
     ffi::{c_ulonglong, c_void, CString},
     path::PathBuf,
     ptr::null_mut,
@@ -10,6 +11,8 @@ use std::{
     },
 };
 
+use heapless::spsc::Queue;
+
 use glium::{buffer::ReadMapping, pixel_buffer::PixelBuffer, texture::RawImage2d};
 use rayon::prelude::*;
 
@@ -18,7 +21,7 @@ use ul_sys::*;
 
 use self::driver::{
     gpu::{Bitmap, GPUCommand, GPUDriver, OwnedBitmap},
-    GPUDriverReceiver, GPUDriverSender,
+    GPUDriverCommand, GPUDriverReceiver, GPUDriverSender,
 };
 
 #[path = "./driver.rs"]
@@ -27,23 +30,23 @@ mod driver;
 static END_WAIT_LOOP: Lazy<Arc<AtomicBool>> = Lazy::new(|| Arc::new(AtomicBool::new(false)));
 static mut GPU_SENDER: Lazy<GPUDriverSender> = Lazy::new(|| GPUDriverSender::new(0, 0, 0));
 
-pub struct Ultralight {
+pub struct Ultralight<'a> {
     renderer: ULRenderer,
     view: ULView,
-    driver_recv: GPUDriverReceiver,
+    driver_recv: GPUDriverReceiver<'a>,
 }
 
-impl Ultralight {
+impl<'a> Ultralight<'a> {
     #[allow(unused_mut)]
-    pub fn new(app_folder: PathBuf) -> Ultralight {
+    pub fn new(app_folder: PathBuf, queue: &mut Queue<GPUDriverCommand, 32>) -> Ultralight<'a> {
         let mut renderer;
         let mut view;
 
-        let (tx, rx) = kanal::unbounded();
+        let (mut producer, mut consumer) = queue.split();
 
-        unsafe { GPU_SENDER.set_tx(tx) };
+        unsafe { GPU_SENDER.set_tx(&producer) };
 
-        let driver_recv = GPUDriverReceiver::new(rx, app_folder.clone()).unwrap();
+        let driver_recv = GPUDriverReceiver::new(consumer, app_folder.clone()).unwrap();
 
         unsafe {
             let config = ulCreateConfig();
@@ -192,15 +195,21 @@ impl Ultralight {
     pub fn call_js_script(&self, script: String) {
         let cstr = CString::new(script).unwrap();
         unsafe {
-            let jsstr = JSStringCreateWithUTF8CString(cstr.as_ptr());
+            // let jsstr = JSStringCreateWithUTF8CString(cstr.as_ptr());
 
-            let context = ulViewLockJSContext(self.view);
+            // let context = ulViewLockJSContext(self.view);
 
-            let _ = JSEvaluateScript(context, jsstr, null_mut(), null_mut(), 1, null_mut());
+            let ulstr = ulCreateString(cstr.as_ptr());
 
-            ulViewLockJSContext(self.view);
+            ulViewEvaluateScript(self.view, ulstr, null_mut());
 
-            JSStringRelease(jsstr);
+            ulDestroyString(ulstr);
+
+            // let _ = JSEvaluateScript(context, jsstr, null_mut(), null_mut(), 1, null_mut());
+
+            // ulViewLockJSContext(self.view);
+
+            // JSStringRelease(jsstr);
         }
     }
 }

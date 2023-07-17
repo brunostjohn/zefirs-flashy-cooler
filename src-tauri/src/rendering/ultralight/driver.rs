@@ -1,6 +1,11 @@
-use std::fs;
+use std::cell::RefCell;
 use std::path::PathBuf;
+use std::sync::Arc;
+use std::time::Duration;
 use std::{borrow::Cow, mem, rc::Rc};
+use std::{fs, thread};
+
+use heapless::spsc::{Consumer, Producer, Queue};
 
 use glium::buffer::ReadMapping;
 use glium::pixel_buffer::PixelBuffer;
@@ -146,6 +151,7 @@ pub mod tex;
 use tex::*;
 use windows::Win32::UI::WindowsAndMessaging::GetDesktopWindow;
 
+#[derive(Debug)]
 pub enum GLVertexBuffer {
     Format2f4ub2f(Vec<ULVertex_2f_4ub_2f>),
     Format2f4ub2f2f28f(Vec<ULVertex_2f_4ub_2f_2f_28f>),
@@ -181,6 +187,7 @@ impl GLVertexBuffer {
     }
 }
 
+#[derive(Debug)]
 pub enum GPUDriverCommand {
     CreateTexture(u32, OwnedBitmap),
     UpdateTexture(u32, OwnedBitmap),
@@ -193,30 +200,29 @@ pub enum GPUDriverCommand {
     UpdateCommandList(Vec<GPUCommand>),
 }
 
-pub struct GPUDriverSender {
+pub struct GPUDriverSender<'a> {
     next_texture_id: u32,
     next_render_buffer_id: u32,
     next_geometry_id: u32,
-    sender: Sender<GPUDriverCommand>,
+    queue: Option<&'a Producer<'a, GPUDriverCommand, 32>>,
 }
 
-impl GPUDriverSender {
+impl<'a> GPUDriverSender<'a> {
     pub fn new(next_texture_id: u32, next_render_buffer_id: u32, next_geometry_id: u32) -> Self {
-        let (sender, _) = kanal::unbounded();
         Self {
             next_texture_id,
             next_render_buffer_id,
             next_geometry_id,
-            sender,
+            queue: None,
         }
     }
 
-    pub fn set_tx(&mut self, sender: Sender<GPUDriverCommand>) {
-        self.sender = sender;
+    pub fn set_tx(&mut self, sender: &Producer<'a, GPUDriverCommand, 32>) {
+        self.queue = Some(sender);
     }
 }
 
-impl GPUDriver for GPUDriverSender {
+impl GPUDriver for GPUDriverSender<'_> {
     fn begin_synchronize(&mut self) {}
 
     fn create_geometry(
@@ -255,51 +261,51 @@ impl GPUDriver for GPUDriverSender {
             }
         };
 
-        self.sender
-            .send(GPUDriverCommand::CreateGeometry(
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::CreateGeometry(
                 geometry_id,
                 gl_vertex_buffer,
                 index_buffer,
-            ))
-            .unwrap();
+            ));
+        }
     }
 
     #[inline]
     fn create_render_buffer(&mut self, render_buffer_id: u32, render_buffer: gpu::RenderBuffer) {
-        self.sender
-            .send(GPUDriverCommand::CreateRenderBuffer(
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::CreateRenderBuffer(
                 render_buffer_id,
                 render_buffer,
-            ))
-            .unwrap();
+            ));
+        }
     }
 
     #[inline]
     fn create_texture(&mut self, texture_id: u32, bitmap: gpu::bitmap::OwnedBitmap) {
-        self.sender
-            .send(GPUDriverCommand::CreateTexture(texture_id, bitmap))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::CreateTexture(texture_id, bitmap));
+        }
     }
 
     #[inline]
     fn destroy_geometry(&mut self, geometry_id: u32) {
-        self.sender
-            .send(GPUDriverCommand::DestroyGeometry(geometry_id))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::DestroyGeometry(geometry_id));
+        }
     }
 
     #[inline]
     fn destroy_render_buffer(&mut self, render_buffer_id: u32) {
-        self.sender
-            .send(GPUDriverCommand::DestroyRenderBuffer(render_buffer_id))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::DestroyRenderBuffer(render_buffer_id));
+        }
     }
 
     #[inline]
     fn destroy_texture(&mut self, texture_id: u32) {
-        self.sender
-            .send(GPUDriverCommand::DestroyTexture(texture_id))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::DestroyTexture(texture_id));
+        }
     }
 
     #[inline]
@@ -328,9 +334,9 @@ impl GPUDriver for GPUDriverSender {
 
     #[inline]
     fn update_command_list(&mut self, command_list: Vec<gpu::GPUCommand>) {
-        self.sender
-            .send(GPUDriverCommand::UpdateCommandList(command_list))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::UpdateCommandList(command_list));
+        }
     }
 
     fn update_geometry(
@@ -369,20 +375,20 @@ impl GPUDriver for GPUDriverSender {
             }
         };
 
-        self.sender
-            .send(GPUDriverCommand::UpdateGeometry(
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::UpdateGeometry(
                 geometry_id,
                 gl_vertex_buffer,
                 index_buffer,
-            ))
-            .unwrap();
+            ));
+        }
     }
 
     #[inline]
     fn update_texture(&mut self, texture_id: u32, bitmap: OwnedBitmap) {
-        self.sender
-            .send(GPUDriverCommand::UpdateTexture(texture_id, bitmap))
-            .unwrap();
+        if let Some(ref mut queue) = self.queue {
+            queue.enqueue(GPUDriverCommand::UpdateTexture(texture_id, bitmap));
+        }
     }
 }
 
@@ -395,8 +401,7 @@ struct RenderVertex {
 implement_vertex!(RenderVertex, position, tex_coords);
 
 #[allow(dead_code)]
-pub struct GPUDriverReceiver {
-    receiver: Receiver<GPUDriverCommand>,
+pub struct GPUDriverReceiver<'a> {
     context: Rc<Context>,
     head: HeadlessRenderer,
     texture_map: HashMap<u32, (EitherTexture, Option<u32>), BuildNoHashHasher<u32>>,
@@ -406,6 +411,7 @@ pub struct GPUDriverReceiver {
     path_program: Program,
     fill_program: Program,
     rawdog: ContextWrapper<NotCurrent, ()>,
+    queue: Consumer<'a, GPUDriverCommand, 32>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -414,16 +420,16 @@ pub struct ShaderCacheFormat {
     pub path_format: u32,
 }
 
-impl GPUDriverReceiver {
+impl<'a> GPUDriverReceiver<'a> {
     pub fn new(
-        receiver: Receiver<GPUDriverCommand>,
+        queue: Consumer<'a, GPUDriverCommand, 32>,
         app_folder: PathBuf,
     ) -> Result<Self, &'static str> {
         let ctx = unsafe { ContextBuilder::new().build_raw_context(GetDesktopWindow().0) }.unwrap();
 
         let gl_ctx = HeadlessRenderer::with_debug::<NotCurrent>(
             unsafe { mem::transmute_copy(ctx.context()) },
-            glium::debug::DebugCallbackBehavior::PrintAll,
+            glium::debug::DebugCallbackBehavior::Ignore,
         )
         .unwrap();
 
@@ -546,7 +552,6 @@ impl GPUDriverReceiver {
         );
 
         Ok(Self {
-            receiver,
             context: context.get_context().clone(),
             empty_texture,
             texture_map,
@@ -557,6 +562,7 @@ impl GPUDriverReceiver {
             fill_program,
             head: gl_ctx,
             rawdog: ctx,
+            queue,
         })
     }
 
@@ -564,7 +570,7 @@ impl GPUDriverReceiver {
     pub fn render_bitmap(&mut self, tex_id: u32) -> Result<Cow<'_, [u8]>, &'static str> {
         let image = self.get_texture(&tex_id).unwrap();
 
-        let image_data: RawImage2d<'_, u8> = image.data().read_as_texture_2d().unwrap();
+        let image_data: RawImage2d<'_, u8> = image.read();
 
         let image = image_data.data;
 
@@ -578,7 +584,9 @@ impl GPUDriverReceiver {
 
     #[inline]
     pub fn render(&mut self) -> Result<(), &'static str> {
-        while let Some(cmd) = self.receiver.try_recv().or(Err("Failed to receive"))? {
+        while let Some(cmd) = self.queue.dequeue() {
+            // println!("{:?}", &cmd);
+            thread::sleep(Duration::from_millis(5));
             match cmd {
                 GPUDriverCommand::CreateTexture(id, bitmap) => {
                     let tex = self.create_texture(id, bitmap)?;
@@ -609,7 +617,7 @@ impl GPUDriverReceiver {
                 GPUDriverCommand::UpdateCommandList(command_list) => {
                     self.update_command_list(command_list)?;
                 }
-            }
+            };
         }
 
         Ok(())
@@ -795,6 +803,7 @@ impl GPUDriverReceiver {
                     self.draw_geometry(gpu_state, geometry_id, indices_offset, indices_count)?;
                 }
             }
+            thread::sleep(Duration::from_millis(5));
         }
 
         Ok(())
@@ -881,8 +890,8 @@ impl GPUDriverReceiver {
 
         for (i, row) in transformation.iter_mut().enumerate() {
             for (j, column) in row.iter_mut().enumerate() {
-                for k in 0..4 {
-                    *column += gpu_state.transform[i * 4 + k] * orth_projection_matrix[k][j];
+                for (k, row_orth) in orth_projection_matrix.iter().enumerate() {
+                    *column += gpu_state.transform[i * 4 + k] * (*row_orth)[j];
                 }
             }
         }

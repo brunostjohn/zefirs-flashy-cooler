@@ -1,5 +1,3 @@
-use std::borrow::Cow;
-
 use self::constants::constants::*;
 use super::{Device, DeviceCreator};
 mod constants;
@@ -55,57 +53,63 @@ impl Device for TTUltra {
         Ok(())
     }
 
-    fn send_image(&mut self, img: Cow<'_, [u8]>) -> Result<(), &'static str> {
-        let mut last_image: Vec<u8> = vec![];
+    fn send_image(&mut self, img: &[u8]) -> Result<(), &'static str> {
+        let mut last_image = [0u8; 1016].as_slice();
 
         let mut compressor = turbojpeg::Compressor::new().unwrap();
         compressor.set_quality(95);
         compressor.set_subsamp(turbojpeg::Subsamp::Sub2x2);
 
         let image_struct = turbojpeg::Image {
-            pixels: &*img,
+            pixels: img,
             width: 480,
             pitch: 480 * 4,
             height: 480,
             format: turbojpeg::PixelFormat::RGBA,
         };
 
-        let mut image = turbojpeg::OutputBuf::new_owned();
-
-        compressor.compress(image_struct, &mut image).unwrap();
+        let image = compressor.compress_to_owned(image_struct).unwrap();
 
         let handle = match &self.device {
             Some(device) => device,
             None => return Err("No device initialised!"),
         };
 
+        let mut packet = Vec::with_capacity(1028);
+
         for (packets_sent, chunk) in image.chunks(1016).enumerate() {
             let chunk_length = chunk.len() as u16;
 
-            let mut packet = vec![
-                IMG_TX,
-                0x09,
-                0x65,
-                0x00,
-                (chunk_length & 0xff) as u8,
-                (chunk_length >> 8 & 0xff) as u8,
-                packets_sent.try_into().unwrap(),
-                0x00,
-            ];
+            packet.extend([IMG_TX, 0x09, 0x65].iter());
+
+            if chunk_length == 1016 {
+                packet.extend([0x00, 0xf8, 0x03].iter());
+            } else {
+                packet.extend(
+                    [
+                        0x01,
+                        (chunk_length & 0xff) as u8,
+                        (chunk_length >> 8 & 0xff) as u8,
+                    ]
+                    .iter(),
+                );
+            }
+
+            packet.extend([packets_sent.try_into().unwrap(), 0x00].iter());
 
             packet.extend(chunk.iter());
 
             if chunk_length < 1016 {
-                packet[3] = 0x01;
                 packet.extend(&mut last_image[chunk_length as usize..].iter());
             }
 
-            last_image = chunk.to_vec();
+            last_image = chunk;
 
             if handle.write(&packet).is_err() {
                 return Err("Failed to write to device!");
             };
         }
+        packet.clear();
 
         Ok(())
     }
