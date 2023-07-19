@@ -6,7 +6,7 @@ args = ["fmt", "--", "--emit=files"]
 [tasks.clean]
 dependencies = [
     "clean-rust",
-    "clean-libre-project"
+    "clean-libre-lib"
 ]
 
 [tasks.clean-rust]
@@ -17,7 +17,7 @@ args = ["clean"]
 install_crate = "tauri"
 command = "cargo"
 args = ["tauri", "build"]
-dependencies = ["clean"]
+dependencies = ["clean", "libre"]
 
 [tasks.clean-libre-lib]
 cwd = "../LibreHardwareMonitorNative/"

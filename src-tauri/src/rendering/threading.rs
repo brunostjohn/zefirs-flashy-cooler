@@ -20,10 +20,8 @@ use std::fs::{self};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration};
+use std::time::{Duration, SystemTime};
 use std::vec;
-
-
 
 use crate::rendering::device::DeviceContainer;
 use crate::rendering::helpers_threading::{ChangeFrequency, EventTicker};
@@ -63,8 +61,6 @@ impl Renderer {
 
         let render = thread::spawn(move || {
             let mut engine = Ultralight::new(app_folder);
-
-            println!("Received {:?} fps", fps);
 
             let mut frame_time = EventTicker::new(1000 / fps);
             let mut sensor_time = EventTicker::new(3000);
@@ -113,7 +109,6 @@ impl Renderer {
 
                         engine.call_js_script(script);
                     }
-                    engine.render();
                     let image = engine.get_bitmap().unwrap();
 
                     if device.send_image(&image).is_err() {
@@ -123,6 +118,9 @@ impl Renderer {
                             device.init().unwrap();
                         }
                     }
+
+                    engine.render();
+
                     if channel_scan.check_time() {
                         if gc_time.check_time() {
                             engine.garbage_collect();
@@ -184,7 +182,6 @@ impl Renderer {
                             );
                             }
                         }
-
                         if receive_flag(&rx_end, false) {
                             println!("Received end signal. Thread: renderer.");
 
@@ -198,7 +195,7 @@ impl Renderer {
                         frame_time.change_frequency(&rx_fps);
                     }
                 } else {
-                    thread::sleep(Duration::from_millis(10));
+                    thread::sleep(Duration::from_millis(15));
                 }
             }
         });

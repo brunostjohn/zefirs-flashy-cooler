@@ -10,8 +10,7 @@ use std::{
     },
 };
 
-use heapless::spsc::{Queue};
-
+use heapless::spsc::Queue;
 
 use rayon::prelude::*;
 
@@ -43,12 +42,12 @@ impl Ultralight {
         let mut renderer;
         let mut view;
 
-        // unsafe { GPU_SENDER.set_tx(producer) };
-
         let driver_recv = GPUDriverReceiver::new(app_folder.clone()).unwrap();
 
         unsafe {
             let config = ulCreateConfig();
+
+            ulConfigSetRecycleDelay(config, 10.0);
 
             ulPlatformSetGPUDriver(ULGPUDriver {
                 begin_synchronize: Some(begin_sync),
@@ -158,10 +157,11 @@ impl Ultralight {
     }
 
     #[inline(always)]
-    pub fn update(&self) {
+    pub fn update(&mut self) {
         unsafe {
             ulUpdate(self.renderer);
         }
+        let _ = self.driver_recv.exec_one();
     }
 
     #[inline(always)]

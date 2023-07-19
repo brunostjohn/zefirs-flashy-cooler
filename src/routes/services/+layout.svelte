@@ -20,13 +20,13 @@
 		<ServiceOption href="" name="Sensors" desc="See your CPU's temperature on your cooler."
 			><SensorIcon /></ServiceOption
 		>
-		<ServiceOption
+		<!-- <ServiceOption
 			href="/srgb"
 			name="SignalRGB"
 			desc="Sync your cooler with your PC's lighting effects."
 		>
 			<SrgbIcon />
-		</ServiceOption>
+		</ServiceOption> -->
 	</div>
 	{#key data.pathname}
 		<div class="content" in:fly={transitionIn} out:fly={transitionOut}>

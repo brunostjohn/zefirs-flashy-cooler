@@ -1,18 +1,11 @@
-
 use std::path::PathBuf;
 
 use std::time::Duration;
 use std::{borrow::Cow, mem, rc::Rc};
 use std::{fs, thread};
 
-
-
-
-
 use glium::program::{Binary, ProgramCreationInput};
 use glium::vertex::AttributeType;
-
-
 
 use serde::{Deserialize, Serialize};
 
@@ -564,8 +557,48 @@ impl GPUDriverReceiver {
     #[inline]
     pub fn render(&mut self) -> Result<(), &'static str> {
         while let Some(cmd) = unsafe { QUEUE.dequeue() } {
-            // println!("{:?}", &cmd);
-            thread::sleep(Duration::from_millis(5));
+            // println!("{:?}", &cmd);a
+            // thread::sleep(Duration::from_millis(5));
+            match cmd {
+                GPUDriverCommand::CreateTexture(id, bitmap) => {
+                    let tex = self.create_texture(id, bitmap)?;
+
+                    self.texture_map.insert(id, (tex, None));
+                }
+                GPUDriverCommand::UpdateTexture(id, bitmap) => {
+                    self.update_texture(id, bitmap)?;
+                }
+                GPUDriverCommand::DestroyTexture(id) => {
+                    self.destroy_texture(id)?;
+                }
+                GPUDriverCommand::CreateRenderBuffer(id, render_buffer) => {
+                    self.create_render_buffer(id, render_buffer)?;
+                }
+                GPUDriverCommand::DestroyRenderBuffer(id) => {
+                    self.destroy_render_buffer(id)?;
+                }
+                GPUDriverCommand::CreateGeometry(id, vertex, index) => {
+                    self.create_geometry(id, vertex, index)?;
+                }
+                GPUDriverCommand::UpdateGeometry(id, vertex, index) => {
+                    self.update_geometry(id, vertex, index)?;
+                }
+                GPUDriverCommand::DestroyGeometry(id) => {
+                    self.destroy_geometry(id)?;
+                }
+                GPUDriverCommand::UpdateCommandList(command_list) => {
+                    self.update_command_list(command_list)?;
+                }
+            };
+            std::thread::yield_now();
+        }
+
+        Ok(())
+    }
+
+    #[inline]
+    pub fn exec_one(&mut self) -> Result<(), &'static str> {
+        if let Some(cmd) = unsafe { QUEUE.dequeue() } {
             match cmd {
                 GPUDriverCommand::CreateTexture(id, bitmap) => {
                     let tex = self.create_texture(id, bitmap)?;
@@ -782,7 +815,8 @@ impl GPUDriverReceiver {
                     self.draw_geometry(gpu_state, geometry_id, indices_offset, indices_count)?;
                 }
             }
-            thread::sleep(Duration::from_millis(5));
+            // thread::sleep(Duration::from_millis(5));
+            std::thread::yield_now();
         }
 
         Ok(())

@@ -539,67 +539,44 @@ pub fn get_all_themes() -> Result<Vec<Theme>, &'static str> {
 
     let mut themes = vec![];
 
-    for dir in themes_iter {
-        match dir {
-            Ok(item) => {
-                let dir_path = item.path();
+    for item in themes_iter.flatten() {
+        let dir_path = item.path();
 
-                let mut index_path = dir_path.clone();
-                index_path.push("index.html");
+        let mut index_path = dir_path.clone();
+        index_path.push("index.html");
 
-                if index_path.as_path().exists() {
-                    let mut image_path = dir_path.clone();
-                    image_path.push("preview.jpg");
+        if index_path.as_path().exists() {
+            let mut image_path = dir_path.clone();
+            image_path.push("preview.jpg");
 
-                    let mut json_path = dir_path.clone();
-                    json_path.push("theme.json");
+            let mut manifest = get_theme_inner(
+                theme_path.to_path_buf(),
+                item.file_name().to_string_lossy().to_string(),
+            )?;
 
-                    let loaded = match fs::read_to_string(json_path) {
-                        Ok(st) => st,
-                        Err(_) => "{}".to_string(),
-                    };
+            match manifest.colour {
+                Some(_) => {}
+                None => {
+                    let image_colour = match image::open(image_path) {
+                        Ok(file) => {
+                            let (buffer, color_type) = get_image_buffer(file);
+                            let colors =
+                                color_thief::get_palette(&buffer, color_type, 10, 10).unwrap();
 
-                    let mut manifest = match serde_json::from_str(&loaded) {
-                        Ok(res) => res,
-                        Err(_) => Theme {
-                            name: item.file_name().to_str().unwrap().to_string(),
-                            fs_name: item.file_name().to_str().unwrap().to_string(),
-                            colour: None,
-                            description: "Failed to load theme.json".to_string(),
-                            author: "Failed to load".to_string(),
-                            customisable_parameters: vec![],
-                            version: "0.0.0".to_owned(),
-                            tested_on: None,
-                        },
-                    };
-
-                    match manifest.colour {
-                        Some(_) => {}
-                        None => {
-                            let image_colour = match image::open(image_path) {
-                                Ok(file) => {
-                                    let (buffer, color_type) = get_image_buffer(file);
-                                    let colors =
-                                        color_thief::get_palette(&buffer, color_type, 10, 10)
-                                            .unwrap();
-
-                                    format!(
-                                        "#{:02X?}{:02X?}{:02X?}",
-                                        255 - colors[0].r,
-                                        255 - colors[0].g,
-                                        255 - colors[0].b
-                                    )
-                                }
-                                Err(_) => "#FFFFFF".to_string(),
-                            };
-                            manifest.colour = Some(image_colour);
+                            format!(
+                                "#{:02X?}{:02X?}{:02X?}",
+                                255 - colors[0].r,
+                                255 - colors[0].g,
+                                255 - colors[0].b
+                            )
                         }
-                    }
-
-                    themes.push(manifest);
+                        Err(_) => "#FFFFFF".to_string(),
+                    };
+                    manifest.colour = Some(image_colour);
                 }
             }
-            Err(_) => {}
+
+            themes.push(manifest);
         }
     }
 

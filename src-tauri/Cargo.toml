@@ -76,7 +76,7 @@ strip = true
 [profile.release]
 lto = true
 opt-level= 3
-incremental = true
+incremental = false
 panic = "abort"
 codegen-units = 1
 strip = true

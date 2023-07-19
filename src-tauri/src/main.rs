@@ -163,9 +163,13 @@ fn main() {
                 api.prevent_exit();
                 // println!("Exit requested");
             }
-            _ => {
-                // println!("{:#?}", event);
-            }
+            tauri::RunEvent::Exit => {}
+            tauri::RunEvent::WindowEvent { label, event, .. } => {}
+            tauri::RunEvent::Ready => {}
+            tauri::RunEvent::Resumed => {}
+            tauri::RunEvent::MainEventsCleared => {}
+            tauri::RunEvent::Updater(_) => {}
+            _ => {}
         });
 
     println!("App exited");
