@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { invoke } from "@tauri-apps/api/tauri";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
+	import { inview } from "svelte-inview";
+	import { topBarMessage } from "../../helpers/stores";
 
 	let themeFolder = "";
 
@@ -34,12 +36,32 @@
 	const handlePortChange = async () => {
 		await invoke("select_port", { port: portValue });
 	};
+
+	const viewEnterExitHandler = (event: { detail: { inView: boolean } }) => {
+		const { inView } = event.detail;
+
+		if (!inView) {
+			topBarMessage.set("Settings");
+		} else {
+			topBarMessage.set("");
+		}
+	};
+
+	onDestroy(() => {
+		topBarMessage.set("");
+	});
 </script>
 
 <div class="actualSettings">
 	<div id="about">
 		<div class="card" style="width: 18rem;" id="zefirCard">
-			<img src="../images/about_card.jpg" class="card-img-top" alt="Zefir" />
+			<img
+				src="../images/about_card.jpg"
+				class="card-img-top"
+				alt="Zefir"
+				use:inview={{ threshold: 0.95 }}
+				on:inview_change={viewEnterExitHandler}
+			/>
 			<div class="card-body">
 				<h5 class="card-title">Meet Zefir</h5>
 				<p class="card-text">

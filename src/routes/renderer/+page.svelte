@@ -13,6 +13,8 @@
 	import Colour from "../../components/parameters/Colour.svelte";
 	import Text from "../../components/parameters/Text.svelte";
 	import File from "../../components/parameters/File.svelte";
+	import { inview } from "svelte-inview";
+	import { topBarMessage } from "../../helpers/stores";
 
 	let theme: Theme = {
 		name: "undefined",
@@ -53,7 +55,18 @@
 
 	onDestroy(async () => {
 		await uninstallerListen();
+		topBarMessage.set("");
 	});
+
+	const viewEnterExitHandler = (event: { detail: { inView: boolean } }) => {
+		const { inView } = event.detail;
+
+		if (!inView) {
+			topBarMessage.set(theme.name);
+		} else {
+			topBarMessage.set("");
+		}
+	};
 </script>
 
 {#if loading}
@@ -75,7 +88,7 @@
 {:else}
 	<div class="info-content">
 		<div class="theme-collect">
-			<h1>{theme.name}</h1>
+			<h1 use:inview on:inview_change={viewEnterExitHandler}>{theme.name}</h1>
 			<h3>by {theme.author}</h3>
 			<SvelteMarkdown source={theme.description} renderers={{ heading: HeadingRendererMd }} />
 		</div>

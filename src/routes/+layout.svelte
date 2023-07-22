@@ -4,12 +4,13 @@
 	import { appWindow } from "@tauri-apps/api/window";
 	import { invoke } from "@tauri-apps/api/tauri";
 	import { page } from "$app/stores";
+	import { topBarMessage } from "../helpers/stores";
 
 	const murder = async () => {
 		await invoke("remote_exit");
 	};
 
-	import { fly } from "svelte/transition";
+	import { fade, fly } from "svelte/transition";
 	import { cubicIn, cubicOut } from "svelte/easing";
 
 	export let data;
@@ -22,28 +23,36 @@
 	const transitionOut = { easing: cubicIn, y: -y, duration };
 
 	document.addEventListener("contextmenu", (event) => event.preventDefault());
+
+	let showDarkened = false;
+	let topText = "";
+
+	topBarMessage.subscribe((value) => {
+		if (value !== "") {
+			showDarkened = true;
+			topText = value;
+		} else {
+			topText = "";
+			showDarkened = false;
+		}
+	});
 </script>
 
-<div id="topbar" data-tauri-drag-region>
+<div
+	id="topbar"
+	data-tauri-drag-region
+	style={showDarkened ? "backdrop-filter: brightness(5%);" : undefined}
+>
 	<img
 		src="/images/android-chrome-192x192.png"
 		id="titlebarlogo"
 		alt="Zefir's Flashy Cooler Logo"
 	/>
-	<nav class="nav nav-pills nav-fill" id="controlbar">
-		<a class="nav-link" href="/themes" class:active={$page.url.pathname.includes("themes")}
-			>Themes</a
-		>
-		<a class="nav-link" href="/services" class:active={$page.url.pathname.includes("services")}
-			>Services</a
-		>
-		<a class="nav-link" href="/renderer" class:active={$page.url.pathname === "/renderer"}
-			>Now Playing</a
-		>
-		<a class="nav-link" href="/settings" class:active={$page.url.pathname === "/settings"}
-			>Settings</a
-		>
-	</nav>
+	{#if showDarkened}
+		<div class="featured-text" transition:fade={{ duration: 150 }}>
+			<p class="featured-text-elt">{topText}</p>
+		</div>
+	{/if}
 	<div id="titlebarcontrols">
 		<!-- svelte-ignore a11y-click-events-have-key-events -->
 		<a id="minimise" on:click={() => appWindow.minimize()}>
@@ -69,6 +78,18 @@
 		</a>
 	</div>
 </div>
+
+<nav class="nav nav-pills nav-fill" id="controlbar">
+	<a class="nav-link" href="/themes" class:active={$page.url.pathname.includes("themes")}>Themes</a>
+	<a class="nav-link" href="/services" class:active={$page.url.pathname.includes("services")}
+		>Services</a
+	>
+	<a class="nav-link" href="/renderer" class:active={$page.url.pathname === "/renderer"}
+		>Now Playing</a
+	>
+	<a class="nav-link" href="/settings" class:active={$page.url.pathname === "/settings"}>Settings</a
+	>
+</nav>
 
 {#key data.pathname}
 	<main in:fly={transitionIn} out:fly={transitionOut}>

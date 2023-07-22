@@ -3,8 +3,9 @@
 	import SearchBar from "../../../components/SearchBar.svelte";
 	import ThemeCard from "../../../components/ThemeCard.svelte";
 	import { fade } from "svelte/transition";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import { getThemes, type Theme } from "../../../helpers/themeTools";
+	import { topBarMessage } from "../../../helpers/stores";
 
 	let transitionLength = 200;
 
@@ -14,6 +15,10 @@
 
 	onMount(async () => {
 		data.themes = await getThemes();
+	});
+
+	onDestroy(() => {
+		topBarMessage.set("");
 	});
 </script>
 

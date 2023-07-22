@@ -20,6 +20,7 @@
 	import FolderIcon from "../../../components/svgs/FolderIcon.svelte";
 	import SliderIcon from "../../../components/svgs/SliderIcon.svelte";
 	import { dragscroll } from "@svelte-put/dragscroll";
+	import { topBarMessage } from "../../../helpers/stores";
 
 	function formatBytes(bytes: number | undefined, decimals = 2) {
 		bytes = bytes ?? 0;
@@ -120,6 +121,7 @@
 	onDestroy(async () => {
 		await installerListen();
 		await uninstallerListen();
+		topBarMessage.set("");
 	});
 
 	const installTheme = () => {

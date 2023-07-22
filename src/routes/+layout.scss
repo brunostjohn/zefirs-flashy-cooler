@@ -2,13 +2,42 @@
 
 #controlbar {
 	padding: 5px;
-	background-color: rgba(44, 58, 71, 0.3);
+	background-color: rgba(211, 211, 211, 0.2);
 	width: 60%;
 	margin: 7px;
 	margin-bottom: 8px;
 	border-radius: 10px;
-	backdrop-filter: blur(50px);
+	backdrop-filter: blur(50px) brightness(0.6);
 	-webkit-app-region: no-drag;
+
+	position: fixed;
+	// bottom: 5px;
+	bottom: -40px;
+	left: 20%;
+
+	-webkit-backface-visibility: hidden;
+	-webkit-transform: translateZ(0) scale(0.9, 0.9);
+
+	z-index: 500;
+
+	transition: all 0.5s ease;
+
+	.active {
+		background: transparent !important;
+	}
+
+	&:hover {
+		bottom: 3px;
+		background-color: rgba(44, 58, 71, 0.3);
+
+		-webkit-backface-visibility: hidden;
+		-webkit-transform: translateZ(0) scale(1, 1);
+
+		.active {
+			background: #646cff !important;
+			color: white;
+		}
+	}
 }
 
 #controlbar .active {
@@ -17,12 +46,13 @@
 }
 
 body {
-	background-color: #080d1400 !important;
+	background-color: #080d14 !important;
 	color: #ffffff !important;
 }
 
 main {
-	margin-top: 5rem;
+	margin-top: 2.5rem;
+	margin-bottom: 5rem;
 }
 
 :not(input):not(textarea),
@@ -53,8 +83,8 @@ a[href^="http://"],
 }
 
 #topbar {
-	background-color: #060a0f3f;
-	backdrop-filter: brightness(5%);
+	// background-color: #FFFFFF;
+	// backdrop-filter: brightness(5%);
 	width: 100%;
 	position: fixed;
 	top: 0;
@@ -69,6 +99,46 @@ a[href^="http://"],
 	padding-top: 0.1rem;
 	padding-bottom: 0.1rem;
 	-webkit-app-region: drag;
+	height: 2.8rem;
+
+	transition: all 150ms ease-in-out;
+
+	.featured-text {
+		position: absolute;
+		// left: 3.5rem;
+		width: 100%;
+		left: 0;
+		height: 100%;
+		margin: 0;
+		padding: 0;
+		text-align: center;
+
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		justify-items: center;
+
+		p {
+			margin: 0;
+			padding: 0;
+
+			position: relative;
+			top: -1px;
+
+			vertical-align: middle;
+			text-align: center;
+
+			font-weight: 400;
+			font-size: 20px;
+
+			// background: -webkit-linear-gradient(120deg, #bd34fe 10%, #41d1ff);
+			filter: brightness(100%);
+			// -webkit-background-clip: text;
+			// -webkit-text-fill-color: transparent;
+
+			filter: brightness(0.8);
+		}
+	}
 }
 
 #spacerTitle {
@@ -76,8 +146,8 @@ a[href^="http://"],
 }
 
 #titlebarlogo {
-	max-width: 3rem;
-	max-height: 3rem;
+	max-width: 2rem;
+	max-height: 2rem;
 	position: absolute;
 	left: 0;
 	margin: 1rem;
@@ -95,44 +165,50 @@ a[href^="http://"],
 }
 
 #minimisewindowimage {
-	width: 2rem;
-	filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	width: 1.5rem;
+	// filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	filter: brightness(0) invert(1) brightness(0.8);
 }
 
 #minimisewindowimage:hover {
-	filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	// filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	filter: brightness(0) invert(1) brightness(0.96);
 	transition: filter ease-in-out 0.2s;
 }
 
 #closewindowimage {
-	width: 2.5rem;
+	width: 2rem;
 	color: rgb(13, 71, 158);
-	filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	// filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	filter: brightness(0) invert(1) brightness(0.8);
 	padding: 0.5rem;
 	transition: filter ease-in-out 0.2s;
 }
 
 #killAppImage {
-	width: 2rem;
+	width: 1.5rem;
 	color: rgb(13, 71, 158);
-	filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	// filter: invert(31%) sepia(98%) saturate(2837%) hue-rotate(207deg) brightness(99%) contrast(100%);
+	filter: brightness(0) invert(1) brightness(0.8);
 	padding: 0.05rem;
 	margin-left: 7px;
 	transition: filter ease-in-out 0.2s;
 }
 
 #killAppImage:hover {
-	filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	// filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	filter: brightness(0) invert(1) brightness(0.96);
 }
 
 #closewindowimage:hover {
-	filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	// filter: invert(57%) sepia(83%) saturate(1878%) hue-rotate(194deg) brightness(108%) contrast(99%);
+	filter: brightness(0) invert(1) brightness(0.96);
 }
 
 #titlebarcontrols {
 	right: 0;
 	position: absolute;
-	padding: 1rem;
+	padding: 0.3rem;
 }
 
 .card,
@@ -195,4 +271,13 @@ a[href^="http://"],
 
 main {
 	z-index: 1;
+}
+
+.nav-pills .active {
+	background: #646cff !important;
+	color: white;
+}
+
+.nav-link {
+	color: #9499ff;
 }

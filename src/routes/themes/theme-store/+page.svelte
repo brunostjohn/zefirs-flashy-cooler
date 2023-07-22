@@ -5,8 +5,9 @@
 	import ThemeCard from "../../../components/ThemeCard.svelte";
 	import { fade } from "svelte/transition";
 	import type { Theme } from "../../../helpers/themeTools";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import { getAllThemes } from "../../../helpers/ghApi";
+	import { topBarMessage } from "../../../helpers/stores";
 
 	let transitionLength = 200;
 
@@ -22,6 +23,10 @@
 			console.log(e);
 		}
 		loading = false;
+	});
+
+	onDestroy(() => {
+		topBarMessage.set("");
 	});
 </script>
 

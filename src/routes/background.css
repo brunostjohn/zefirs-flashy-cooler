@@ -1,5 +1,5 @@
 body {
-	background-color: #080d1400 !important;
+	background-color: #080d14 !important;
 	overflow-x: hidden !important;
 	/* color: #d8d8d8 !important; */
 }
@@ -19,4 +19,14 @@ body::-webkit-scrollbar-thumb {
 	border-radius: 20px;
 	border-width: 340px;
 	z-index: 6;
+}
+
+:root {
+	--bs-primary: #646cff !important;
+	--vp-c-brand-light: #747bff;
+	--vp-c-brand-lighter: #9499ff;
+	--vp-c-brand-lightest: #bcc0ff;
+	--vp-c-brand-dark: #535bf2;
+	--vp-c-brand-darker: #454ce1;
+	--vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
 }

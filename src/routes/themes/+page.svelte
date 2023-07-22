@@ -1,13 +1,15 @@
 <script lang="ts">
 	import { fade } from "svelte/transition";
 	import type { Theme } from "./../../helpers/themeTools";
-	import { onMount } from "svelte";
+	import { onDestroy, onMount } from "svelte";
 	import FeaturedThemes from "../../components/FeaturedThemes.svelte";
 	import NavigationCircle from "../../components/NavigationCircle.svelte";
 	import ThemeCarousel from "../../components/ThemeCarousel.svelte";
 	import { getAllThemes, getFeaturedThemes } from "../../helpers/ghApi";
 	import { getThemes } from "../../helpers/themeTools";
 	import { DoubleBounce, Stretch } from "svelte-loading-spinners";
+	import { inview } from "svelte-inview";
+	import { topBarMessage } from "../../helpers/stores";
 
 	let featuredThemes: Theme[] = [];
 	let myThemes: Theme[] = [];
@@ -36,12 +38,28 @@
 		}
 		loadingAll = false;
 	});
+
+	onDestroy(() => {
+		topBarMessage.set("");
+	});
+
+	const viewEnterExitHandler = (event: { detail: { inView: boolean } }) => {
+		const { inView } = event.detail;
+
+		if (!inView) {
+			topBarMessage.set("Featured Themes");
+		} else {
+			topBarMessage.set("");
+		}
+	};
 </script>
 
 <main>
 	<section>
 		<div class="section-header">
-			<h1 style="margin-bottom: 1rem;">Featured Themes</h1>
+			<h1 style="margin-bottom: 1rem;" use:inview on:inview_change={viewEnterExitHandler}>
+				Featured Themes
+			</h1>
 		</div>
 		{#if !loadingFeatured}
 			<div>

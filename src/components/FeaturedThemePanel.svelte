@@ -46,18 +46,15 @@
 
 	@keyframes clicked-panel-animation {
 		0% {
-			width: 54.6rem;
-			height: 24.6em;
+			transform: scale(0.98, 0.98);
 		}
 
 		60% {
-			width: 52.6rem;
-			height: 22.6em;
+			transform: scale(0.94, 0.94);
 		}
 
 		100% {
-			width: 55rem;
-			height: 25rem;
+			transform: scale(1, 1);
 		}
 	}
 
@@ -70,8 +67,7 @@
 
 		&:hover {
 			.featured-theme {
-				width: 54.6rem;
-				height: 24.6em;
+				transform: scale(0.98, 0.98);
 			}
 		}
 	}
