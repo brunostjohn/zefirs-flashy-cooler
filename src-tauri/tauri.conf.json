@@ -81,7 +81,8 @@
 					"license": "../LICENSE",
 					"installerIcon": "./icons/installer.ico",
 					"sidebarImage": "./icons/installer-sidebar.bmp",
-					"headerImage": "./icons/installer-header.bmp"
+					"headerImage": "./icons/installer-header.bmp",
+					"installMode": "perMachine"
 				}
 			}
 		},

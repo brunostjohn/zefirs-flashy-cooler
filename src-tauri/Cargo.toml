@@ -24,7 +24,6 @@ tauri-plugin-window-state = "0.1.0"
 base64 = "0.21.2"
 turbojpeg = {version = "0.5.2", features = ["image"] }
 image = "0.24.6"
-hidapi = "2.3.3"
 flate2 = "1.0.26"
 infer = "0.13.0"
 mime_guess = "2.0.4"
@@ -51,6 +50,7 @@ rayon = "1.7.0"
 seq-macro = "0.3.4"
 nohash-hasher = "0.2.0"
 heapless = "0.7.16"
+hidapi = { git = "https://github.com/sidit77/hidapi-rs.git", features = ["windows-native"] }
 
 [features]
 # this feature is used for production builds or when `devPath` points to the filesystem and the built-in dev server is disabled.

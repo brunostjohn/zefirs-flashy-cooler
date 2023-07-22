@@ -1,7 +1,3 @@
-
-
-
-
 use self::{capellix::Capellix, thermaltake::TTUltra};
 
 #[path = "./capellix/device.rs"]
