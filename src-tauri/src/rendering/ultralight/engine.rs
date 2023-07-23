@@ -38,7 +38,7 @@ pub struct Ultralight {
 
 impl Ultralight {
     #[allow(unused_mut)]
-    pub fn new(app_folder: PathBuf) -> Ultralight {
+    pub fn new(app_folder: PathBuf, width: u32, height: u32) -> Ultralight {
         let mut renderer;
         let mut view;
 
@@ -94,7 +94,7 @@ impl Ultralight {
             let view_config = ulCreateViewConfig();
             ulViewConfigSetIsAccelerated(view_config, true);
 
-            view = ulCreateView(renderer, 480, 480, view_config, null_mut());
+            view = ulCreateView(renderer, width, height, view_config, null_mut());
             ulViewSetFinishLoadingCallback(view, Some(finished_callback), null_mut());
         };
 
@@ -186,7 +186,7 @@ impl Ultralight {
         unsafe {
             let context = ulViewLockJSContext(self.view);
             JSGarbageCollect(context);
-            ulViewLockJSContext(self.view);
+            ulViewUnlockJSContext(self.view);
         }
     }
 

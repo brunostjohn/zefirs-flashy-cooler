@@ -10,10 +10,10 @@
 
 	const onClickPanel = () => {
 		panel.classList.remove("clicked-panel");
+		goto(`/themes/fsName?fsName=${encodeURIComponent(theme.fs_name)}`);
 		panel.classList.add("clicked-panel");
 		setTimeout(() => {
 			panel.classList.remove("clicked-panel");
-			goto(`/themes/fsName?fsName=${encodeURIComponent(theme.fs_name)}`);
 		}, 150);
 	};
 </script>
@@ -91,11 +91,13 @@
 
 			object-fit: cover;
 			z-index: -5;
-			filter: blur(20px) brightness(90%);
+			filter: blur(20px) brightness(50%);
 			// background-color: var(--bs-primary);
 		}
 
 		.short-info {
+			color: white;
+
 			z-index: 200;
 			top: 0;
 			left: 3%;
@@ -113,7 +115,9 @@
 				white-space: nowrap;
 			}
 
-			h4 {
+			h4,
+			h3 {
+				color: white;
 			}
 
 			.preview-img {
@@ -152,6 +156,8 @@
 			-webkit-line-clamp: 9;
 			line-clamp: 9;
 			-webkit-box-orient: vertical;
+
+			color: white;
 		}
 	}
 </style>

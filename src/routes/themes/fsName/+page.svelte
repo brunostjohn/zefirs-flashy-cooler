@@ -177,7 +177,7 @@
 		{#if theme.customisable_parameters.find((x) => x.type === "sensor")}
 			<Chip content={`Uses sensors`}><SensorIcon /></Chip>
 		{/if}
-		{#if theme.customisable_parameters.find((x) => x.type === "sensor")}
+		{#if theme.customisable_parameters.find((x) => x.type === "file")}
 			<Chip content={`Can use files`}><FolderIcon /></Chip>
 		{/if}
 	</div>

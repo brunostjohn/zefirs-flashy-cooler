@@ -34,28 +34,23 @@
 	};
 </script>
 
-<div id="container">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div id="container" on:click={updateConfig}>
 	<h5>{display_as}</h5>
-	<div id="flex">
-		<button class="btn btn-outline-primary" on:click={updateConfig}>Select file</button>
-		<p>
-			Currently selected: {current === "" || current === undefined ? "No file selected" : current}
-		</p>
-	</div>
+	<h6>Select file</h6>
 </div>
 
 <style lang="scss">
+	@import "../../styles/mixins.scss";
+
 	#container {
-		margin-top: 1rem;
+		// margin-top: 1rem;
+		width: 12rem;
+		height: 12rem;
+		@include flex-center;
+		flex-direction: column;
+		border-radius: 15px;
 
-		#flex {
-			display: flex;
-			align-items: center;
-
-			p {
-				margin-bottom: 0;
-				margin-left: 1rem;
-			}
-		}
+		background-color: rgba(185, 121, 194, 0.205);
 	}
 </style>

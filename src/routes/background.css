@@ -1,7 +1,46 @@
 body {
-	background-color: #080d14 !important;
 	overflow-x: hidden !important;
+	/* background: transparent !important; */
+	/* backdrop-filter: brightness(0.5); */
+
 	/* color: #d8d8d8 !important; */
+}
+
+body::before {
+	content: "";
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	z-index: -1;
+
+	display: block;
+	background: linear-gradient(54deg, #0d0413, #111218, #0a2129);
+	background-size: 400% 400%;
+	/* animation: gradient-bg-anim 15s ease-in-out infinite both alternate running; */
+	/* background-size: cover; */
+	width: 100vw;
+	height: 100vh;
+
+	/* filter: blur(20px) brightness(0.5); */
+
+	/* -webkit-filter: blur(5px);
+	-moz-filter: blur(5px);
+	-o-filter: blur(5px);
+	-ms-filter: blur(5px);
+	filter: blur(5px); */
+}
+
+@keyframes gradient-bg-anim {
+	0% {
+		background-position: 0% 50%;
+	}
+	50% {
+		background-position: 100% 50%;
+	}
+	100% {
+		background-position: 0% 50%;
+	}
 }
 
 body::-webkit-scrollbar {

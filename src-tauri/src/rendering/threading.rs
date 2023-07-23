@@ -20,7 +20,7 @@ use std::fs::{self};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread::{self, JoinHandle};
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
 use std::vec;
 
 use crate::rendering::device::DeviceContainer;
@@ -60,13 +60,6 @@ impl Renderer {
         let (tx_port, rx_port) = kanal::unbounded();
 
         let render = thread::spawn(move || {
-            let mut engine = Ultralight::new(app_folder);
-
-            let mut frame_time = EventTicker::new(1000 / fps);
-            let mut sensor_time = EventTicker::new(3000);
-            let mut channel_scan = EventTicker::new(250);
-            let mut gc_time = EventTicker::new(1000 * 30);
-
             let mut device = match DeviceContainer::new() {
                 Err(error) => {
                     println!("{:?}", error);
@@ -74,6 +67,14 @@ impl Renderer {
                 }
                 Ok(result) => result,
             };
+
+            let info = device.device_info();
+
+            let mut engine = Ultralight::new(app_folder, info.width, info.height);
+
+            let mut frame_time = EventTicker::new(1000 / fps);
+            let mut sensor_time = EventTicker::new(3000);
+            let mut gc_time = EventTicker::new(1000 * 30);
 
             let _ = device
                 .init()
@@ -121,79 +122,76 @@ impl Renderer {
 
                     engine.render();
 
-                    if channel_scan.check_time() {
-                        if gc_time.check_time() {
-                            engine.garbage_collect();
-                        }
+                    if gc_time.check_time() {
+                        engine.garbage_collect();
+                    }
 
-                        if let Ok(Some(port)) = rx_port.try_recv() {
-                            let _ = engine
-                                .load_url(&format!("http://127.0.0.1:{port}"))
-                                .map_err(|_| println!("Failed to reload theme!"));
-                        }
+                    if let Ok(Some(port)) = rx_port.try_recv() {
+                        let _ = engine
+                            .load_url(&format!("http://127.0.0.1:{port}"))
+                            .map_err(|_| println!("Failed to reload theme!"));
+                    }
 
-                        if receive_flag(&rx_reload, false) {
-                            let server = server.lock().unwrap();
-                            let now_serving = server.now_serving();
-                            drop(server);
-                            let mut theme_path = themes_path.clone();
-                            theme_path.push(now_serving);
-                            theme_path.push("config.json");
+                    if receive_flag(&rx_reload, false) {
+                        let server = server.lock().unwrap();
+                        let now_serving = server.now_serving();
+                        drop(server);
+                        let mut theme_path = themes_path.clone();
+                        theme_path.push(now_serving);
+                        theme_path.push("config.json");
 
-                            if theme_path.exists() {
-                                let theme_config_unparsed =
-                                    fs::read_to_string(theme_path).unwrap_or("".to_owned());
+                        if theme_path.exists() {
+                            let theme_config_unparsed =
+                                fs::read_to_string(theme_path).unwrap_or("".to_owned());
 
-                                let theme_config_parsed: Vec<ThemeConfigItem> =
-                                    serde_json::from_str(&theme_config_unparsed)
-                                        .unwrap_or(Vec::new());
+                            let theme_config_parsed: Vec<ThemeConfigItem> =
+                                serde_json::from_str(&theme_config_unparsed).unwrap_or(Vec::new());
 
-                                let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
-                                    .iter()
-                                    .filter(|x| x.r#type == "sensor")
-                                    .map(|x| x.to_owned())
-                                    .collect::<Vec<ThemeConfigItem>>();
+                            let sensors_only: Vec<ThemeConfigItem> = theme_config_parsed
+                                .iter()
+                                .filter(|x| x.r#type == "sensor")
+                                .map(|x| x.to_owned())
+                                .collect::<Vec<ThemeConfigItem>>();
 
-                                if !sensors_only.is_empty() {
-                                    sensor_flag = true;
-                                    let sensor_paths: Vec<String> =
-                                        sensors_only.iter().map(|x| x.value.clone()).collect();
+                            if !sensors_only.is_empty() {
+                                sensor_flag = true;
+                                let sensor_paths: Vec<String> =
+                                    sensors_only.iter().map(|x| x.value.clone()).collect();
 
-                                    let sensor_names: Vec<String> =
-                                        sensors_only.iter().map(|x| x.name.clone()).collect();
+                                let sensor_names: Vec<String> =
+                                    sensors_only.iter().map(|x| x.name.clone()).collect();
 
-                                    let mut sensors = sensors.lock().unwrap();
+                                let mut sensors = sensors.lock().unwrap();
 
-                                    if let Ok(vals) = sensors
-                                        .subscribe(sensor_paths.clone(), sensor_names.clone())
-                                    {
-                                        sensor_values = vals;
-                                    }
-
-                                    drop(sensors);
-                                } else {
-                                    sensor_flag = false;
+                                if let Ok(vals) =
+                                    sensors.subscribe(sensor_paths.clone(), sensor_names.clone())
+                                {
+                                    sensor_values = vals;
                                 }
 
-                                let serialised = theme_config_parsed.custom_serialise();
+                                drop(sensors);
+                            } else {
+                                sensor_flag = false;
+                            }
 
-                                engine.call_js_script(
+                            let serialised = theme_config_parsed.custom_serialise();
+
+                            engine.call_js_script(
                                 format!("document.dispatchEvent(new CustomEvent('configLoaded', {{ detail: JSON.parse('{}') }}))", &serialised),
                             );
-                            }
                         }
-                        if receive_flag(&rx_end, false) {
-                            println!("Received end signal. Thread: renderer.");
-
-                            let _ = device
-                                .close()
-                                .map_err(|_| println!("Failed to close device!"));
-
-                            break;
-                        }
-
-                        frame_time.change_frequency(&rx_fps);
                     }
+                    if receive_flag(&rx_end, false) {
+                        println!("Received end signal. Thread: renderer.");
+
+                        let _ = device
+                            .close()
+                            .map_err(|_| println!("Failed to close device!"));
+
+                        break;
+                    }
+
+                    frame_time.change_frequency(&rx_fps);
                 } else {
                     thread::sleep(Duration::from_millis(15));
                 }

@@ -8,6 +8,7 @@ mod thermaltake;
 
 pub struct DeviceContainer {
     device: Box<dyn Device>,
+    device_info: DeviceInfo,
 }
 
 impl DeviceContainer {
@@ -16,6 +17,7 @@ impl DeviceContainer {
             Ok(device) => {
                 return Ok(Self {
                     device: Box::new(device),
+                    device_info: TTUltra::device_info(),
                 })
             }
             Err(_) => None,
@@ -25,6 +27,7 @@ impl DeviceContainer {
             Ok(device) => {
                 return Ok(Self {
                     device: Box::new(device),
+                    device_info: Capellix::device_info(),
                 });
             }
             Err(_) => None,
@@ -52,6 +55,10 @@ impl DeviceContainer {
     pub fn send_image(&mut self, img: &[u8]) -> Result<(), &'static str> {
         self.device.send_image(img)
     }
+
+    pub fn device_info(&self) -> DeviceInfo {
+        self.device_info.clone()
+    }
 }
 
 pub trait DeviceCreator {
@@ -63,10 +70,13 @@ pub trait DeviceCreator {
         Self: Sized;
 }
 
+#[derive(Clone, Debug)]
 pub struct DeviceInfo {
     pub name: String,
     pub manufacturer: String,
     pub conflicting_processes: Vec<String>,
+    pub width: u32,
+    pub height: u32,
 }
 
 pub trait Device {

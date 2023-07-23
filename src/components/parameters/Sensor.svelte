@@ -2,7 +2,9 @@
 	import { onMount } from "svelte";
 	import type { Parameter } from "../../helpers/themeTools";
 	import { invoke } from "@tauri-apps/api/tauri";
+	import { crossfade, fade } from "svelte/transition";
 	import type ParameterValue from "./parameter";
+	import { clickOutside } from "../../helpers/clickOutside";
 	export let parameter: Parameter;
 
 	interface Sensor {
@@ -145,43 +147,92 @@
 		computedSensors = temp_built;
 		selectedPath = computedSensors[0].name;
 	};
+
+	let expand = false;
+	const [send, recieve] = crossfade({ fallback: fade });
 </script>
 
-<div id="container">
-	<h5>{display_as}</h5>
-	{#if allSensors.length > 0}
-		<label for="parent" id="parentLbl">Hardware</label>
-		<select bind:value={parent} on:change={handleParentChange} class="form-control" id="parent">
-			{#each allSensors as sensor}
-				<option value={sensor.name}>{sensor.displayName}</option>
-			{/each}
-		</select>
-		{#if computedCategories.length > 0}
-			<label for="cat">Category</label>
-			<select bind:value={category} on:change={handleCategoryChange} class="form-control" id="cat">
-				{#each computedCategories as category}
-					<option value={category}>{category}</option>
-				{/each}
-			</select>
-		{/if}
-		{#if computedSensors.length > 0}
-			<label for="sensor">Sensor</label>
-			<select bind:value={selectedPath} on:change={updateConfig} class="form-control" id="sensor">
-				{#each computedSensors as sensor}
-					<option value={sensor.name}>{sensor.displayName}</option>
-				{/each}
-			</select>
-		{/if}
-	{/if}
-</div>
+{#if expand}
+	<div id="contents">
+		<div
+			id="container"
+			use:clickOutside
+			on:click_outside={() => (expand = false)}
+			in:recieve={{ duration: 300 }}
+			out:send={{ duration: 300 }}
+		>
+			<h5>{display_as}</h5>
+			{#if allSensors.length > 0}
+				<label for="parent" id="parentLbl">Hardware</label>
+				<select bind:value={parent} on:change={handleParentChange} class="form-control" id="parent">
+					{#each allSensors as sensor}
+						<option value={sensor.name}>{sensor.displayName}</option>
+					{/each}
+				</select>
+				{#if computedCategories.length > 0}
+					<label for="cat">Category</label>
+					<select
+						bind:value={category}
+						on:change={handleCategoryChange}
+						class="form-control"
+						id="cat"
+					>
+						{#each computedCategories as category}
+							<option value={category}>{category}</option>
+						{/each}
+					</select>
+				{/if}
+				{#if computedSensors.length > 0}
+					<label for="sensor">Sensor</label>
+					<select
+						bind:value={selectedPath}
+						on:change={updateConfig}
+						class="form-control"
+						id="sensor"
+					>
+						{#each computedSensors as sensor}
+							<option value={sensor.name}>{sensor.displayName}</option>
+						{/each}
+					</select>
+				{/if}
+			{/if}
+		</div>
+	</div>
+{:else}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div
+		class="square"
+		on:click={() => (expand = true)}
+		in:recieve={{ duration: 300 }}
+		out:send={{ duration: 300 }}
+	>
+		<h5>{display_as}</h5>
+	</div>
+{/if}
 
 <style lang="scss">
+	@import "../../styles/mixins.scss";
+
+	#contents {
+		position: fixed;
+		top: 0;
+		left: 0;
+
+		width: 100%;
+		height: 100%;
+		backdrop-filter: blur(10px) brightness(0.8);
+
+		z-index: 100;
+
+		@include flex-center;
+	}
+
 	#parentLbl {
 		margin-top: 0;
 	}
 
 	div {
-		margin-top: 1rem;
+		// margin-top: 1rem;
 
 		label {
 			margin-top: 1rem;
@@ -195,5 +246,18 @@
 				background-color: var(--bs-body-bg);
 			}
 		}
+	}
+
+	.square {
+		// margin-top: 1rem;
+
+		width: 12rem;
+		height: 12rem;
+		border-radius: 15px;
+
+		backdrop-filter: blur(10px);
+		background-color: rgba(113, 70, 117, 0.4);
+
+		@include flex-center;
 	}
 </style>

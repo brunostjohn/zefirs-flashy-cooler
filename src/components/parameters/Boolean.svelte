@@ -20,8 +20,22 @@
 	};
 </script>
 
-<h5>{display_as}</h5>
-<div class="form-check form-switch">
+<!-- svelte-ignore a11y-click-events-have-key-events -->
+<div
+	class="elt"
+	on:click={() => {
+		checked = !checked;
+		updateConfig();
+	}}
+	style={`background-color: ${checked ? "rgba(5, 109, 24, 0.5)" : "rgba(5, 109, 24, 0.2)"}`}
+>
+	<h5>{display_as}</h5>
+	<h6>
+		{checked ? "Yes" : "No"}
+	</h6>
+</div>
+
+<!-- <div class="form-check form-switch">
 	<input
 		class="form-check-input"
 		type="checkbox"
@@ -31,10 +45,29 @@
 		on:change={() => updateConfig()}
 	/>
 	<label class="form-check-label" for="flexSwitchCheckDefault">{checked ? "On" : "Off"}</label>
-</div>
+</div> -->
 
 <style lang="scss">
-	h5 {
-		margin-top: 1rem;
+	@import "../../styles/mixins.scss";
+
+	.elt {
+		width: 12rem;
+		height: 12rem;
+
+		@include flex-center;
+		flex-direction: column;
+
+		border-radius: 15px;
+
+		transition: all 150ms ease-in-out;
+
+		h5 {
+			text-align: center;
+			margin-bottom: 1rem;
+		}
 	}
+
+	// h5 {
+	// 	margin-top: 1rem;
+	// }
 </style>

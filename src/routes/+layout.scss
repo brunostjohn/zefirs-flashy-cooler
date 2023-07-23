@@ -46,8 +46,9 @@
 }
 
 body {
-	background-color: #080d14 !important;
+	// background-color: #080d14 !important;
 	color: #ffffff !important;
+	
 }
 
 main {
@@ -101,7 +102,7 @@ a[href^="http://"],
 	-webkit-app-region: drag;
 	height: 2.8rem;
 
-	transition: all 150ms ease-in-out;
+	transition: all 90ms ease-in-out;
 
 	.featured-text {
 		position: absolute;
@@ -280,4 +281,12 @@ main {
 
 .nav-link {
 	color: #9499ff;
+}
+
+.bg-canvas {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
 }

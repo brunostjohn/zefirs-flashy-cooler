@@ -12,6 +12,7 @@
 
 	import { fade, fly } from "svelte/transition";
 	import { cubicIn, cubicOut } from "svelte/easing";
+	import { onMount } from "svelte";
 
 	export let data;
 
@@ -41,16 +42,17 @@
 <div
 	id="topbar"
 	data-tauri-drag-region
-	style={showDarkened ? "backdrop-filter: brightness(5%);" : undefined}
+	style={showDarkened ? "backdrop-filter: blur(60px) brightness(90%);" : undefined}
 >
-	<img
-		src="/images/android-chrome-192x192.png"
-		id="titlebarlogo"
-		alt="Zefir's Flashy Cooler Logo"
-	/>
 	{#if showDarkened}
-		<div class="featured-text" transition:fade={{ duration: 150 }}>
-			<p class="featured-text-elt">{topText}</p>
+		<img
+			src="/images/android-chrome-192x192.png"
+			id="titlebarlogo"
+			alt="Zefir's Flashy Cooler Logo"
+			transition:fade={{ duration: 150 }}
+		/>
+		<div class="featured-text" transition:fade={{ duration: 150 }} data-tauri-drag-region>
+			<p class="featured-text-elt" data-tauri-drag-region>{topText}</p>
 		</div>
 	{/if}
 	<div id="titlebarcontrols">
@@ -90,6 +92,8 @@
 	<a class="nav-link" href="/settings" class:active={$page.url.pathname === "/settings"}>Settings</a
 	>
 </nav>
+
+<!-- <canvas class="bg-canvas" bind:this={canvas} /> -->
 
 {#key data.pathname}
 	<main in:fly={transitionIn} out:fly={transitionOut}>

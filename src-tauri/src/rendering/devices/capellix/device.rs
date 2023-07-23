@@ -77,6 +77,8 @@ impl<'a> DeviceCreator for Capellix<'a> {
             name: "Corsair iCUE Capellix LCD Cooler".to_string(),
             manufacturer: "Corsair".to_string(),
             conflicting_processes: vec!["iCUE.exe".to_string()],
+            width: 480,
+            height: 480,
         }
     }
 }

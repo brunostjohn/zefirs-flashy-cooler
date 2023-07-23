@@ -71,7 +71,8 @@
 		@include flex-center;
 		flex-direction: column;
 
-		background-color: rgba(0, 0, 0, 0.7);
+		// background-color: rgba(0, 0, 0, 0.7);
+		backdrop-filter: blur(20px) brightness(0.5);
 
 		.progress {
 			width: 60%;

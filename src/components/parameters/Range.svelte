@@ -3,6 +3,8 @@
 	import type { Parameter } from "../../helpers/themeTools";
 	import { invoke } from "@tauri-apps/api/tauri";
 	import type ParameterValue from "./parameter";
+	import { crossfade, fade } from "svelte/transition";
+	import { clickOutside } from "../../helpers/clickOutside";
 	export let parameter: Parameter;
 
 	const { name, display_as, default: def, min, max, step } = parameter;
@@ -30,41 +32,92 @@
 		clearTimeout(timeout);
 		timeout = setTimeout(updateConfig, 300);
 	};
+
+	let expand = false;
+	const [send, recieve] = crossfade({ fallback: fade });
 </script>
 
-<label for="rangeInput" class="form-label"><h5>{display_as}</h5></label>
-<div id="rangeContainer">
-	<div class="input-group mb-3" id="direct">
-		<span class="input-group-text" id="numberInput">Current value</span>
-		<input
-			type="number"
-			{min}
-			{max}
-			{step}
-			class="form-control"
-			id="directInput"
-			aria-describedby="numberInput"
-			bind:value={currentValue}
-			on:change={handlerWrapper}
-		/>
+{#if expand}
+	<div id="container">
+		<div
+			id="contents"
+			use:clickOutside
+			on:click_outside={() => (expand = false)}
+			in:recieve={{ duration: 300 }}
+			out:send={{ duration: 300 }}
+		>
+			<label for="rangeInput" class="form-label"><h5>{display_as}</h5></label>
+			<div id="rangeContainer">
+				<div class="input-group mb-3" id="direct">
+					<span class="input-group-text" id="numberInput">Current value</span>
+					<input
+						type="number"
+						{min}
+						{max}
+						{step}
+						class="form-control"
+						id="directInput"
+						aria-describedby="numberInput"
+						bind:value={currentValue}
+						on:change={handlerWrapper}
+					/>
+				</div>
+				<div id="rangeInput">
+					<p>{min}</p>
+					<input
+						type="range"
+						class="form-range"
+						{min}
+						{max}
+						{step}
+						id="pollRate"
+						bind:value={currentValue}
+						on:change={handlerWrapper}
+					/>
+					<p>{max}</p>
+				</div>
+			</div>
+		</div>
 	</div>
-	<div id="rangeInput">
-		<p>{min}</p>
-		<input
-			type="range"
-			class="form-range"
-			{min}
-			{max}
-			{step}
-			id="pollRate"
-			bind:value={currentValue}
-			on:change={handlerWrapper}
-		/>
-		<p>{max}</p>
+{:else}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
+	<div
+		id="small"
+		on:click={() => (expand = true)}
+		in:recieve={{ duration: 300 }}
+		out:send={{ duration: 300 }}
+	>
+		<h5>{display_as}</h5>
 	</div>
-</div>
+{/if}
 
 <style lang="scss">
+	@import "../../styles/mixins.scss";
+
+	#small {
+		width: 12rem;
+		height: 12rem;
+
+		border-radius: 15px;
+
+		background-color: #65649438;
+		@include flex-center;
+	}
+
+	#container {
+		position: fixed;
+		top: 0;
+		left: 0;
+
+		width: 100%;
+		height: 100%;
+		backdrop-filter: blur(10px) brightness(0.8);
+
+		z-index: 100;
+
+		@include flex-center;
+	}
+
 	label {
 		margin-top: 1rem;
 	}

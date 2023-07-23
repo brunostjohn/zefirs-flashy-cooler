@@ -118,21 +118,25 @@
 		<div class="controllable">
 			<hr />
 			<h2>Customisable parameters</h2>
-			{#each theme.customisable_parameters as parameter}
-				{#if parameter.type === "boolean"}
-					<Boolean {parameter} />
-				{:else if parameter.type === "sensor"}
-					<Sensor {parameter} />
-				{:else if parameter.type === "range"}
-					<Range {parameter} />
-				{:else if parameter.type === "colour"}
-					<Colour {parameter} />
-				{:else if parameter.type === "text"}
-					<Text {parameter} />
-				{:else if parameter.type === "file"}
-					<File {parameter} />
-				{/if}
-			{/each}
+			<div class="controls">
+				{#each theme.customisable_parameters as parameter}
+					<div>
+						{#if parameter.type === "boolean"}
+							<Boolean {parameter} />
+						{:else if parameter.type === "sensor"}
+							<Sensor {parameter} />
+						{:else if parameter.type === "range"}
+							<Range {parameter} />
+						{:else if parameter.type === "colour"}
+							<Colour {parameter} />
+						{:else if parameter.type === "text"}
+							<Text {parameter} />
+						{:else if parameter.type === "file"}
+							<File {parameter} />
+						{/if}
+					</div>
+				{/each}
+			</div>
 		</div>
 	{/if}
 {/if}

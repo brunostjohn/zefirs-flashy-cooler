@@ -29,6 +29,8 @@ impl DeviceCreator for TTUltra {
             name: "Thermaltake Toughliquid LCD Cooler".to_string(),
             manufacturer: "Thermaltake".to_string(),
             conflicting_processes: vec![],
+            width: 480,
+            height: 480,
         }
     }
 }
