@@ -55,7 +55,7 @@
 
 Thank you for your ongoing support. [Click here to become my sponsor.](https://github.com/sponsors/brunostjohn)
 
-<!-- sponsors --><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><a href="https://github.com/Hunter68uk"><img src="https://github.com/Hunter68uk.png" width="60px" alt="" /></a><!-- sponsors -->
 
 <!-- TABLE OF CONTENTS -->
 ## 📔Table of Contents
