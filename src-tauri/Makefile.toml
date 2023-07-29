@@ -90,3 +90,9 @@ args = ["tauri", "dev", "--", "--profile", "release-with-debug"]
 
 [tasks.default]
 alias = "dev"
+
+[tasks.tests]
+install_crate = "tauri-cli"
+dependencies = ["libre"]
+command = "cargo"
+args = ["test"]

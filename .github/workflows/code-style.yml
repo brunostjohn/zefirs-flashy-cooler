@@ -1,6 +1,7 @@
-name: Build from current commit
+name: Check code style
 
 on:
+  pull_request:
   push:
     branches: ["main"]
     paths-ignore:
@@ -25,6 +26,9 @@ jobs:
       - name: Install frontend dependencies 🏗️
         run: npm install
 
+      - name: Check frontend code style 🎇
+        run: npm run style-check
+
       - uses: actions-rs/toolchain@v1
         name: Install Rust toolchain ☄️
         with:
@@ -33,13 +37,6 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
         name: Install cargo-make ⌨️
 
-      - name: Build app 🛠️
+      - name: Check Rust code style ✨
         working-directory: ./src-tauri
-        run: cargo make release
-
-      - name: Upload artifacts ☁️
-        uses: actions/upload-artifact@v3
-        with:
-          name: nightly-build
-          path: src-tauri/target/release/bundle/
-          retention-days: 3
+        run: cargo fmt --check
