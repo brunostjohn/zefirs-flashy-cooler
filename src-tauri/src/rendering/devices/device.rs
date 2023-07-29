@@ -1,10 +1,13 @@
-use self::{capellix::Capellix, thermaltake::TTUltra};
+use self::{capellix::Capellix, stream_deck_xl::StreamDeckXL, thermaltake::TTUltra};
 
 #[path = "./capellix/device.rs"]
 mod capellix;
 
 #[path = "./thermaltake/device.rs"]
 mod thermaltake;
+
+#[path = "./streamdeck_xl/device.rs"]
+mod stream_deck_xl;
 
 pub struct DeviceContainer {
     device: Box<dyn Device>,
@@ -13,6 +16,16 @@ pub struct DeviceContainer {
 
 impl DeviceContainer {
     pub fn new() -> Result<Self, &'static str> {
+        let _: Option<Capellix> = match Capellix::new() {
+            Ok(device) => {
+                return Ok(Self {
+                    device: Box::new(device),
+                    device_info: Capellix::device_info(),
+                });
+            }
+            Err(_) => None,
+        };
+
         let _: Option<TTUltra> = match TTUltra::new() {
             Ok(device) => {
                 return Ok(Self {
@@ -23,11 +36,11 @@ impl DeviceContainer {
             Err(_) => None,
         };
 
-        let _: Option<Capellix> = match Capellix::new() {
+        let _: Option<StreamDeckXL> = match StreamDeckXL::new() {
             Ok(device) => {
                 return Ok(Self {
                     device: Box::new(device),
-                    device_info: Capellix::device_info(),
+                    device_info: StreamDeckXL::device_info(),
                 });
             }
             Err(_) => None,
