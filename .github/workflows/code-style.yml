@@ -35,6 +35,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - uses: actions/checkout@v3
+        name: Checkout 🛎️
+
       - uses: actions-rs/toolchain@v1
         name: Install Rust toolchain ☄️
         with:
