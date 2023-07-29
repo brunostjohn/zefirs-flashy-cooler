@@ -51,7 +51,11 @@
   </p>
 </div>
 
+## 💖 Sponsors
 
+Thank you for your ongoing support. [Click here to become my sponsor.](https://github.com/sponsors/brunostjohn)
+
+<!-- sponsors --><!-- sponsors -->
 
 <!-- TABLE OF CONTENTS -->
 <details>
