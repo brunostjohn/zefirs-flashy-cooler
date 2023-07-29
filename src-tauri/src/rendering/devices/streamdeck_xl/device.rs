@@ -87,8 +87,6 @@ impl<'a> Device for StreamDeckXL<'a> {
     }
 
     fn send_image(&mut self, img: &[u8]) -> Result<(), &'static str> {
-        // let mut last_image = [0u8; 1016].as_slice();
-
         let handle = match &self.device {
             Some(device) => device,
             None => return Err("No device initialised!"),

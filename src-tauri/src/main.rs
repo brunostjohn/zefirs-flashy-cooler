@@ -161,10 +161,9 @@ fn main() {
         .run(|_app_handle, event| match event {
             tauri::RunEvent::ExitRequested { api, .. } => {
                 api.prevent_exit();
-                // println!("Exit requested");
             }
             tauri::RunEvent::Exit => {}
-            tauri::RunEvent::WindowEvent { label, event, .. } => {}
+            tauri::RunEvent::WindowEvent { .. } => {}
             tauri::RunEvent::Ready => {}
             tauri::RunEvent::Resumed => {}
             tauri::RunEvent::MainEventsCleared => {}

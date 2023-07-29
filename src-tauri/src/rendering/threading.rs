@@ -92,6 +92,12 @@ impl Renderer {
             loop {
                 engine.update();
 
+                if let Ok(Some(port)) = rx_port.try_recv() {
+                    let _ = engine
+                        .load_url(&format!("http://127.0.0.1:{port}"))
+                        .map_err(|_| println!("Failed to reload theme!"));
+                }
+
                 if frame_time.check_time() {
                     if sensor_time.check_time() && sensor_flag {
                         let value = rx_sensor.try_recv().unwrap();
@@ -124,12 +130,6 @@ impl Renderer {
 
                     if gc_time.check_time() {
                         engine.garbage_collect();
-                    }
-
-                    if let Ok(Some(port)) = rx_port.try_recv() {
-                        let _ = engine
-                            .load_url(&format!("http://127.0.0.1:{port}"))
-                            .map_err(|_| println!("Failed to reload theme!"));
                     }
 
                     if receive_flag(&rx_reload, false) {
