@@ -1,4 +1,4 @@
-name: Generate Sponsors in README
+name: Generate sponsors section in readme
 permissions:
   contents: write
 on:
@@ -23,3 +23,5 @@ jobs:
         with:
           branch: main
           folder: "."
+          token: ${{ secrets.GHA_README_SPONSORS }}
+          commit-message: "chore: update sponsors"
