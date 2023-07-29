@@ -1,10 +1,9 @@
 ---
 name: Device request
 about: Suggest a device to be added to the app
-title: ''
-labels: ''
-assignees: ''
-
+title: ""
+labels: ""
+assignees: ""
 ---
 
 **Describe the device you'd like to be added**

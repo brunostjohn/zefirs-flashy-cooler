@@ -11,7 +11,8 @@ on:
       - ".github/**"
 
 jobs:
-  build:
+  Frontend-Style:
+    name: Frontend code style
     runs-on: windows-latest
 
     steps:
@@ -29,13 +30,18 @@ jobs:
       - name: Check frontend code style 🎇
         run: npm run style-check
 
+  Rust-Style:
+    name: Rust code style
+    runs-on: windows-latest
+
+    steps:
       - uses: actions-rs/toolchain@v1
         name: Install Rust toolchain ☄️
         with:
           toolchain: stable
 
-      - uses: davidB/rust-cargo-make@v1
-        name: Install cargo-make ⌨️
+      #   - uses: davidB/rust-cargo-make@v1
+      #     name: Install cargo-make ⌨️
 
       - name: Check Rust code style ✨
         working-directory: ./src-tauri

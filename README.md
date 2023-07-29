@@ -1,7 +1,5 @@
 <a name="readme-top"></a>
 
-
-
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
@@ -58,7 +56,9 @@ Thank you for your ongoing support. [Click here to become my sponsor.](https://g
 <!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><a href="https://github.com/Hunter68uk"><img src="https://github.com/Hunter68uk.png" width="60px" alt="" /></a><!-- sponsors -->
 
 <!-- TABLE OF CONTENTS -->
+
 ## 📔Table of Contents
+
 <ol>
   <li>
     <a href="#about-the-project">About The Project</a>
@@ -81,9 +81,8 @@ Thank you for your ongoing support. [Click here to become my sponsor.](https://g
   <li><a href="#acknowledgments">Acknowledgments</a></li>
 </ol>
 
-
-
 <!-- ABOUT THE PROJECT -->
+
 ## 🌟 About The Project
 
 [![Product Name Screen Shot][product-screenshot]](https://zefirsflashycooler.app)
@@ -91,8 +90,6 @@ Thank you for your ongoing support. [Click here to become my sponsor.](https://g
 This project aims to entirely replace iCUE and other pieces of software like it in control of CPU coolers etc. with LCD displays.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
 
 ### 👾 Built With
 
@@ -108,9 +105,8 @@ This project aims to entirely replace iCUE and other pieces of software like it 
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- GETTING STARTED -->
+
 ## 🧰 Getting Started
 
 To build this project locally, you will need a few dependencies set up.
@@ -129,11 +125,12 @@ To build this project locally, you will need a few dependencies set up.
 
 If `System.IO.Compression.Native.Aot.lib` throws linker conflicts for you, run the following command from a Visual Studio Developer Command Prompt:
 
-```lib /remove:libs-native\System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.Aot.dir\D\_\a_work\1\s\src\native\external\brotli\dec\decode.c.obj /LIBPATH:[WHEREEVER YOU HAVE THE REPO ON YOUR MACHINE]zefirs-flashy-cooler\src-tauri\static-libs .\System.IO.Compression.Native.Aot.lib```
+`lib /remove:libs-native\System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.Aot.dir\D\_\a_work\1\s\src\native\external\brotli\dec\decode.c.obj /LIBPATH:[WHEREEVER YOU HAVE THE REPO ON YOUR MACHINE]zefirs-flashy-cooler\src-tauri\static-libs .\System.IO.Compression.Native.Aot.lib`
 
 These symbols are still covered by a different library and everything still functions correctly.
 
 In case of further issues, follow the error messages until everything works. For support, try messaging me through [our discord server](https://discord.gg/KXmnwA6zWK).
+
 ### ⚙️ Installation
 
 1. Download the [latest app release from GitHub](https://github.com/brunostjohn/zefirs-flashy-cooler/releases/).
@@ -141,9 +138,8 @@ In case of further issues, follow the error messages until everything works. For
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- USAGE EXAMPLES -->
+
 ## 🏃 Usage
 
 To use this app without making themes, just download some from the Theme Store and enjoy. It should work right out of the box.
@@ -152,9 +148,8 @@ _For more information, please refer to the [Documentation](https://zefirsflashyc
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- ROADMAP -->
+
 ## 🎯 Roadmap
 
 - [ ] A complete rewrite in Rust.
@@ -168,9 +163,8 @@ _For more information, please refer to the [Documentation](https://zefirsflashyc
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTRIBUTING -->
+
 ## 👋 Contributing
 
 Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
@@ -186,18 +180,16 @@ Don't forget to give the project a star! Thanks again!
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- LICENSE -->
+
 ## ⚠️ License
 
 Distributed under the AGPLv3 License. See `LICENSE` for more information.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- CONTACT -->
+
 ## 🤝 Contact
 
 Bruno St. John - me@brunostjohn.com
@@ -210,20 +202,18 @@ Discord: [https://discord.gg/KXmnwA6zWK](https://discord.gg/KXmnwA6zWK)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
-
 <!-- ACKNOWLEDGMENTS -->
+
 ## 💎 Acknowledgments
 
-* Zefir for being the best cat on Planet Earth.
-* Klaudia for living with me as I am visibly frustrated at a computer.
-* The King Boardstar for being willing to test software that doesn't even work on his hardware.
-* Dordo for bootstrapping this project by helping with reverse engineering the Capellix LCD.
-* Heal-bot for yelling at me when I do stupid stuff.
-* Joe.
+- Zefir for being the best cat on Planet Earth.
+- Klaudia for living with me as I am visibly frustrated at a computer.
+- The King Boardstar for being willing to test software that doesn't even work on his hardware.
+- Dordo for bootstrapping this project by helping with reverse engineering the Capellix LCD.
+- Heal-bot for yelling at me when I do stupid stuff.
+- Joe.
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
 
 [contributors-shield]: https://img.shields.io/github/contributors/brunostjohn/zefirs-flashy-cooler.svg?style=for-the-badge
 [gh_dls]: https://img.shields.io/github/downloads/brunostjohn/zefirs-flashy-cooler/total?style=for-the-badge

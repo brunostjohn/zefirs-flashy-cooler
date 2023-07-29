@@ -33,6 +33,13 @@ jobs:
       - uses: davidB/rust-cargo-make@v1
         name: Install cargo-make ⌨️
 
+      - uses: ilammy/setup-nasm@v1
+        name: Install NASM 🖥️
+
+      - name: Install build dependencies 🛫
+        run: |
+          choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
+
       - name: Build app 🛠️
         working-directory: ./src-tauri
         run: cargo make release

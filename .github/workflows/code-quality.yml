@@ -11,7 +11,8 @@ on:
       - ".github/**"
 
 jobs:
-  build:
+  Frontend-Quality:
+    name: Frontend code quality
     runs-on: windows-latest
 
     steps:
@@ -23,11 +24,19 @@ jobs:
         with:
           node-version: 18
 
-      - name: Install frontend dependencies 🏗️
+      - name: Install dependencies 🏗️
         run: npm install
 
-      - name: Check frontend code quality 🔩
+      - name: Check code quality 🔩
         run: npm run lint
+
+  Rust-Quality:
+    name: Rust code quality
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout 🛎️
 
       - uses: actions-rs/toolchain@v1
         name: Install Rust toolchain ☄️
@@ -38,7 +47,7 @@ jobs:
         name: Install cargo-make ⌨️
 
       - uses: reinismu/clippy-check@master
-        name: Check Rust code quality 📑
+        name: Check code quality 📑
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
