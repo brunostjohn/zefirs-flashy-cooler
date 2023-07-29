@@ -10,19 +10,29 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        name: Checkout 🛎️
+
+      - uses: actions/setup-node@v3
+        name: Setup Node ⚙️
+        with:
+          node-version: 18
+
+      - name: Install frontend dependencies 🏗️
+        run: npm install
 
       - uses: actions-rs/toolchain@v1
+        name: Install Rust toolchain ☄️
         with:
           toolchain: stable
 
       - uses: davidB/rust-cargo-make@v1
-      - name: Build app
+      - name: Build app 🛠️
         working-directory: ./src-tauri
         run: cargo make release
 
-      - name: Upload Artifacts
+      - name: Upload artifacts ☁️
         uses: actions/upload-artifact@v3
         with:
           name: nightly-build
           path: src-tauri/target/release/bundle/
-          retention-days: 5
+          retention-days: 3
