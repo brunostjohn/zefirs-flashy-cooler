@@ -11,7 +11,7 @@ command = "cargo"
 args = ["clean"]
 
 [tasks.build]
-install_crate = "tauri"
+install_crate = "tauri-cli"
 command = "cargo"
 args = ["tauri", "build"]
 dependencies = ["clean", "libre"]
@@ -68,12 +68,12 @@ run_task = [
 dependencies = ["format", "libre", "build"]
 
 [tasks.tauri-dev]
-install_crate = "tauri"
+install_crate = "tauri-cli"
 command = "cargo"
 args = ["tauri", "dev"]
 
 [tasks.tauri-release]
-install_crate = "tauri"
+install_crate = "tauri-cli"
 command = "cargo"
 args = ["tauri", "dev", "--release"]
 
@@ -84,7 +84,7 @@ dependencies = ["libre", "tauri-dev"]
 dependencies = ["libre", "tauri-release"]
 
 [tasks.release-debug]
-install_crate = "tauri"
+install_crate = "tauri-cli"
 command = "cargo"
 args = ["tauri", "dev", "--", "--profile", "release-with-debug"]
 
