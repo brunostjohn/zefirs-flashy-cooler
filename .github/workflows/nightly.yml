@@ -41,7 +41,7 @@ jobs:
           choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
 
       - name: Build app 🛠️
-        working-directory: ./src-tauri
+        working-directory: src-tauri
         run: cargo make release
 
       - name: Upload artifacts ☁️
