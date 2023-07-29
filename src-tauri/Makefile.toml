@@ -4,10 +4,7 @@ command = "cargo"
 args = ["fmt", "--", "--emit=files"]
 
 [tasks.clean]
-dependencies = [
-    "clean-rust",
-    "clean-libre-lib"
-]
+dependencies = ["clean-rust", "clean-libre-lib"]
 
 [tasks.clean-rust]
 command = "cargo"
@@ -31,7 +28,16 @@ script = '''
 [tasks.build-libre-lib]
 cwd = "../LibreHardwareMonitorNative/"
 command = "dotnet"
-args = ["publish", "-r", "win-x64", "-c", "Release", "/p:NativeLib=Static", "/p:SelfContained=true", "/t:LinkNative"]
+args = [
+    "publish",
+    "-r",
+    "win-x64",
+    "-c",
+    "Release",
+    "/p:NativeLib=Static",
+    "/p:SelfContained=true",
+    "/t:LinkNative",
+]
 dependencies = ["clean-libre-lib"]
 
 [tasks.copy-libre-lib]
@@ -44,17 +50,22 @@ script = '''
 dependencies = ["build-libre-lib"]
 
 [tasks.libre-force]
-run_task = [{name="copy-libre-lib"}]
+run_task = [{ name = "copy-libre-lib" }]
 
 [tasks.libre]
-run_task = [{ name="copy-libre-lib", condition = { files_modified = { input = ["../LibreHardwareMonitorNative/Class1.cs", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj", "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.sln"], output = ["../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.lib", "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.dll"] } } }]
+run_task = [
+    { name = "copy-libre-lib", condition = { files_modified = { input = [
+        "../LibreHardwareMonitorNative/Monitor.cs",
+        "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj",
+        "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.sln",
+    ], output = [
+        "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.lib",
+        "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.dll",
+    ] } } },
+]
 
 [tasks.release]
-dependencies = [
-    "format",
-    "libre",
-    "build"
-]
+dependencies = ["format", "libre", "build"]
 
 [tasks.tauri-dev]
 install_crate = "tauri"
@@ -67,16 +78,10 @@ command = "cargo"
 args = ["tauri", "dev", "--release"]
 
 [tasks.dev]
-dependencies = [
-    "libre",
-    "tauri-dev"
-]
+dependencies = ["libre", "tauri-dev"]
 
 [tasks.run]
-dependencies = [
-    "libre",
-    "tauri-release"
-]
+dependencies = ["libre", "tauri-release"]
 
 [tasks.release-debug]
 install_crate = "tauri"

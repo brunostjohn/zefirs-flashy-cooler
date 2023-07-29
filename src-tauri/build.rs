@@ -2,7 +2,14 @@ fn main() {
     println!("cargo:rustc-link-search=./static-libs/");
     println!("cargo:rustc-link-lib=LibreHardwareMonitorNative");
 
-    println!("cargo:rustc-link-search=/Users/bruno/.nuget/packages/runtime.win-x64.microsoft.dotnet.ilcompiler/7.0.8/sdk");
+    let home = dirs::home_dir();
+
+    if let Some(dir) = home {
+        println!("cargo:rustc-link-search={}/.nuget/packages/runtime.win-x64.microsoft.dotnet.ilcompiler/7.0.8/sdk", dir.display());
+    } else {
+        println!("cargo:rustc-link-search=/Users/bruno/.nuget/packages/runtime.win-x64.microsoft.dotnet.ilcompiler/7.0.8/sdk");
+    }
+
     println!("cargo:rustc-link-arg-bins=/INCLUDE:NativeAOT_StaticInitialization");
 
     println!("cargo:rerun-if-changed=build.rs");

@@ -65,22 +65,11 @@
 	onMount(async () => {
 		const parameterCurrent: ParameterValue = await invoke("get_current_theme_parameter", { name });
 
-		try {
-			allSensorsPre = (await invoke("get_all_sensors")) as Hardware[];
-		} catch {
-			alert("Failed to get sensor tree!");
-		}
-		try {
-			processHardware();
-		} catch {
-			alert("Failed to process hardware!");
-		}
+		allSensorsPre = (await invoke("get_all_sensors")) as Hardware[];
 
-		try {
-			initial(parameterCurrent);
-		} catch {
-			alert("Failed to perform initial comparison!");
-		}
+		processHardware();
+
+		initial(parameterCurrent);
 	});
 
 	const processHardware = () => {

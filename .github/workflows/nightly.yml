@@ -1,0 +1,28 @@
+name: Build from current commit
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - uses: davidB/rust-cargo-make@v1
+      - name: Build app
+        working-directory: ./src-tauri
+        run: cargo make release
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: nightly-build
+          path: src-tauri/target/release/bundle/
+          retention-days: 5

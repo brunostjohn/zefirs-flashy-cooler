@@ -1,5 +1,6 @@
 use std::{
     ffi::{CStr, CString},
+    fs,
     thread::{self, JoinHandle},
 };
 
@@ -253,6 +254,7 @@ fn get_all_sensors_vec() -> Vec<Hardware> {
 
         free_mem(ptr);
     }
+
     let sensors: Vec<Hardware> = match serde_json::from_str(&sensor_string) {
         Ok(sensors) => sensors,
         Err(_) => vec![],
