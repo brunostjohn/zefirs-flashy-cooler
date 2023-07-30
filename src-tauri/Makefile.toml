@@ -99,9 +99,4 @@ alias = "dev"
 [tasks.tests]
 dependencies = ["libre", "install-tauri", "install-nextest"]
 command = "cargo"
-args = ["nextest", "run"]
-
-[tasks.tests-ci]
-dependencies = ["libre", "install-tauri", "install-nextest"]
-command = "cargo"
-args = ["nextest", "run", "--retries", "3", "--profile", "ci"]
+args = ["nextest", "run", "--retries", "3"]

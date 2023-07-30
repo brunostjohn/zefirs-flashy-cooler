@@ -58,11 +58,11 @@ jobs:
 
       - name: Run Rust code tests 🧪
         working-directory: src-tauri
-        run: cargo make tests-ci
+        run: cargo make tests
 
       - name: Publish test results 💫
         uses: EnricoMi/publish-unit-test-result-action/composite@v2
         if: always()
         with:
           files: |
-            src-tauri/target/nextest/ci/junit.xml
+            src-tauri/target/nextest/default/junit.xml
