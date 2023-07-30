@@ -28,7 +28,8 @@
 		});
 
 		hex = parameterCurrent.value.toLowerCase();
-		rgb = hexToRgb(hex);
+		const converted = hexToRgb(hex);
+		rgb = converted !== null ? converted : rgb;
 	});
 
 	const updateConfig = async () => {
@@ -43,7 +44,7 @@
 		timeout = setTimeout(updateConfig, 300);
 	};
 
-	function hexToRgb(hex: string): number {
+	function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
 		// Expand shorthand form (e.g. "03F") to full form (e.g. "0033FF")
 		var shorthandRegex = /^#?([a-f\d])([a-f\d])([a-f\d])$/i;
 		hex = hex.replace(shorthandRegex, function (m, r, g, b) {
@@ -61,7 +62,7 @@
 	}
 
 	let expand = false;
-	const [send, recieve] = crossfade({ fallback: fade });
+	const [send, recieve] = crossfade({});
 </script>
 
 {#if expand}
@@ -70,8 +71,8 @@
 			class="items"
 			use:clickOutside
 			on:click_outside={() => (expand = false)}
-			in:recieve={{ duration: 300 }}
-			out:send={{ duration: 300 }}
+			in:recieve={{ duration: 300, key: name }}
+			out:send={{ duration: 300, key: name }}
 		>
 			<h5>{display_as}</h5>
 			<div id="pickerContainer">
@@ -85,8 +86,8 @@
 		class="small-icon"
 		style={`background-color: rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.2)`}
 		on:click={() => (expand = true)}
-		in:recieve={{ duration: 300 }}
-		out:send={{ duration: 300 }}
+		in:recieve={{ duration: 300, key: name }}
+		out:send={{ duration: 300, key: name }}
 	>
 		<h5>{display_as}</h5>
 	</div>
@@ -111,8 +112,6 @@
 	}
 
 	.small-icon {
-		// margin-top: 1rem;
-
 		width: 12rem;
 		height: 12rem;
 		border-radius: 15px;
@@ -122,10 +121,5 @@
 		@include flex-center;
 
 		text-align: center;
-
-		// #coloris {
-		// 	background-color: transparent;
-		// 	// width: 94.5vw;
-		// }
 	}
 </style>

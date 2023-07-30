@@ -44,12 +44,7 @@
 	{#if themes.length > 0 && searchValue.replace(" ", "").replace("	", "") === ""}
 		<main id="card-container" in:fade={{ delay: transitionLength }}>
 			{#each themes as theme}
-				<ThemeCard
-					src={theme.image_src}
-					themeName={theme.name}
-					textColour={theme.colour}
-					fsName={theme.fs_name}
-				/>
+				<ThemeCard src={theme.image_src} themeName={theme.name} fsName={theme.fs_name} />
 			{/each}
 			{#each [1, 2, 3, 4, 5, 6, 7, 8] as i}
 				<article class="fillspace" />
@@ -58,12 +53,7 @@
 	{:else if themes.filter((theme) => theme.name.includes(searchValue)).length > 0}
 		<main id="card-container" in:fade={{ delay: transitionLength }}>
 			{#each themes.filter((theme) => theme.name.includes(searchValue)) as theme}
-				<ThemeCard
-					src={theme.image_src}
-					themeName={theme.name}
-					textColour={theme.colour}
-					fsName={theme.fs_name}
-				/>
+				<ThemeCard src={theme.image_src} themeName={theme.name} fsName={theme.fs_name} />
 			{/each}
 			{#each [1, 2, 3, 4, 5, 6, 7, 8] as _i}
 				<article class="fillspace" />

@@ -64,12 +64,7 @@
 				{/if}
 			</div>
 			{#each themes as theme}
-				<ThemeCard
-					src={theme.image_src}
-					themeName={theme.name}
-					textColour={theme.colour}
-					fsName={theme.fs_name}
-				/>
+				<ThemeCard src={theme.image_src} themeName={theme.name} fsName={theme.fs_name} />
 			{/each}
 			{#if themes.length <= 5}
 				{#each { length: 6 - themes.length } as _, i}

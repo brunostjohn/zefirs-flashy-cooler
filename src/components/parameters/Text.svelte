@@ -31,7 +31,7 @@
 	};
 
 	let expand = false;
-	const [send, recieve] = crossfade({ fallback: fade });
+	const [send, recieve] = crossfade({});
 </script>
 
 {#if expand}
@@ -40,8 +40,8 @@
 			id="container"
 			use:clickOutside
 			on:click_outside={() => (expand = false)}
-			in:recieve={{ duration: 300 }}
-			out:send={{ duration: 300 }}
+			in:recieve={{ duration: 300, key: name }}
+			out:send={{ duration: 300, key: name }}
 		>
 			<label for="inputText" class="form-label"><h5>{display_as}</h5></label>
 			<input
@@ -54,11 +54,12 @@
 		</div>
 	</div>
 {:else}
+	<!-- svelte-ignore a11y-click-events-have-key-events -->
 	<div
 		class="square"
 		on:click={() => (expand = true)}
-		in:recieve={{ duration: 300 }}
-		out:send={{ duration: 300 }}
+		in:recieve={{ duration: 300, key: name }}
+		out:send={{ duration: 300, key: name }}
 	>
 		<h5>{display_as}</h5>
 	</div>

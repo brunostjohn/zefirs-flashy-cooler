@@ -277,3 +277,15 @@ fn get_subscribed() -> String {
 
     stringified
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn thread_stops_when_asked() {
+        let (mut sensors, _) = Sensors::new(None);
+
+        sensors.stop();
+    }
+}

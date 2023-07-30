@@ -34,7 +34,7 @@
 	};
 
 	let expand = false;
-	const [send, recieve] = crossfade({ fallback: fade });
+	const [send, recieve] = crossfade({});
 </script>
 
 {#if expand}
@@ -43,8 +43,8 @@
 			id="contents"
 			use:clickOutside
 			on:click_outside={() => (expand = false)}
-			in:recieve={{ duration: 300 }}
-			out:send={{ duration: 300 }}
+			in:recieve={{ duration: 300, key: name }}
+			out:send={{ duration: 300, key: name }}
 		>
 			<label for="rangeInput" class="form-label"><h5>{display_as}</h5></label>
 			<div id="rangeContainer">
@@ -84,8 +84,8 @@
 	<div
 		id="small"
 		on:click={() => (expand = true)}
-		in:recieve={{ duration: 300 }}
-		out:send={{ duration: 300 }}
+		in:recieve={{ duration: 300, key: name }}
+		out:send={{ duration: 300, key: name }}
 	>
 		<h5>{display_as}</h5>
 	</div>

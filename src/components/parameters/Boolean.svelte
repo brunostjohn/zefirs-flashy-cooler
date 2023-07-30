@@ -35,18 +35,6 @@
 	</h6>
 </div>
 
-<!-- <div class="form-check form-switch">
-	<input
-		class="form-check-input"
-		type="checkbox"
-		role="switch"
-		id="flexSwitchCheckDefault"
-		bind:checked
-		on:change={() => updateConfig()}
-	/>
-	<label class="form-check-label" for="flexSwitchCheckDefault">{checked ? "On" : "Off"}</label>
-</div> -->
-
 <style lang="scss">
 	@import "../../styles/mixins.scss";
 
@@ -66,8 +54,4 @@
 			margin-bottom: 1rem;
 		}
 	}
-
-	// h5 {
-	// 	margin-top: 1rem;
-	// }
 </style>

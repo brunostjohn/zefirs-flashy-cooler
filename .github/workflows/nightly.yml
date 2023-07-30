@@ -14,6 +14,10 @@ jobs:
     runs-on: windows-latest
     name: Build nightly
 
+    env:
+      TAURI_PRIVATE_KEY: ${{ secrets.TAURI_SIGN_PK }}
+      TAURI_KEY_PASSWORD: ${{ secrets.TAURI_SIGN_PASS }}
+
     steps:
       - uses: actions/checkout@v3
         name: Checkout 🛎️
