@@ -105,6 +105,7 @@ fn download_ultralight() -> Result<(), ULError> {
 
         let from = {
             let mut temp = target.clone();
+            temp.push("bin");
             temp.push(dll_str);
             temp
         };
@@ -122,6 +123,7 @@ fn download_ultralight() -> Result<(), ULError> {
 
         let from = {
             let mut temp = target.clone();
+            temp.push("lib");
             temp.push(lib_str);
             temp
         };
