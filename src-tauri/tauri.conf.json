@@ -56,18 +56,10 @@
 			"resources": [
 				"./AppCore.dll",
 				"./resources/cacert.pem",
-				"./gio-2.0-0.dll",
-				"./glib-2.0-0.dll",
-				"./gmodule-2.0-0.dll",
-				"./gobject-2.0-0.dll",
-				"./gstreamer-full-1.0.dll",
-				"./gthread-2.0-0.dll",
 				"./resources/icudt67l.dat",
 				"./Ultralight.dll",
 				"./UltralightCore.dll",
-				"./WebCore.dll",
-				"./libMonoPosixHelper.dll",
-				"./MonoPosixHelper.dll"
+				"./WebCore.dll"
 			],
 			"shortDescription": "Zefirs Flashy Cooler",
 			"targets": ["nsis", "updater"],

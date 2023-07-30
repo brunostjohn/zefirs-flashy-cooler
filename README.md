@@ -123,13 +123,7 @@ To build this project locally, you will need a few dependencies set up.
    - CMake
 6. Run `cargo make` in `src-tauri`. The project should build normally.
 
-If `System.IO.Compression.Native.Aot.lib` throws linker conflicts for you, run the following command from a Visual Studio Developer Command Prompt:
-
-`lib /remove:libs-native\System.IO.Compression.Native\CMakeFiles\System.IO.Compression.Native.Aot.dir\D\_\a_work\1\s\src\native\external\brotli\dec\decode.c.obj /LIBPATH:[WHEREEVER YOU HAVE THE REPO ON YOUR MACHINE]zefirs-flashy-cooler\src-tauri\static-libs .\System.IO.Compression.Native.Aot.lib`
-
-These symbols are still covered by a different library and everything still functions correctly.
-
-In case of further issues, follow the error messages until everything works. For support, try messaging me through [our discord server](https://discord.gg/KXmnwA6zWK).
+In case of issues, follow the error messages until everything works. For support, try messaging me through [our discord server](https://discord.gg/KXmnwA6zWK).
 
 ### ⚙️ Installation
 
