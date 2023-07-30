@@ -31,7 +31,7 @@ jobs:
         uses: sibiraj-s/action-eslint@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          ignore-path: .eslintignore
+          eslint-args: "--quiet"
           extensions: "js,ts,svelte"
           annotations: true
 
