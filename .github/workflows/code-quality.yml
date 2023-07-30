@@ -31,8 +31,7 @@ jobs:
         uses: sibiraj-s/action-eslint@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          eslint-args: "--quiet"
-          extensions: "js,ts,svelte"
+          eslint-args: '--quiet "**/*.js,**.*.ts,**.*.svelte"'
           annotations: true
 
   Rust-Quality:
@@ -60,8 +59,14 @@ jobs:
           mkdir build
 
       - uses: giraffate/clippy-action@v1
-        name: Check code quality 📑
+        name: Check code quality (PR) 📑
+        if: github.event_name == 'pull_request'
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           workdir: src-tauri
           reporter: github-pr-check
+
+      - name: Check code quality (push) 📑
+        if: github.event_name != 'pull_request'
+        working-directory: src-tauri
+        run: cargo clippy
