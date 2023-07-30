@@ -44,8 +44,8 @@ dependencies = ["clean-libre-lib"]
 cwd = "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish"
 script_runner = "@shell"
 script = '''
+    mkdir -p ../../../../../../src-tauri/static-libs/
     cp ./LibreHardwareMonitorNative.lib ../../../../../../src-tauri/static-libs/
-    cp ./*.dll ../../../../../../src-tauri/
 '''
 dependencies = ["build-libre-lib"]
 

@@ -52,6 +52,7 @@ jobs:
       - name: Install build dependencies 🛫
         run: |
           choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
+          mkdir build
 
       - uses: reinismu/clippy-check@master
         name: Check code quality 📑
