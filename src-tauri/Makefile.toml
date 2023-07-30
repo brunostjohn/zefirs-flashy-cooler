@@ -59,8 +59,7 @@ run_task = [
         "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj",
         "../LibreHardwareMonitorNative/LibreHardwareMonitorNative.sln",
     ], output = [
-        "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.lib",
-        "../LibreHardwareMonitorNative/bin/Release/net7.0/win-x64/publish/*.dll",
+        "./static-libs/LibreHardwareMonitorNative.lib",
     ] } } },
 ]
 
