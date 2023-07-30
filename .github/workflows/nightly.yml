@@ -50,4 +50,4 @@ jobs:
         with:
           name: nightly-build
           path: src-tauri/target/release/bundle/*.exe
-          retention-days: 3
+          retention-days: 1
