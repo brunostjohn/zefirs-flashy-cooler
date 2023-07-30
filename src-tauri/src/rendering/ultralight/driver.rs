@@ -1,8 +1,6 @@
+use std::fs;
 use std::path::PathBuf;
-
-use std::time::Duration;
 use std::{borrow::Cow, mem, rc::Rc};
-use std::{fs, thread};
 
 use glium::program::{Binary, ProgramCreationInput};
 use glium::vertex::AttributeType;

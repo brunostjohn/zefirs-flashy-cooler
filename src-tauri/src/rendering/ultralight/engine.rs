@@ -12,8 +12,6 @@ use std::{
 
 use heapless::spsc::Queue;
 
-use rayon::prelude::*;
-
 use once_cell::sync::Lazy;
 use ul_sys::*;
 
@@ -194,21 +192,11 @@ impl Ultralight {
     pub fn call_js_script(&self, script: String) {
         let cstr = CString::new(script).unwrap();
         unsafe {
-            // let jsstr = JSStringCreateWithUTF8CString(cstr.as_ptr());
-
-            // let context = ulViewLockJSContext(self.view);
-
             let ulstr = ulCreateString(cstr.as_ptr());
 
             ulViewEvaluateScript(self.view, ulstr, null_mut());
 
             ulDestroyString(ulstr);
-
-            // let _ = JSEvaluateScript(context, jsstr, null_mut(), null_mut(), 1, null_mut());
-
-            // ulViewLockJSContext(self.view);
-
-            // JSStringRelease(jsstr);
         }
     }
 }
@@ -244,6 +232,7 @@ pub unsafe extern "C" fn logger_callback(log_level: ULLogLevel, message: ULStrin
         _ => "None",
     };
 
+    #[cfg(not(test))]
     println!("[ {log_level} ] {msg}");
 }
 
@@ -315,4 +304,49 @@ pub unsafe extern "C" fn update_cmd_lst(list: ULCommandList) {
         .collect();
 
     GPU_SENDER.update_command_list(cmds);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rand::prelude::*;
+
+    /// Generates random colours and makes sure the engine renders them appropriately.
+    #[test]
+    fn renders_correctly() {
+        let current_path = std::env::current_dir().unwrap();
+
+        let mut engine = Ultralight::new(current_path, 480, 480);
+
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..=10 {
+            let r = rng.gen_range(0..=255) as u8;
+            let g = rng.gen_range(0..=255) as u8;
+            let b = rng.gen_range(0..=255) as u8;
+
+            let html = format!("<html><head><style>body {{ background-color: rgba({r}, {g}, {b}, 1); }}</style></head><body></body></html>");
+
+            engine.load_html(&html).unwrap();
+
+            for _ in 0..=100 {
+                engine.update();
+            }
+
+            engine.render();
+
+            let bitmap = engine.get_bitmap().unwrap();
+
+            let generated: Vec<u8> = [r, g, b, 255]
+                .iter()
+                .cycle()
+                .take(480 * 480 * 4)
+                .copied()
+                .collect();
+
+            let generated_cow = Cow::Borrowed(generated.as_slice());
+
+            assert_eq!(bitmap, generated_cow)
+        }
+    }
 }

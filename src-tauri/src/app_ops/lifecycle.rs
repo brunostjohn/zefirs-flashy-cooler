@@ -28,14 +28,6 @@ pub fn exit(window: &Option<Window>, app: &AppHandle) {
 pub fn setup(app: &mut App) -> Result<(), Box<dyn Error>> {
     let window = app.get_window("main").unwrap();
 
-    // #[cfg(target_os = "windows")]
-    // match apply_mica(&window) {
-    //     Ok(_) => {}
-    //     Err(_) => {
-    //         let _ = apply_acrylic(&window, Some((0, 0, 0, 0)));
-    //     }
-    // };
-
     set_shadow(&window, true).unwrap();
 
     if config.start_minimised {

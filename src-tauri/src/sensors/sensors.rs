@@ -284,8 +284,19 @@ mod tests {
 
     #[test]
     fn thread_stops_when_asked() {
-        let (mut sensors, _) = Sensors::new(None);
+        let (mut sensors, _) = Sensors::new(Some(1000));
 
         sensors.stop();
+    }
+
+    #[test]
+    fn gets_all_sensors() {
+        let (mut sensors, _) = Sensors::new(Some(1000));
+
+        let list = sensors.get_all_sensors().unwrap();
+
+        sensors.stop();
+
+        assert_ne!(list.len(), 0)
     }
 }

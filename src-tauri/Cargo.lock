@@ -101,6 +101,7 @@ dependencies = [
  "mime_guess",
  "nohash-hasher",
  "once_cell",
+ "rand 0.8.5",
  "rayon",
  "reqwest",
  "serde",
