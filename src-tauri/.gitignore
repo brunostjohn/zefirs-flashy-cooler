@@ -6,3 +6,4 @@
 *.dll
 *.pem
 /.idea/
+/resources/
