@@ -28,7 +28,12 @@ jobs:
         run: npm install
 
       - name: Check code quality 🔩
-        run: npm run lint
+        uses: sibiraj-s/action-eslint@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ignore-path: .eslintignore
+          extensions: "js,ts,svelte"
+          annotations: true
 
   Rust-Quality:
     name: Rust code quality
@@ -54,9 +59,9 @@ jobs:
           choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
           mkdir build
 
-      - uses: reinismu/clippy-check@master
+      - uses: giraffate/clippy-action@v1
         name: Check code quality 📑
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          args: --all-features
-          working-directory: src-tauri
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          workdir: src-tauri
+          reporter: github-pr-check

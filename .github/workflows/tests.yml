@@ -33,6 +33,9 @@ jobs:
   Rust-Tests:
     name: Rust tests
     runs-on: windows-latest
+    permissions:
+      checks: write
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v3
@@ -55,4 +58,11 @@ jobs:
 
       - name: Run Rust code tests 🧪
         working-directory: src-tauri
-        run: cargo make tests
+        run: cargo make tests-ci
+
+      - name: Publish test results 💫
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2
+        if: always()
+        with:
+          files: |
+            src-tauri/target/nextest/ci/junit.xml

@@ -82,6 +82,12 @@ dependencies = ["libre", "tauri-dev"]
 [tasks.run]
 dependencies = ["libre", "tauri-release"]
 
+[tasks.install-tauri]
+install_crate = "tauri-cli"
+
+[tasks.install-nextest]
+install_crate = "cargo-nextest"
+
 [tasks.release-debug]
 install_crate = "tauri-cli"
 command = "cargo"
@@ -91,7 +97,11 @@ args = ["tauri", "dev", "--", "--profile", "release-with-debug"]
 alias = "dev"
 
 [tasks.tests]
-install_crate = "tauri-cli"
-dependencies = ["libre"]
+dependencies = ["libre", "install-tauri", "install-nextest"]
 command = "cargo"
-args = ["test"]
+args = ["nextest", "run"]
+
+[tasks.tests-ci]
+dependencies = ["libre", "install-tauri", "install-nextest"]
+command = "cargo"
+args = ["nextest", "run", "--retries", "3", "--profile", "ci"]
