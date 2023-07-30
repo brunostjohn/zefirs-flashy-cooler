@@ -1,13 +1,9 @@
-name: Build from current commit
+name: Build nightly
 
 on:
-  push:
-    branches: ["main"]
-    paths-ignore:
-      - "README.md"
-      - ".vscode/**"
-      - "LICENSE"
-      - ".github/**"
+  workflow_dispatch:
+  schedule:
+    - cron: 0 0 * * *
 
 jobs:
   build:
@@ -53,5 +49,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: nightly-build
-          path: src-tauri/target/release/bundle/
+          path: src-tauri/target/release/bundle/*.exe
           retention-days: 3

@@ -56,6 +56,9 @@ jobs:
         run: |
           choco install cmake.install --installargs '"ADD_CMAKE_TO_PATH=User"'
 
+      - uses: Swatinem/rust-cache@v2
+        name: Set up cache 📚
+
       - name: Run Rust code tests 🧪
         working-directory: src-tauri
         run: cargo make tests
