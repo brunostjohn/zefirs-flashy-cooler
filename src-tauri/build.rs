@@ -1,4 +1,142 @@
+use std::io::Cursor;
+
+#[derive(Debug)]
+enum ULError {
+    OpFailed,
+    NotFound,
+}
+
+fn check_ultralight() -> Result<(), ULError> {
+    let necessary_dlls = [
+        "AppCore.dll",
+        "Ultralight.dll",
+        "UltralightCore.dll",
+        "WebCore.dll",
+    ];
+    let necessary_libs = [
+        "AppCore.lib",
+        "Ultralight.lib",
+        "UltralightCore.lib",
+        "WebCore.lib",
+    ];
+
+    let cwd = std::env::current_dir().or(Err(ULError::OpFailed))?;
+
+    for dll_str in necessary_dlls {
+        let dir = {
+            let mut temp = cwd.clone();
+            temp.push(dll_str);
+            temp
+        };
+
+        if !dir.exists() {
+            return Err(ULError::NotFound);
+        }
+    }
+
+    for lib_str in necessary_libs {
+        let dir = {
+            let mut temp = cwd.clone();
+            temp.push("static-libs");
+            temp.push(lib_str);
+            temp
+        };
+
+        if !dir.exists() {
+            return Err(ULError::NotFound);
+        }
+    }
+
+    Ok(())
+}
+
+fn download_ultralight() -> Result<(), ULError> {
+    let ultralight_url =
+        "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
+
+    let response = reqwest::blocking::get(ultralight_url).or(Err(ULError::OpFailed))?;
+
+    let archive_path = {
+        let mut temp = std::env::temp_dir();
+
+        temp.push("ul_sdk.7z");
+
+        temp
+    };
+
+    let mut file = std::fs::File::create(archive_path).or(Err(ULError::OpFailed))?;
+    let mut content = Cursor::new(response.bytes().or(Err(ULError::OpFailed))?);
+
+    std::io::copy(&mut content, &mut file).or(Err(ULError::OpFailed))?;
+
+    let target = {
+        let mut temp = std::env::temp_dir();
+
+        temp.push("ul_sdk");
+
+        temp
+    };
+
+    std::fs::create_dir(&target).or(Err(ULError::OpFailed))?;
+
+    sevenz_rust::decompress(file, &target).or(Err(ULError::OpFailed))?;
+
+    let necessary_dlls = [
+        "AppCore.dll",
+        "Ultralight.dll",
+        "UltralightCore.dll",
+        "WebCore.dll",
+    ];
+    let necessary_libs = [
+        "AppCore.lib",
+        "Ultralight.lib",
+        "UltralightCore.lib",
+        "WebCore.lib",
+    ];
+
+    let cwd = std::env::current_dir().or(Err(ULError::OpFailed))?;
+
+    for dll_str in necessary_dlls {
+        let dir = {
+            let mut temp = cwd.clone();
+            temp.push(dll_str);
+            temp
+        };
+
+        let from = {
+            let mut temp = target.clone();
+            temp.push(dll_str);
+            temp
+        };
+
+        std::fs::copy(from, dir).or(Err(ULError::OpFailed))?;
+    }
+
+    for lib_str in necessary_libs {
+        let dir = {
+            let mut temp = cwd.clone();
+            temp.push("static-libs");
+            temp.push(lib_str);
+            temp
+        };
+
+        let from = {
+            let mut temp = target.clone();
+            temp.push(lib_str);
+            temp
+        };
+
+        std::fs::copy(from, dir).or(Err(ULError::OpFailed))?;
+    }
+
+    Ok(())
+}
+
 fn main() {
+    if let Err(ULError::NotFound) = check_ultralight() {
+        download_ultralight().unwrap();
+    }
+
     println!("cargo:rustc-link-search=./static-libs/");
     println!("cargo:rustc-link-lib=LibreHardwareMonitorNative");
 
