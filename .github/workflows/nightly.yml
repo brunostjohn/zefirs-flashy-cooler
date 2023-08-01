@@ -49,5 +49,5 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: nightly-build
-          path: src-tauri/target/release/bundle/*.exe
+          path: src-tauri/target/release/bundle/nsis/*.exe
           retention-days: 1
