@@ -45,7 +45,7 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"@melloware/coloris": "^0.20.0",
+		"@melloware/coloris": "^0.21.1",
 		"@tauri-apps/api": "^1.4.0"
 	}
 }
