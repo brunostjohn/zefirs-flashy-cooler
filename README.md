@@ -53,7 +53,7 @@
 
 Thank you for your ongoing support. [Click here to become my sponsor.](https://github.com/sponsors/brunostjohn)
 
-<!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><a href="https://github.com/Pseudo-Nym"><img src="https://github.com/Pseudo-Nym.png" width="60px" alt="Serene Scream" /></a><a href="https://github.com/Hunter68uk"><img src="https://github.com/Hunter68uk.png" width="60px" alt="" /></a><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><a href="https://github.com/Pseudo-Nym"><img src="https://github.com/Pseudo-Nym.png" width="60px" alt="Serene Scream" /></a><!-- sponsors -->
 
 <!-- TABLE OF CONTENTS -->
 
