@@ -1,0 +1,13 @@
+[package]
+name = "ultralight-sys"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+bindgen = "0.69.1"
+reqwest = { version = "0.11.22", features = ["blocking"] }
+sevenz-rust = "0.5.3"
+
+[dependencies]
+
+

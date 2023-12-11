@@ -1,0 +1,20 @@
+[package]
+name = "ultralight"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75.0"
+
+[dependencies]
+bytemuck = "1.14.0"
+nohash-hasher = "0.2.0"
+thiserror = "1.0.50"
+ultralight-sys = {path="../ultralight-sys"}
+wgpu = { version = "0.18.0", features = ["spirv"] }
+wgpu-async = "0.18.0"
+
+[dev-dependencies]
+tokio = { version = "1.35.0", features = ["full"] }
+rusty-fork = "0.3.0"
+
+[build-dependencies]
+spirv-compiler = "0.2.0"
