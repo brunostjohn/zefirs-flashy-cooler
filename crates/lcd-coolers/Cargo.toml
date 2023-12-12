@@ -1,0 +1,9 @@
+[package]
+name = "lcd-coolers"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75.0"
+
+[dependencies]
+anyhow = "1.0.75"
+windows = { version = "0.52.0", features = ["Foundation", "Devices", "Devices_HumanInterfaceDevice", "Devices_Enumeration", "Foundation_Collections"] }

@@ -36,4 +36,10 @@ pub enum ULError {
     GPUDriverNoCompatibleAdapter,
     #[error("Failed to start GPU driver due to a lack of a supported GPU device")]
     GPUDriverNoCompatibleDevice,
+    #[error("Failed to perform operation as it is unsupported for a borrowed bitmap")]
+    BitmapUnsupportedOperationForBorrowedBitmap,
+    #[error("Failed to get geometry from map")]
+    GPUFailedToGetGeometry,
+    #[error("Failed to get render buffer from map")]
+    GPUFailedToGetRenderBuffer,
 }

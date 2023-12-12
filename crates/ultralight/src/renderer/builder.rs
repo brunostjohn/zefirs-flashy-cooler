@@ -17,11 +17,25 @@ use ultralight_sys::{
 
 use crate::{
     string::ULString,
-    types::{facewinding::ULFaceWinding, fonthinting::ULFontHinting},
+    types::{face_winding::ULFaceWinding, font_hinting::ULFontHinting},
 };
 
 use super::r#impl::ULRenderer;
 
+/// A builder for creating a renderer.
+///
+/// # Example
+/// ```rust
+/// use ultralight::{platform::ULPlatformBuilder, renderer::ULRendererBuilder};
+///
+/// let platform = ULPlatformBuilder::new()
+///  .enable_platform_file_system()
+///  .enable_platform_font_loader()
+///  .build();
+///
+/// let renderer = ULRendererBuilder::new()
+///  .set_page_cache_size(128)
+///  .build();
 pub struct ULRendererBuilder {
     config: ULConfigGuard,
 }

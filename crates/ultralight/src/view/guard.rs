@@ -1,6 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
-pub(crate) struct ULViewGuard(ultralight_sys::ULView);
+pub(crate) struct ULViewGuard(pub(crate) ultralight_sys::ULView);
+
+unsafe impl Sync for ULViewGuard {}
+unsafe impl Send for ULViewGuard {}
 
 impl ULViewGuard {
     pub fn new(view: ultralight_sys::ULView) -> Self {

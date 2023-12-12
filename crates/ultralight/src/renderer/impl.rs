@@ -16,6 +16,9 @@ pub enum ULRendererGuard {
     Borrowed(ultralight_sys::ULRenderer),
 }
 
+unsafe impl Send for ULRendererGuard {}
+unsafe impl Sync for ULRendererGuard {}
+
 impl Drop for ULRendererGuard {
     fn drop(&mut self) {
         match self {

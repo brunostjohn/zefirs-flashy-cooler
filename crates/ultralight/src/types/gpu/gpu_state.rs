@@ -1,8 +1,8 @@
 use ultralight_sys::ULGPUState;
 
-use crate::{error::ULError, from_ul_arr};
+use crate::error::ULError;
 
-use super::{rect::Rect, shader_type::ShaderType};
+use super::{from_ul_arr, rect::Rect, shader_type::ShaderType};
 
 #[derive(Debug)]
 pub struct GPUState {

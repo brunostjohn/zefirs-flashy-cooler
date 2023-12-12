@@ -1,13 +1,17 @@
-const tailwindcss = require("tailwindcss");
+/* eslint-env node */
 const autoprefixer = require("autoprefixer");
+const tailwindcss = require("tailwindcss");
 
-const config = {
-  plugins: [
-    //Some plugins, like tailwindcss/nesting, need to run before Tailwind,
-    tailwindcss(),
-    //But others, like autoprefixer, need to run after,
-    autoprefixer,
-  ],
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+	darkMode: "class",
+	content: [
+		"./src/**/*.{html,js,svelte,ts}",
+		// 3. Append the path to the Skeleton package
+		require("path").join(require.resolve("@skeletonlabs/skeleton"), "../**/*.{html,js,svelte,ts}"),
+	],
+	theme: {
+		extend: {},
+	},
+	plugins: [tailwindcss, autoprefixer],
 };
-
-module.exports = config;

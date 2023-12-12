@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.75.0"
 
 [dependencies]
-bytemuck = "1.14.0"
+bytemuck = { version = "1.14.0", features = ["derive"] }
 nohash-hasher = "0.2.0"
 thiserror = "1.0.50"
 ultralight-sys = {path="../ultralight-sys"}

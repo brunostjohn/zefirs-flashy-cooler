@@ -1,18 +1,21 @@
 use ultralight_sys::JSGarbageCollect;
 
-use crate::{ULRendererGuard, ULResult, ULViewBuilder};
+use crate::{ULRendererGuard, ULResult, ULSurface, ULViewBuilder};
 
 use super::{
     guard::{ULViewConfigGuard, ULViewGuard},
-    load_future::LoadFuture,
+    load_future::{LoadFuture, LoadFutureContainer},
 };
 use std::ptr;
 
 pub struct ULView<'a> {
     internal: ULViewGuard,
-    renderer: &'a crate::ULRendererGuard,
+    renderer: &'a ULRendererGuard,
     config: ULViewConfigGuard,
 }
+
+unsafe impl Send for ULView<'_> {}
+unsafe impl Sync for ULView<'_> {}
 
 impl<'a> ULView<'a> {
     pub unsafe fn from_raw(
@@ -84,7 +87,7 @@ impl<'a> ULView<'a> {
         self.load_url_start(url);
 
         LoadFuture {
-            renderer: self.renderer,
+            renderer: &LoadFutureContainer(**self.renderer),
         }
         .await
     }
@@ -98,7 +101,7 @@ impl<'a> ULView<'a> {
         self.load_html_start(html);
 
         LoadFuture {
-            renderer: self.renderer,
+            renderer: &LoadFutureContainer(**self.renderer),
         }
         .await
     }
@@ -168,6 +171,16 @@ impl<'a> ULView<'a> {
     pub fn create_local_inspector_view(&mut self) {
         unsafe { ultralight_sys::ulViewCreateLocalInspectorView(*self.internal) }
     }
+
+    pub(crate) fn get_render_surface(&mut self) -> ultralight_sys::ULSurface {
+        unsafe { ultralight_sys::ulViewGetSurface(*self.internal) }
+    }
+
+    pub fn get_surface(&mut self) -> ULSurface {
+        unsafe { ULSurface::from_raw(self.get_render_surface()) }
+    }
+
+    pub fn render_png(&mut self) {}
 
     #[inline]
     pub fn garbage_collect(&mut self) {

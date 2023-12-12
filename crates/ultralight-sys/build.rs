@@ -19,24 +19,26 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
     Ok(())
 }
 
-fn main() {
+fn download_resources() {
+    let dir = {
+        let mut dir = std::env::temp_dir();
+        dir.push("ultralight");
+
+        if dir.exists() {
+            return;
+        }
+        std::fs::create_dir_all(&dir).expect("Failed to create Ultralight temp dir!");
+
+        dir
+    };
+
     let bundle = reqwest::blocking::get(WINDOWS_DL)
         .expect("Failed to download Ultralight bundle!")
         .bytes()
         .expect("Failed to get Ultralight bytes!")
         .to_vec();
     let cursor = std::io::Cursor::new(bundle);
-    let dir = {
-        let mut dir = std::env::temp_dir();
-        dir.push("ultralight");
 
-        if dir.exists() {
-            let _ = std::fs::remove_dir_all(&dir);
-        }
-        std::fs::create_dir_all(&dir).expect("Failed to create Ultralight temp dir!");
-
-        dir
-    };
     sevenz_rust::decompress(cursor, &dir).expect("Failed to decompress Ultralight bundle!");
 
     let include_dir = dir.join("include");
@@ -53,16 +55,19 @@ fn main() {
     let target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
-    let target_dir = target_dir.join("ul-libs");
-    if target_dir.exists() {
-        let _ = std::fs::remove_dir_all(&target_dir);
-    }
-    std::fs::create_dir(&target_dir).expect("Failed to create ul-libs dir!");
     copy_dir_all(lib_dir, &target_dir).expect("Failed to copy ultralight libs!");
+}
+
+fn main() {
+    println!("cargo:rerun-if-changed=build.rs");
 
     println!("cargo:rustc-link-lib=Ultralight");
     println!("cargo:rustc-link-lib=WebCore");
     println!("cargo:rustc-link-lib=AppCore");
+
+    let target_dir: PathBuf = std::env::var("OUT_DIR")
+        .expect("Failed to get target dir!")
+        .into();
 
     println!("cargo:rustc-link-search=native={}", target_dir.display());
 
@@ -84,6 +89,13 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
+
+    let dir = {
+        let mut dir = std::env::temp_dir();
+        dir.push("ultralight");
+
+        dir
+    };
 
     let bin_dir = dir.join("bin");
     let target_dir: PathBuf = std::env::var("OUT_DIR")

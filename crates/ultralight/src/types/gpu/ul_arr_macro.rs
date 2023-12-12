@@ -1,4 +1,3 @@
-#[macro_export]
 macro_rules! from_ul_arr {
     ($arr:expr, $from:ident) => {
         [
@@ -33,3 +32,5 @@ macro_rules! from_ul_arr {
         ]
     };
 }
+
+pub(crate) use from_ul_arr;

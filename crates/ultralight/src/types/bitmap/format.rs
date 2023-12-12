@@ -5,9 +5,12 @@ use ultralight_sys::{
 
 use crate::error::ULError;
 
+/// Describes the format of a bitmap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BitmapFormat {
+    /// 8-bit alpha-only.
     A8Unorm = ULBitmapFormat_kBitmapFormat_A8_UNORM as isize,
+    /// 32-bit BGRA, 8-bits per channel.
     Bgra8UnormSrgb = ULBitmapFormat_kBitmapFormat_BGRA8_UNORM_SRGB as isize,
 }
 

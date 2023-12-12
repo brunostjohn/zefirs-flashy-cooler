@@ -36,8 +36,13 @@ pub(super) unsafe extern "C" fn failed_loading(
     FAILED_LOADING.store(true, Ordering::Release);
 }
 
+pub(crate) struct LoadFutureContainer(pub(crate) ultralight_sys::ULRenderer);
+
+unsafe impl Send for LoadFutureContainer {}
+unsafe impl Sync for LoadFutureContainer {}
+
 pub struct LoadFuture<'a> {
-    pub(super) renderer: &'a ultralight_sys::ULRenderer,
+    pub(super) renderer: &'a LoadFutureContainer,
 }
 
 impl<'a> Future for LoadFuture<'a> {
@@ -55,8 +60,8 @@ impl<'a> Future for LoadFuture<'a> {
             std::task::Poll::Ready(Err(ULError::FailedToLoadWebpage))
         } else {
             cx.waker().wake_by_ref();
-            unsafe { ulUpdate(*self.renderer) };
-            unsafe { ulRender(*self.renderer) };
+            unsafe { ulUpdate(self.renderer.0) };
+            unsafe { ulRender(self.renderer.0) };
             std::task::Poll::Pending
         }
     }
