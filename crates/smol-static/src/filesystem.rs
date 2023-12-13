@@ -15,23 +15,20 @@ pub(crate) async fn read_http_file(filename: &str, path: &Path) -> anyhow::Resul
     filename
         .split('/')
         .flat_map(|s| s.split('\\'))
-        .filter(|s| s.starts_with(".."))
+        .filter(|s| !s.starts_with(".."))
         .for_each(|piece| path.push(piece));
 
-    let mut file = tokio::fs::File::open(path)
-        .await
-        .context("Failed to open file!")?;
-
-    let mut contents = Vec::with_capacity(1024);
-    file.read_to_end(&mut contents)
+    let contents = tokio::fs::read(path)
         .await
         .context("Failed to read file!")?;
 
-    let mut encoder = GzipEncoder::new(Vec::new());
+    let mut encoder = GzipEncoder::new(Vec::with_capacity(contents.len()));
     encoder
         .write_all(&contents)
         .await
         .context("Failed to compress file!")?;
+    encoder.flush().await.context("Failed to flush encoder!")?;
+    encoder.shutdown().await.context("Failed to shutdown encoder!")?;
 
     let content_type = mime_guess::from_path(filename)
         .first_or_octet_stream()

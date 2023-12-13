@@ -29,6 +29,7 @@ lcd-coolers = {path="./crates/lcd-coolers"}
 librehardwaremonitor-rs = {path="./crates/librehardwaremonitor-rs"}
 tachyonix = "0.2.1"
 smol-static = { path = "./crates/smol-static" }
+confy = "0.5.1"
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]

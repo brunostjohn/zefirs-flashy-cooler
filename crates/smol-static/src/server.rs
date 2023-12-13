@@ -1,16 +1,16 @@
 use anyhow::Context;
 use std::path::{Path, PathBuf};
+use tachyonix::TryRecvError;
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
-use tachyonix::TryRecvError;
 
 use crate::filesystem::{read_http_file, HTTPFile};
 
 pub enum ServerMessage {
     SetBasePath(PathBuf),
-    Shutdown
+    Shutdown,
 }
 
 pub struct Server {
@@ -26,7 +26,13 @@ impl Server {
         let base_path = base_path.as_ref().to_path_buf();
         let (sender, receiver) = tachyonix::channel(10);
 
-        (sender, Self { base_path, receiver })
+        (
+            sender,
+            Self {
+                base_path,
+                receiver,
+            },
+        )
     }
 
     pub fn set_base_path<P: AsRef<Path>>(&mut self, base_path: P) {
@@ -45,7 +51,9 @@ impl Server {
             }
 
             true
-        } else { !matches!(self.receiver.try_recv(), Err(TryRecvError::Closed)) }
+        } else {
+            !matches!(self.receiver.try_recv(), Err(TryRecvError::Closed))
+        }
     }
 
     pub async fn run(&mut self, port: usize) -> anyhow::Result<()> {
@@ -74,12 +82,11 @@ impl Server {
                     .expect("Failed to read request!");
                 let request = String::from_utf8_lossy(&buf[..n]);
                 let request = request.split_whitespace().collect::<Vec<_>>();
-                let first_line = request.first();
+                let second_node = request.get(1);
 
-                if let Some(line) = first_line {
-                    let path = line
-                        .trim_start_matches("GET /")
-                        .trim_end_matches(" HTTP/1.1");
+                if let Some(path) = second_node {
+                    let path = path
+                        .trim_start_matches('/');
                     let path = if path.is_empty() { "index.html" } else { path };
                     if let Ok(HTTPFile {
                         content,
@@ -88,7 +95,7 @@ impl Server {
                     }) = read_http_file(path, &base).await
                     {
                         let response_header = format!(
-                                "HTTP/1.1 200 OK\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
+                                "HTTP/1.1 200 OK\r\nContent-Encoding: gzip\r\nContent-Type: {}\r\nContent-Length: {}\r\nConnection: close\r\n\r\n",
                                 content_type, content_length
                             );
                         let mut response = vec![];
@@ -98,6 +105,7 @@ impl Server {
                             .write_all(response.as_slice())
                             .await
                             .expect("Failed to write response!");
+                        socket.flush().await.expect("Failed to flush socket!");
                     } else {
                         return_404(socket).await.expect("Failed to write 404!");
                     }

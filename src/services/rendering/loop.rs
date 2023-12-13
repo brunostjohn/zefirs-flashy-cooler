@@ -1,6 +1,4 @@
 use lcd_coolers::{find_and_create_device, DisplayCooler};
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use tokio::time::{self, Duration};
 use ultralight::{ULPlatformBuilder, ULRendererBuilder, ULViewBuilder};
 
@@ -27,8 +25,8 @@ pub async fn main_loop() {
         .set_height(480)
         .build();
 
-    let loaded = view
-        .load_url("https://google.com")
+    view
+        .load_url("http://127.0.0.1:2137")
         .await
         .expect("Failed to load URL");
     // let fps = (1 / 30) * 1000;

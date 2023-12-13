@@ -4,13 +4,14 @@ use tokio::runtime::Handle;
 
 mod lifecycle;
 mod services;
+mod utils;
 use crate::services::spawn_services;
 
 #[tokio::main]
 async fn main() {
     tauri::async_runtime::set(Handle::current());
 
-    let (local, renderer, app) = spawn_services().await;
+    let (local, renderer, server, app) = spawn_services().await;
 
-    let _ = tokio::join!(local, renderer, app);
+    let _ = tokio::join!(local, renderer, server, app);
 }
