@@ -55,7 +55,7 @@ impl<'a> Sensor<'a> {
             )
         };
 
-        if value == -1f32  {
+        if value == -1f32 {
             Err(LibreError::FailedToGetSensorValue)
         } else {
             Ok(value)

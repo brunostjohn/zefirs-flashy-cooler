@@ -55,21 +55,22 @@ fn download_resources() {
     let target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
-    copy_dir_all(lib_dir, &target_dir).expect("Failed to copy ultralight libs!");
+    copy_dir_all(lib_dir, target_dir).expect("Failed to copy ultralight libs!");
 }
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    println!("cargo:rustc-link-lib=Ultralight");
-    println!("cargo:rustc-link-lib=WebCore");
-    println!("cargo:rustc-link-lib=AppCore");
+    download_resources();
 
     let target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
 
     println!("cargo:rustc-link-search=native={}", target_dir.display());
+    println!("cargo:rustc-link-lib=Ultralight");
+    println!("cargo:rustc-link-lib=WebCore");
+    println!("cargo:rustc-link-lib=AppCore");
 
     let bindings = bindgen::Builder::default()
         .header("wrapped/wrapper.h")
@@ -101,21 +102,16 @@ fn main() {
     let target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
-    let target_dir = target_dir.join("ul-bin");
-    if target_dir.exists() {
-        let _ = std::fs::remove_dir_all(&target_dir);
-    }
-    std::fs::create_dir(&target_dir).expect("Failed to create ul-bin dir!");
-    copy_dir_all(bin_dir, &target_dir).expect("Failed to copy ultralight bins!");
+    copy_dir_all(bin_dir, target_dir).expect("Failed to copy ultralight bins!");
 
     let resources_dir = dir.join("resources");
     let target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
-    let target_dir = target_dir.join("ul-resources");
+    let target_dir = target_dir.join("resources");
     if target_dir.exists() {
         let _ = std::fs::remove_dir_all(&target_dir);
     }
-    std::fs::create_dir(&target_dir).expect("Failed to create ul-resources dir!");
+    std::fs::create_dir(&target_dir).expect("Failed to create resources dir!");
     copy_dir_all(resources_dir, &target_dir).expect("Failed to copy ultralight resources!");
 }

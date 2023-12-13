@@ -1,6 +1,7 @@
 use super::{
     constants::{PRODUCT_ID, PRODUCT_ID_V2, VENDOR_ID},
-    device::CorsairH150i, counter::Counter,
+    counter::Counter,
+    device::CorsairH150i,
 };
 use crate::traits::device_creator::DeviceCreator;
 use anyhow::Context;
@@ -45,7 +46,7 @@ impl<'a> DeviceCreator for CorsairH150i<'a> {
             ),
             compressor,
             packet: Vec::with_capacity(1024),
-            unfuck_counter: Counter::new(1000 * 29)
+            unfuck_counter: Counter::new(1000 * 29),
         })
     }
 }

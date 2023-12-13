@@ -2,7 +2,7 @@ use std::time::{Duration, SystemTime};
 
 pub(crate) struct Counter {
     frequency: Duration,
-    time: SystemTime
+    time: SystemTime,
 }
 
 impl Counter {

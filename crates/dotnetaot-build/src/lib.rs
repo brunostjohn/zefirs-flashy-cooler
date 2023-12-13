@@ -51,7 +51,14 @@ fn get_aot_libs_path() -> PathBuf {
 }
 
 pub fn use_aot_lib() {
+    let aot_libs_path = get_aot_libs_path();
+    println!("cargo:rustc-link-search=native={}", aot_libs_path.display());
     println!("cargo:rustc-link-arg=/INCLUDE:NativeAOT_StaticInitialization");
+
+    println!("cargo:rustc-link-lib=Ole32");
+    println!("cargo:rustc-link-lib=OleAut32");
+    println!("cargo:rustc-link-lib=Iphlpapi");
+    println!("cargo:rustc-link-lib=Crypt32");
 }
 
 pub fn build(lib_name: &str, csharp_project_path: Option<PathBuf>) {

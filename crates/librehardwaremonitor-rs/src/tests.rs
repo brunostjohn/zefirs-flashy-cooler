@@ -64,7 +64,10 @@ fn gets_hardware() {
             let sensor_name = sensor.get_name().unwrap_or("".into());
             let sensor_value = sensor.get_value().unwrap_or(0f32);
             let sensor_type = sensor.get_type();
-            println!("\t{sensor_name}\n\t\tvalue: {sensor_value}\n\t\ttype: {:#?}", sensor_type);
+            println!(
+                "\t{sensor_name}\n\t\tvalue: {sensor_value}\n\t\ttype: {:#?}",
+                sensor_type
+            );
         }
     }
 }

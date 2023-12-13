@@ -37,7 +37,7 @@ pub enum SensorType {
     Noise,
 }
 
-#[link(name = "bootstrapperdll", kind="static")]
+#[link(name = "bootstrapperdll", kind = "static")]
 #[link(name = "Runtime.WorkstationGC", kind = "static")]
 #[link(name = "System.Globalization.Native.Aot", kind = "static")]
 #[link(name = "System.IO.Compression.Native.Aot", kind = "static")]

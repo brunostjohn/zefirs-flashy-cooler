@@ -11,6 +11,9 @@ rust-version = "1.60"
 
 [build-dependencies]
 tauri-build = { version = "1.5.0", features = [] }
+dotnetaot-build = {path="./crates/dotnetaot-build"}
+anyhow = "1.0.75"
+ultralight-build = {path="./crates/ultralight-build"}
 
 [dependencies]
 serde_json = "1.0"
@@ -23,6 +26,9 @@ window-shadows = "0.2.2"
 anyhow = "1.0.75"
 ultralight = {path="./crates/ultralight"}
 lcd-coolers = {path="./crates/lcd-coolers"}
+librehardwaremonitor-rs = {path="./crates/librehardwaremonitor-rs"}
+tachyonix = "0.2.1"
+smol-static = { path = "./crates/smol-static" }
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]

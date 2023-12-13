@@ -6,7 +6,10 @@ use tokio::{
 };
 use turbojpeg::{Compressor, Image, OutputBuf};
 
-use super::{constants::{CONTROL_REQUEST, DEVICE_ALIVE, DEVICE_STAT, IMG_TX, SET_INTERFACE}, counter::Counter};
+use super::{
+    constants::{CONTROL_REQUEST, DEVICE_ALIVE, DEVICE_STAT, IMG_TX, SET_INTERFACE},
+    counter::Counter,
+};
 
 pub struct CorsairH150i<'a> {
     #[allow(unused)]
@@ -16,7 +19,7 @@ pub struct CorsairH150i<'a> {
     pub(crate) image_frame: Image<&'a [u8]>,
     pub(crate) compression_buffer: OutputBuf<'a>,
     pub(crate) packet: Vec<u8>,
-    pub(crate) unfuck_counter: Counter
+    pub(crate) unfuck_counter: Counter,
 }
 
 unsafe impl Send for CorsairH150i<'_> {}

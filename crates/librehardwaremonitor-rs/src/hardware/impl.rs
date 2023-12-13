@@ -1,4 +1,4 @@
-use crate::{Computer, HardwareType, LibreError, LibreResult, HardwareIter, SensorIter};
+use crate::{Computer, HardwareIter, HardwareType, LibreError, LibreResult, SensorIter};
 
 pub struct Hardware<'a> {
     pub(crate) guard: &'a Computer,
