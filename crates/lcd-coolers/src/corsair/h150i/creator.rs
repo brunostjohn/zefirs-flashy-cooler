@@ -1,6 +1,6 @@
 use super::{
     constants::{PRODUCT_ID, PRODUCT_ID_V2, VENDOR_ID},
-    device::CorsairH150i,
+    device::CorsairH150i, counter::Counter,
 };
 use crate::traits::device_creator::DeviceCreator;
 use anyhow::Context;
@@ -9,13 +9,6 @@ use tokio::task;
 use turbojpeg::{Compressor, Image, OutputBuf, PixelFormat, Subsamp};
 
 impl<'a> DeviceCreator for CorsairH150i<'a> {
-    async fn check_for_device() -> bool
-    where
-        Self: Sized,
-    {
-        todo!();
-    }
-
     async fn create_device() -> anyhow::Result<Self>
     where
         Self: Sized,
@@ -52,6 +45,7 @@ impl<'a> DeviceCreator for CorsairH150i<'a> {
             ),
             compressor,
             packet: Vec::with_capacity(1024),
+            unfuck_counter: Counter::new(1000 * 29)
         })
     }
 }

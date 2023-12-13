@@ -6,7 +6,7 @@ use tokio::{
 };
 use turbojpeg::{Compressor, Image, OutputBuf};
 
-use super::constants::{CONTROL_REQUEST, DEVICE_ALIVE, DEVICE_STAT, IMG_TX, SET_INTERFACE};
+use super::{constants::{CONTROL_REQUEST, DEVICE_ALIVE, DEVICE_STAT, IMG_TX, SET_INTERFACE}, counter::Counter};
 
 pub struct CorsairH150i<'a> {
     #[allow(unused)]
@@ -16,13 +16,14 @@ pub struct CorsairH150i<'a> {
     pub(crate) image_frame: Image<&'a [u8]>,
     pub(crate) compression_buffer: OutputBuf<'a>,
     pub(crate) packet: Vec<u8>,
+    pub(crate) unfuck_counter: Counter
 }
 
 unsafe impl Send for CorsairH150i<'_> {}
 unsafe impl Sync for CorsairH150i<'_> {}
 
 impl<'a> CorsairH150i<'a> {
-    pub(crate) async fn send_feature_report(&mut self, data: &[u8]) -> anyhow::Result<()> {
+    pub(crate) async fn send_feature_report(&self, data: &[u8]) -> anyhow::Result<()> {
         task::block_in_place(|| -> anyhow::Result<()> {
             self.device.send_feature_report(data)?;
             Ok(())
@@ -85,6 +86,7 @@ impl<'a> DisplayCooler for CorsairH150i<'a> {
         Ok(())
     }
 
+    #[allow(refining_impl_trait)]
     async fn reopen(self) -> anyhow::Result<impl DisplayCooler + DeviceCreator> {
         Self::create_device().await
     }
@@ -138,20 +140,20 @@ impl<'a> DisplayCooler for CorsairH150i<'a> {
 
             handle.write(&self.packet)?;
 
-            // if chunk_length < 1016 && self.unfuck_counter.check_time() {
-            //     let unfuck_packet = [
-            //         CONTROL_REQUEST,
-            //         DEVICE_ALIVE,
-            //         0x40,
-            //         0x01,
-            //         packets_sent.try_into().unwrap(),
-            //         0x00,
-            //         (chunk_length & 0xff) as u8,
-            //         (chunk_length >> 8 & 0xff) as u8,
-            //     ];
+            if chunk_length < 1016 && self.unfuck_counter.check_time() {
+                let unfuck_packet = [
+                    CONTROL_REQUEST,
+                    DEVICE_ALIVE,
+                    0x40,
+                    0x01,
+                    packets_sent.try_into().unwrap(),
+                    0x00,
+                    (chunk_length & 0xff) as u8,
+                    (chunk_length >> 8 & 0xff) as u8,
+                ];
 
-            //     handle.send_feature_report(&unfuck_packet)?;
-            // }
+                let _ = self.device.send_feature_report(&unfuck_packet);
+            }
 
             self.packet.clear();
         }

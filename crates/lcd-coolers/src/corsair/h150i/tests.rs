@@ -1,6 +1,6 @@
 use crate::traits::{device_creator::DeviceCreator, display_cooler::DisplayCooler};
 
-use super::{device::CorsairH150i, *};
+use super::device::CorsairH150i;
 
 #[test]
 fn creates_a_device() {
@@ -8,7 +8,7 @@ fn creates_a_device() {
         .build()
         .unwrap()
         .block_on(async {
-            let device = CorsairH150i::create_device().await.unwrap();
+            let _ = CorsairH150i::create_device().await.unwrap();
         });
 }
 
