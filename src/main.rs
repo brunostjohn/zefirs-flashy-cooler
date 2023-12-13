@@ -11,7 +11,7 @@ use crate::services::spawn_services;
 async fn main() {
     tauri::async_runtime::set(Handle::current());
 
-    let (local, renderer, server, app) = spawn_services().await;
+    let (local, renderer, server, sensors, app) = spawn_services().await;
 
-    let _ = tokio::join!(local, renderer, server, app);
+    let _ = tokio::join!(local, renderer, server, sensors, app);
 }

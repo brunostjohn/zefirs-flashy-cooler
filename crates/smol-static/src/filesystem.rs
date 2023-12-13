@@ -28,7 +28,10 @@ pub(crate) async fn read_http_file(filename: &str, path: &Path) -> anyhow::Resul
         .await
         .context("Failed to compress file!")?;
     encoder.flush().await.context("Failed to flush encoder!")?;
-    encoder.shutdown().await.context("Failed to shutdown encoder!")?;
+    encoder
+        .shutdown()
+        .await
+        .context("Failed to shutdown encoder!")?;
 
     let content_type = mime_guess::from_path(filename)
         .first_or_octet_stream()

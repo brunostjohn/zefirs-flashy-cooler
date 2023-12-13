@@ -1,9 +1,9 @@
 use self::config::AppConfig;
 use crate::utils::themes::paths::get_default_theme_path;
-use std::future::Future;
-use tokio::task::{JoinHandle, LocalSet};
-use tachyonix::Sender;
 use smol_static::ServerMessage;
+use std::future::Future;
+use tachyonix::Sender;
+use tokio::task::{JoinHandle, LocalSet};
 
 mod app;
 mod config;
@@ -14,17 +14,20 @@ mod server;
 pub async fn spawn_services() -> (
     LocalSet,
     JoinHandle<()>,
-    impl Future<Output = (Sender<ServerMessage>, JoinHandle<Result<(), anyhow::Error>>)>,
-    impl Future<Output = JoinHandle<Result<(), tauri::Error>>>,
+    JoinHandle<()>,
+    JoinHandle<Result<(), anyhow::Error>>,
+    JoinHandle<Result<(), tauri::Error>>,
 ) {
     let config = AppConfig::load();
-    let server = server::spawn_server(
+    let (sender_server, server) = server::spawn_server(
         config.theme_path.unwrap_or(get_default_theme_path()),
         config.port,
-    );
+    )
+    .await;
     let local = LocalSet::new();
+    let (sender_sensors, sensors) = sensors::spawn_sensors(&local).await;
     let rendering = rendering::spawn_renderer(&local);
-    let app = app::spawn_app();
+    let app = app::spawn_app().await;
 
-    (local, rendering, server, app)
+    (local, rendering, sensors, server, app)
 }

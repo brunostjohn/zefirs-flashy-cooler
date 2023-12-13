@@ -85,8 +85,7 @@ impl Server {
                 let second_node = request.get(1);
 
                 if let Some(path) = second_node {
-                    let path = path
-                        .trim_start_matches('/');
+                    let path = path.trim_start_matches('/');
                     let path = if path.is_empty() { "index.html" } else { path };
                     if let Ok(HTTPFile {
                         content,

@@ -25,8 +25,7 @@ pub async fn main_loop() {
         .set_height(480)
         .build();
 
-    view
-        .load_url("http://127.0.0.1:2137")
+    view.load_url("http://127.0.0.1:2137")
         .await
         .expect("Failed to load URL");
     // let fps = (1 / 30) * 1000;
