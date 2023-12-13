@@ -1,5 +1,6 @@
 use librehardwaremonitor_sys::HardwareType as HardwareTypeNative;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum HardwareType {
     Motherboard,
     SuperIO,

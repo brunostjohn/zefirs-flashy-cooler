@@ -10,7 +10,7 @@ impl<'a> Iterator for ComputerHardwareIter<'a> {
     type Item = Hardware<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index < self.len {
+        if self.index < (self.len - 1) {
             let hardware = Hardware {
                 guard: self.inner,
                 indices: vec![self.index as i32],

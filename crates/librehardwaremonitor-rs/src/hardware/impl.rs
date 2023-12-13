@@ -1,4 +1,4 @@
-use crate::{Computer, HardwareType, LibreError, LibreResult};
+use crate::{Computer, HardwareType, LibreError, LibreResult, HardwareIter, SensorIter};
 
 pub struct Hardware<'a> {
     pub(crate) guard: &'a Computer,
@@ -8,6 +8,14 @@ pub struct Hardware<'a> {
 impl<'a> Hardware<'a> {
     pub(crate) fn new(guard: &'a Computer, indices: Vec<i32>) -> Self {
         Self { guard, indices }
+    }
+
+    pub fn subhardware_iter(&mut self) -> HardwareIter<'_> {
+        HardwareIter {
+            inner: self,
+            index: 0,
+            len: self.get_subhardware_len(),
+        }
     }
 
     pub fn get_name(&mut self) -> Option<String> {
@@ -58,11 +66,11 @@ impl<'a> Hardware<'a> {
         hardware_type.into()
     }
 
-    pub fn get_sensors_len(&mut self) -> usize {
+    pub fn get_sensors_len(&self) -> usize {
         unsafe {
             librehardwaremonitor_sys::get_sensors_len_hardware(
                 self.guard.id,
-                self.indices.as_mut_ptr(),
+                self.indices.as_ptr() as _,
                 self.indices.len() as i32,
             )
         }
@@ -70,23 +78,31 @@ impl<'a> Hardware<'a> {
         .unwrap()
     }
 
-    pub fn get_subhardware_len(&mut self) -> usize {
+    pub fn get_subhardware_len(&self) -> usize {
         unsafe {
             librehardwaremonitor_sys::get_subhardware_len_hardware(
                 self.guard.id,
-                self.indices.as_mut_ptr(),
+                self.indices.as_ptr() as _,
                 self.indices.len() as i32,
             )
         }
         .try_into()
         .unwrap()
+    }
+
+    pub fn sensor_iter(&self) -> SensorIter<'_> {
+        SensorIter {
+            inner: self,
+            index: 0,
+            len: self.get_sensors_len(),
+        }
     }
 
     pub fn update(&mut self) {
         unsafe {
             librehardwaremonitor_sys::update_hardware_object(
                 self.guard.id,
-                self.indices.as_mut_ptr(),
+                self.indices.as_ptr() as _,
                 self.indices.len() as i32,
             )
         };

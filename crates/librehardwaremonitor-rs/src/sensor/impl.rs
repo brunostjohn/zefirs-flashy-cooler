@@ -45,14 +45,20 @@ impl<'a> Sensor<'a> {
         }
     }
 
-    pub fn get_value(&mut self) -> f32 {
-        unsafe {
+    pub fn get_value(&mut self) -> LibreResult<f32> {
+        let value = unsafe {
             librehardwaremonitor_sys::get_sensor_value(
                 self.computer_guard.id,
                 self.hardware_guard.indices.as_ptr() as _,
                 self.hardware_guard.indices.len() as i32,
                 self.index,
             )
+        };
+
+        if value == -1f32  {
+            Err(LibreError::FailedToGetSensorValue)
+        } else {
+            Ok(value)
         }
     }
 

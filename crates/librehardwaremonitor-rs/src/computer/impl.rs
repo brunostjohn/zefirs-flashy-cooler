@@ -1,6 +1,6 @@
 use std::ffi::CStr;
 
-use crate::ComputerHardwareIter;
+use crate::{ComputerHardwareIter, ComputerParams};
 
 pub struct Computer {
     pub(crate) id: i32,
@@ -23,6 +23,15 @@ impl Computer {
         let id = unsafe { librehardwaremonitor_sys::create_computer_object() };
 
         Self { id }
+    }
+
+    pub fn new_with_params(params: ComputerParams) -> Self {
+        let id = unsafe { librehardwaremonitor_sys::create_computer_object() };
+        let mut new_me = Self { id };
+
+        new_me.set_params(params);
+
+        new_me
     }
 
     pub fn update(&mut self) {

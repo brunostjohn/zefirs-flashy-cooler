@@ -192,13 +192,18 @@ namespace LibreHardwareMonitorNative
         [UnmanagedCallersOnly(EntryPoint = "get_hardware_name")]
         public static IntPtr GetHardwareName(int computerId, IntPtr indicesArrPtr, int indicesLen)
         {
-            var hardware = find_hardware_by_indices(computerId, indicesArrPtr, indicesLen);
-            string name = hardware.Name;
-            byte[] bytes = Encoding.UTF8.GetBytes(name);
-            IntPtr ptr = Marshal.AllocHGlobal(bytes.Length + 1);
-            Marshal.Copy(bytes, 0, ptr, bytes.Length);
-            Marshal.WriteByte(ptr, bytes.Length, 0);
-            return ptr;
+            try {
+                var hardware = find_hardware_by_indices(computerId, indicesArrPtr, indicesLen);
+                string name = hardware.Name;
+                byte[] bytes = Encoding.UTF8.GetBytes(name);
+                IntPtr ptr = Marshal.AllocHGlobal(bytes.Length + 1);
+                Marshal.Copy(bytes, 0, ptr, bytes.Length);
+                Marshal.WriteByte(ptr, bytes.Length, 0);
+                return ptr;
+            }
+            catch {
+                return IntPtr.Zero;
+            }
         }
 
         [UnmanagedCallersOnly(EntryPoint = "get_hardware_type")]

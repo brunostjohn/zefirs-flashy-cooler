@@ -6,4 +6,6 @@ pub enum LibreError {
     InvalidName,
     #[error("Failed to set the provided name.")]
     FailedToSetName,
+    #[error("Failed to get the value of the sensor.")]
+    FailedToGetSensorValue
 }

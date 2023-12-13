@@ -1,5 +1,6 @@
 use librehardwaremonitor_sys::SensorType as SensorTypeNative;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum SensorType {
     Voltage,
     Current,
