@@ -3,6 +3,9 @@ name = "librehardwaremonitor-rs"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
+librehardwaremonitor-sys = { path = "../librehardwaremonitor-sys" }
+thiserror = "1.0.50"
+
+[build-dependencies]
+dotnetaot-build = {path="../dotnetaot-build"}

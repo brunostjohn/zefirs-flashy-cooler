@@ -1,14 +1,12 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub mod computer;
+pub mod hardware;
+pub mod sensor;
+pub mod types;
+
+pub use computer::*;
+pub use hardware::*;
+pub use sensor::*;
+pub use types::*;
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod tests;

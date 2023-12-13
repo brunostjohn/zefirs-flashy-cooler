@@ -37,6 +37,10 @@ pub enum SensorType {
     Noise,
 }
 
+#[link(name = "bootstrapperdll", kind="static")]
+#[link(name = "Runtime.WorkstationGC", kind = "static")]
+#[link(name = "System.Globalization.Native.Aot", kind = "static")]
+#[link(name = "System.IO.Compression.Native.Aot", kind = "static")]
 #[link(name = "LibreHardwareMonitorNative", kind = "static")]
 extern "C" {
     pub fn create_computer_object() -> i32;
@@ -143,4 +147,16 @@ extern "C" {
         indices_arr_len: i32,
         sensor_index: i32,
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_computer() {
+        let num = unsafe { create_computer_object() };
+
+        println!("{}", num);
+    }
 }
