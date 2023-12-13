@@ -22,6 +22,7 @@ sevenz-rust = "0.5.3"
 window-shadows = "0.2.2"
 anyhow = "1.0.75"
 ultralight = {path="./crates/ultralight"}
+lcd-coolers = {path="./crates/lcd-coolers"}
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]

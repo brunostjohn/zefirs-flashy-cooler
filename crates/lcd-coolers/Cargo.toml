@@ -6,4 +6,9 @@ rust-version = "1.75.0"
 
 [dependencies]
 anyhow = "1.0.75"
-windows = { version = "0.52.0", features = ["Foundation", "Devices", "Devices_HumanInterfaceDevice", "Devices_Enumeration", "Foundation_Collections"] }
+hidapi = {git="https://github.com/ruabmbua/hidapi-rs.git", features=["windows-native"]}
+tokio = { version = "1.35.0", features = ["rt-multi-thread"] }
+turbojpeg = "0.5.4"
+
+[dev-dependencies]
+tokio = { version = "1.35.0", features = ["full"] }

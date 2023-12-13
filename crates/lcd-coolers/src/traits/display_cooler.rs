@@ -1,6 +1,11 @@
-pub trait DisplayCooler {
-    async fn initialise(&mut self) -> anyhow::Result<()>;
-    async fn close(&mut self) -> anyhow::Result<()>;
-    async fn reopen(&mut self) -> anyhow::Result<()>;
-    async fn send_image(&mut self, image: &[u8]) -> anyhow::Result<()>;
+use std::future::Future;
+
+pub trait DisplayCooler: Sync + Send {
+    fn initialise(&mut self) -> impl Future<Output = anyhow::Result<()>> + '_ + Sync + Send;
+    fn close(&mut self) -> impl Future<Output = anyhow::Result<()>> + '_ + Sync + Send;
+    fn reopen(self) -> impl Future<Output = anyhow::Result<impl DisplayCooler>> + Sync + Send;
+    fn send_image<'a, 'b>(
+        &'a mut self,
+        image: &'b [u8],
+    ) -> impl Future<Output = anyhow::Result<()>> + Sync + Send;
 }
