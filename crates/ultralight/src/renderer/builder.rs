@@ -174,6 +174,9 @@ pub enum ULConfigGuard {
     Borrowed(ULConfig),
 }
 
+unsafe impl Send for ULConfigGuard {}
+unsafe impl Sync for ULConfigGuard {}
+
 impl Drop for ULConfigGuard {
     fn drop(&mut self) {
         match self {

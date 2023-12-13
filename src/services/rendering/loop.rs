@@ -1,4 +1,6 @@
 use lcd_coolers::{find_and_create_device, DisplayCooler};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use tokio::time::{self, Duration};
 use ultralight::{ULPlatformBuilder, ULRendererBuilder, ULViewBuilder};
 
@@ -20,7 +22,6 @@ pub async fn main_loop() {
             newthing
         })
         .build();
-
     let mut view = ULViewBuilder::new(&renderer)
         .set_width(480)
         .set_height(480)
@@ -30,12 +31,14 @@ pub async fn main_loop() {
         .load_url("https://google.com")
         .await
         .expect("Failed to load URL");
-    let fps = 1000 / 30;
-    let mut interval = time::interval(Duration::from_millis(fps));
+    // let fps = (1 / 30) * 1000;
+    let mut interval = time::interval(Duration::from_millis(40));
 
     let mut device = find_and_create_device().await.unwrap();
     device.initialise().await.unwrap();
 
+    // renderer.update();
+    // renderer.render();
     loop {
         renderer.update();
         renderer.render();
@@ -43,11 +46,11 @@ pub async fn main_loop() {
         let bitmap = surface.get_bitmap();
         if let Ok(mut bitmap) = bitmap {
             if bitmap.swap_red_blue_channels().is_ok() {
-                let pixels = bitmap.lock_pixels();
-
-                if let Some(pixels) = pixels {
-                    device.send_image(&*pixels).await.unwrap();
-                }
+                device
+                    .send_image(&*bitmap.lock_pixels().unwrap())
+                    .await
+                    .unwrap();
+                bitmap.swap_red_blue_channels();
             }
         }
 

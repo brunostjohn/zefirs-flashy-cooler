@@ -50,6 +50,7 @@ impl DerefMut for ULRendererGuard {
 
 pub struct ULRenderer {
     internal: ULRendererGuard,
+    config: ULConfigGuard,
 }
 
 #[derive(Debug)]
@@ -79,6 +80,7 @@ impl ULRenderer {
             .expect("Failed to set renderer!");
         Self {
             internal: ULRendererGuard::Owned(renderer),
+            config,
         }
     }
 
@@ -95,6 +97,7 @@ impl ULRenderer {
 
             Self {
                 internal: ULRendererGuard::Borrowed(renderer),
+                config,
             }
         } else {
             Self::get_existing()
@@ -102,13 +105,11 @@ impl ULRenderer {
     }
 
     pub(crate) fn get_existing() -> Self {
-        let render_ptr = RENDERER_EXISTS
-            .get()
-            .expect("Renderer does not exist!")
-            .renderer;
+        let render_ptr = RENDERER_EXISTS.get().expect("Renderer does not exist!");
 
         Self {
-            internal: ULRendererGuard::Borrowed(render_ptr),
+            internal: ULRendererGuard::Borrowed(render_ptr.renderer),
+            config: ULConfigGuard::Borrowed(render_ptr.config),
         }
     }
 

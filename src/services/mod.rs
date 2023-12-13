@@ -1,9 +1,14 @@
-use tokio::task::JoinHandle;
+use std::future::Future;
 
+use tokio::task::{JoinHandle, LocalSet};
+
+mod app;
 mod rendering;
 
-pub fn spawn_services() -> (JoinHandle<()>) {
-    let rendering = rendering::spawn_renderer();
+pub async fn spawn_services() -> (LocalSet, impl Future<Output = JoinHandle<Result<(), tauri::Error>>>) {
+    let local = LocalSet::new();
+    let rendering = rendering::spawn_renderer(&local);
+    let app = app::spawn_app();
 
-    (rendering)
+    (local, app)
 }

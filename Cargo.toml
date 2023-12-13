@@ -29,3 +29,15 @@ custom-protocol = [ "tauri/custom-protocol" ]
 
 [workspace]
 members = ["crates/*"]
+
+[profile.release]
+lto = "fat"
+opt-level = 3
+codegen-units = 1
+debug = false
+panic = "abort"
+
+[profile.release.package."*"]
+opt-level = 3
+codegen-units = 1
+debug = false

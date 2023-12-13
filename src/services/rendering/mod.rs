@@ -1,11 +1,11 @@
 mod r#loop;
 
-use tokio::task::{self, JoinHandle};
+use tokio::task::{self, JoinHandle, LocalSet};
 
-use self::r#loop::main_loop;
+pub use self::r#loop::main_loop;
 
-pub fn spawn_renderer() -> JoinHandle<()> {
-    task::spawn(async {
+pub fn spawn_renderer(local: &LocalSet) -> JoinHandle<()> {
+    local.spawn_local(async move {
         main_loop().await;
     })
 }

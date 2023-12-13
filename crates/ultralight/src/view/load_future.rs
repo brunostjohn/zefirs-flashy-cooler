@@ -61,7 +61,7 @@ impl<'a> Future for LoadFuture<'a> {
         } else {
             cx.waker().wake_by_ref();
             unsafe { ulUpdate(self.renderer.0) };
-            unsafe { ulRender(self.renderer.0) };
+            // unsafe { ulRender(self.renderer.0) };
             std::task::Poll::Pending
         }
     }
