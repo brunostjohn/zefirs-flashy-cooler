@@ -46,11 +46,12 @@ async fn handle_messages(receiver: &mut Receiver<RendererMessage>) -> bool {
         match message {
             RendererMessage::Shutdown => {
                 return false;
-            }
+            },
+            _ => {}
         };
 
         true
     } else {
-        !matches!(received, Err(TryRecvError::Empty))
+        !matches!(received, Err(TryRecvError::Closed))
     }
 }

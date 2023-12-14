@@ -23,20 +23,20 @@ pub async fn spawn_app(
 ) -> JoinHandle<Result<(), tauri::Error>> {
     task::spawn_blocking(|| {
         tauri::Builder::default()
-            // .plugin(WindowStateBuilder::default().build())
-            // .plugin(
-            //     LogBuilder::default()
-            //         .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
-            //         .build(),
-            // )
-            // .plugin(context_menu_init())
-            // .manage(sender_renderer)
-            // .manage(sender_sensors)
-            // .manage(receiver_sensors)
-            // .manage(sender_server)
-            // .system_tray(build_tray())
-            // .on_system_tray_event(tray_event_handler)
-            // .setup(setup)
+            .plugin(WindowStateBuilder::default().build())
+            .plugin(
+                LogBuilder::default()
+                    .targets([LogTarget::LogDir, LogTarget::Stdout, LogTarget::Webview])
+                    .build(),
+            )
+            .plugin(context_menu_init())
+            .manage(sender_renderer)
+            .manage(sender_sensors)
+            .manage(receiver_sensors)
+            .manage(sender_server)
+            .system_tray(build_tray())
+            .on_system_tray_event(tray_event_handler)
+            .setup(setup)
             .invoke_handler(tauri::generate_handler![crate::lifecycle::exit_handler])
             .any_thread()
             .build(tauri::generate_context!())

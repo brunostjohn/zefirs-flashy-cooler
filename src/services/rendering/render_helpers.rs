@@ -11,7 +11,9 @@ pub async fn render_bitmap_and_send(
     bitmap.swap_red_blue_channels()?;
     let pixels = bitmap.lock_pixels().context("Failed to lock pixels");
     if let Ok(ref pixels) = pixels {
-        device.send_image(pixels.as_ref()).await?;
+        if device.send_image(pixels.as_ref()).await.is_err() {
+            let _ = device.reopen().await;
+        }
     }
     drop(pixels);
 

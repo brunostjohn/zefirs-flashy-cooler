@@ -89,9 +89,10 @@ impl<'a> DisplayCooler for CorsairH150i<'a> {
         Ok(())
     }
 
-    #[allow(refining_impl_trait)]
-    async fn reopen(self) -> anyhow::Result<impl DisplayCooler + DeviceCreator> {
-        Self::create_device().await
+    async fn reopen(&mut self) -> anyhow::Result<()> {
+        *self = Self::create_device().await?;
+
+        Ok(())
     }
 
     async fn send_image(&mut self, image: &[u8]) -> anyhow::Result<()> {
