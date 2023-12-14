@@ -3,7 +3,7 @@ use super::{
     counter::Counter,
     device::CorsairH150i,
 };
-use crate::traits::device_creator::DeviceCreator;
+use crate::{traits::device_creator::DeviceCreator, DeviceInfo};
 use anyhow::Context;
 use hidapi::HidApi;
 use tokio::task;
@@ -48,5 +48,14 @@ impl<'a> DeviceCreator for CorsairH150i<'a> {
             packet: Vec::with_capacity(1024),
             unfuck_counter: Counter::new(1000 * 29),
         })
+    }
+
+    async fn device_info(&self) -> DeviceInfo {
+        DeviceInfo {
+            name: "Capellix LCD Cap".into(),
+            width: 480,
+            height: 480,
+            manufacturer: "Corsair".into(),
+        }
     }
 }

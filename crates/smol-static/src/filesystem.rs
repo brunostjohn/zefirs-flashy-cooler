@@ -1,7 +1,7 @@
 use anyhow::Context;
 use async_compression::tokio::write::GzipEncoder;
 use std::path::Path;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 
 pub(crate) struct HTTPFile {
     pub(crate) content_type: String,
