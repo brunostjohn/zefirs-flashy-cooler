@@ -7,12 +7,14 @@
 //! not yet feature complete. If you are interested in contributing, please see the [GitHub repository](https://github.com/brunostjohn/zefirs-flashy-cooler).
 //! As it is part of a larger project, it is in the `crates/ultralight` directory. If there is enough interest, it will be moved to its own repository.
 
+pub mod js;
 pub mod platform;
 pub mod renderer;
 mod string;
 mod types;
 pub mod view;
 
+pub use js::*;
 pub use platform::*;
 pub use renderer::*;
 pub use types::*;

@@ -42,4 +42,6 @@ pub enum ULError {
     GPUFailedToGetGeometry,
     #[error("Failed to get render buffer from map")]
     GPUFailedToGetRenderBuffer,
+    #[error("JS value type not known")]
+    JSValueTypeNotKnown,
 }

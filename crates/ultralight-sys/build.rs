@@ -13,7 +13,7 @@ fn main() {
         .impl_partialeq(true)
         .generate_comments(true)
         .generate_inline_functions(true)
-        .allowlist_var("^UL.*|JS.*|ul.*|WK.*")
+        .allowlist_var("^UL.*|JS.*|ul.*|WK.*|kJS.*")
         .allowlist_type("^UL.*|JS.*|ul.*|WK.*")
         .allowlist_function("^UL.*|JS.*|ul.*|WK.*")
         .generate()

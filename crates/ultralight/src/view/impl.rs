@@ -1,6 +1,6 @@
 use ultralight_sys::JSGarbageCollect;
 
-use crate::{ULRendererGuard, ULResult, ULSurface, ULViewBuilder};
+use crate::{context::JSContext, ULRendererGuard, ULResult, ULSurface, ULViewBuilder};
 
 use super::{
     guard::{ULViewConfigGuard, ULViewGuard},
@@ -9,7 +9,7 @@ use super::{
 use std::ptr;
 
 pub struct ULView<'a> {
-    internal: ULViewGuard,
+    pub(crate) internal: ULViewGuard,
     renderer: &'a ULRendererGuard,
     config: ULViewConfigGuard,
 }
@@ -18,7 +18,7 @@ unsafe impl Send for ULView<'_> {}
 unsafe impl Sync for ULView<'_> {}
 
 impl<'a> ULView<'a> {
-    pub unsafe fn from_raw(
+    pub(crate) unsafe fn from_raw(
         view: ultralight_sys::ULView,
         renderer: &'a ULRendererGuard,
         config: ULViewConfigGuard,
@@ -178,6 +178,11 @@ impl<'a> ULView<'a> {
 
     pub fn get_surface(&mut self) -> ULSurface {
         unsafe { ULSurface::from_raw(self.get_render_surface()) }
+    }
+
+    pub fn get_js_context(&'a mut self) -> JSContext<'a> {
+        let ctx = self.lock_js_context();
+        JSContext::new(ctx, self.renderer, self)
     }
 
     pub fn render_png(&mut self) {}

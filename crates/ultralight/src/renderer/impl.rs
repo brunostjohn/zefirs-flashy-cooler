@@ -175,15 +175,15 @@ impl ULRenderer {
         }
     }
 
-    pub unsafe fn fire_gamepad_event(&self, event: ULGamepadEvent) {
+    pub unsafe fn fire_raw_gamepad_event(&self, event: ULGamepadEvent) {
         unsafe { ultralight_sys::ulFireGamepadEvent(*self.internal, event) }
     }
 
-    pub unsafe fn fire_gamepad_axis_event(&self, event: ULGamepadAxisEvent) {
+    pub unsafe fn fire_raw_gamepad_axis_event(&self, event: ULGamepadAxisEvent) {
         unsafe { ultralight_sys::ulFireGamepadAxisEvent(*self.internal, event) }
     }
 
-    pub unsafe fn fire_gamepad_button_event(&self, event: ULGamepadButtonEvent) {
+    pub unsafe fn fire_raw_gamepad_button_event(&self, event: ULGamepadButtonEvent) {
         unsafe { ultralight_sys::ulFireGamepadButtonEvent(*self.internal, event) }
     }
 }
