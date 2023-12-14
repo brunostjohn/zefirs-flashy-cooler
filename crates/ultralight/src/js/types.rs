@@ -16,6 +16,18 @@ impl IsJSValue for JSOpaque<'_> {
     }
 }
 
+pub struct JSFunction<'a> {
+    pub(crate) internal: ultralight_sys::JSValueRef,
+    #[allow(unused)]
+    pub(crate) guard: &'a JSContext<'a>,
+}
+
+impl IsJSValue for JSFunction<'_> {
+    fn get_value(&self) -> ultralight_sys::JSValueRef {
+        self.internal
+    }
+}
+
 pub struct JSString<'a> {
     pub(crate) internal: ultralight_sys::JSValueRef,
     #[allow(unused)]

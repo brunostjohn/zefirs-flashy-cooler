@@ -44,4 +44,6 @@ pub enum ULError {
     GPUFailedToGetRenderBuffer,
     #[error("JS value type not known")]
     JSValueTypeNotKnown,
+    #[error("JS value type invalid for this cast")]
+    JSInvalidCast,
 }

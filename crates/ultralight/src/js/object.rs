@@ -1,8 +1,8 @@
 use super::{
     internal_string::JSCString,
-    types::{IsJSValue, JSObject, JSOpaque},
+    types::{IsJSValue, JSFunction, JSObject, JSOpaque},
 };
-use crate::{context::JSContext, value::JSValue};
+use crate::{context::JSContext, value::JSValue, ULError, ULResult};
 use libffi::high::Closure6;
 use std::{mem, ptr};
 
@@ -36,11 +36,29 @@ impl<'a> JSValue<JSObject<'a>> {
         })
     }
 
+    pub fn try_cast_as_function(&mut self) -> ULResult<JSValue<JSFunction<'a>>> {
+        let is_function = unsafe {
+            ultralight_sys::JSObjectIsFunction(
+                **self.internal.guard,
+                self.internal.get_value() as _,
+            )
+        };
+
+        if is_function {
+            Ok(JSValue::new(JSFunction {
+                internal: self.internal.get_value() as _,
+                guard: self.internal.guard,
+            }))
+        } else {
+            Err(ULError::JSInvalidCast)
+        }
+    }
+
     pub fn make_function<'b: 'a, S, F, V, E>(
         &mut self,
         name: S,
         callback: F,
-    ) -> JSValue<JSObject<'a>>
+    ) -> JSValue<JSFunction<'a>>
     where
         S: AsRef<str>,
         F: (Fn(
@@ -60,10 +78,19 @@ impl<'a> JSValue<JSObject<'a>> {
                                      arguments: *const ultralight_sys::JSValueRef,
                                      exception: *mut ultralight_sys::JSValueRef|
               -> ultralight_sys::JSValueRef {
-            let evil_ctx =
-                JSContext::new(ctx, unsafe { mem::transmute(ptr::null::<u8>()) }, unsafe {
+            let evil_ctx = JSContext::new(
+                ctx,
+                unsafe {
+                    #[allow(clippy::transmute_ptr_to_ref)]
+                    #[allow(clippy::transmuting_null)]
                     mem::transmute(ptr::null::<u8>())
-                });
+                },
+                unsafe {
+                    #[allow(clippy::transmute_ptr_to_ref)]
+                    #[allow(clippy::transmuting_null)]
+                    mem::transmute(ptr::null::<u8>())
+                },
+            );
             let arguments = unsafe { std::slice::from_raw_parts(arguments, argument_count) };
             let arguments = arguments
                 .iter()
@@ -110,7 +137,7 @@ impl<'a> JSValue<JSObject<'a>> {
             )
         };
 
-        JSValue::new(JSObject {
+        JSValue::new(JSFunction {
             internal: function,
             guard: self.internal.guard,
         })
