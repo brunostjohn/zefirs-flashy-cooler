@@ -5,11 +5,11 @@ use tokio::{
     time::Duration,
 };
 
-mod app;
-mod config;
-mod rendering;
-mod sensors;
-mod server;
+pub mod app;
+pub mod config;
+pub mod rendering;
+pub mod sensors;
+pub mod server;
 
 pub async fn spawn_services() -> (
     LocalSet,
@@ -26,9 +26,16 @@ pub async fn spawn_services() -> (
     .await;
     let local = LocalSet::new();
     let interval = Duration::from_millis(config.sensor_poll_rate_ms);
-    let (sender_sensors, sensors) = sensors::spawn_sensors(&local, interval).await;
-    let rendering = rendering::spawn_renderer(&local);
-    let app = app::spawn_app().await;
+    let (sender_renderer, rendering) = rendering::spawn_renderer(&local);
+    let (sender_sensors, receiver_sensors, sensors) =
+        sensors::spawn_sensors(&local, interval, sender_renderer.clone()).await;
+    let app = app::spawn_app(
+        sender_renderer,
+        sender_sensors,
+        receiver_sensors,
+        sender_server,
+    )
+    .await;
 
     (local, rendering, sensors, server, app)
 }

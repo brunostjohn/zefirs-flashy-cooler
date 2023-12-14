@@ -1,18 +1,28 @@
+use crate::services::rendering::message::RendererMessage;
+
 use super::SensorMessage;
 use librehardwaremonitor_rs::{Computer, ComputerParams, Hardware, Sensor};
-use tachyonix::Receiver;
-use tokio::time::{self, Duration};
+use tachyonix::{Receiver, Sender, TryRecvError};
+use tokio::time::{self, Duration, Interval};
 
 pub struct Sensors<'a> {
     computer: Computer,
     subscribed_hardware: Vec<Hardware<'a>>,
     subscribed_sensors: Vec<Sensor<'a>>,
     interval: Duration,
-    receiver: Receiver<SensorMessage>,
+    receiver_to: Receiver<SensorMessage>,
+    sender_from: Sender<SensorMessage>,
+    sender_renderer: Sender<RendererMessage>,
+    ticker: Interval,
 }
 
 impl<'a> Sensors<'a> {
-    pub fn new(interval: Duration, receiver: Receiver<SensorMessage>) -> Self {
+    pub fn new(
+        interval: Duration,
+        receiver_to: Receiver<SensorMessage>,
+        sender_from: Sender<SensorMessage>,
+        sender_renderer: Sender<RendererMessage>,
+    ) -> Self {
         let computer = Computer::new_with_params(ComputerParams {
             is_psu_enabled: true,
             is_gpu_enabled: true,
@@ -24,20 +34,46 @@ impl<'a> Sensors<'a> {
             is_controller_enabled: true,
             is_battery_enabled: true,
         });
+        let ticker = time::interval(interval);
         Self {
             computer,
             subscribed_hardware: Vec::new(),
             subscribed_sensors: Vec::new(),
             interval,
-            receiver,
+            receiver_to,
+            sender_from,
+            sender_renderer,
+            ticker,
         }
     }
 
     pub async fn run(&mut self) {
-        let mut ticker = time::interval(self.interval);
         loop {
-            ticker.tick().await;
+            self.ticker.tick().await;
+            if !self.handle_messages().await {
+                break;
+            }
             println!("Sensors");
+        }
+    }
+
+    async fn handle_messages(&mut self) -> bool {
+        let received = self.receiver_to.try_recv();
+
+        if let Ok(message) = received {
+            match message {
+                SensorMessage::ChangePoll(duration) => {
+                    self.interval = duration;
+                    self.ticker = time::interval(self.interval);
+                }
+                SensorMessage::Shutdown => {
+                    return false;
+                }
+            }
+
+            true
+        } else {
+            !matches!(received, Err(TryRecvError::Closed))
         }
     }
 }

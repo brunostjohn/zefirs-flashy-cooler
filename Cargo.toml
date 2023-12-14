@@ -18,7 +18,7 @@ ultralight-build = {path="./crates/ultralight-build"}
 [dependencies]
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.5.3", features = [ "window-unmaximize", "window-unminimize", "window-minimize", "window-close", "window-maximize", "window-start-dragging", "window-show", "window-hide"] }
+tauri = { version = "1.5.3", features = [ "window-unmaximize", "window-unminimize", "window-minimize", "window-close", "window-maximize", "window-start-dragging", "window-show", "window-hide", "system-tray"] }
 tokio = { version = "1.35.0", features = ["full"] }
 windows = { version = "0.52.0", features = ["Win32_Foundation"] }
 sevenz-rust = "0.5.3"
@@ -30,6 +30,11 @@ librehardwaremonitor-rs = {path="./crates/librehardwaremonitor-rs"}
 tachyonix = "0.2.1"
 smol-static = { path = "./crates/smol-static" }
 confy = "0.5.1"
+tauri-plugin-context-menu = "0.6.1"
+tauri-plugin-log = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+tauri-plugin-window-state = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v1" }
+log = "^0.4"
+
 
 [features]
 custom-protocol = [ "tauri/custom-protocol" ]

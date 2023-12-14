@@ -76,7 +76,7 @@ impl ULRendererBuilder {
     }
 
     pub fn set_resource_path_prefix<P: AsRef<Path>>(mut self, path: P) -> Self {
-        let path_string = ULString::new(path.as_ref().to_str().unwrap());
+        let path_string = ULString::new(path.as_ref().to_str().unwrap().to_string() + "\\");
 
         unsafe { ulConfigSetResourcePathPrefix(*self.config, *path_string) };
         self
