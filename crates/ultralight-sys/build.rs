@@ -1,76 +1,10 @@
-use std::fs;
-use std::path::{Path, PathBuf};
-use std::{env, io};
-
-const WINDOWS_DL: &str =
-    "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
-
-fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
-    fs::create_dir_all(&dst)?;
-    for entry in fs::read_dir(src)? {
-        let entry = entry?;
-        let ty = entry.file_type()?;
-        if ty.is_dir() {
-            copy_dir_all(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        } else {
-            fs::copy(entry.path(), dst.as_ref().join(entry.file_name()))?;
-        }
-    }
-    Ok(())
-}
-
-fn download_resources() {
-    let dir = {
-        let mut dir = std::env::temp_dir();
-        dir.push("ultralight");
-
-        if dir.exists() {
-            return;
-        }
-        std::fs::create_dir_all(&dir).expect("Failed to create Ultralight temp dir!");
-
-        dir
-    };
-
-    let bundle = reqwest::blocking::get(WINDOWS_DL)
-        .expect("Failed to download Ultralight bundle!")
-        .bytes()
-        .expect("Failed to get Ultralight bytes!")
-        .to_vec();
-    let cursor = std::io::Cursor::new(bundle);
-
-    sevenz_rust::decompress(cursor, &dir).expect("Failed to decompress Ultralight bundle!");
-
-    let include_dir = dir.join("include");
-    let dst =
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("Failed to find cargo manifest!"))
-            .join("wrapped")
-            .join("ultralight");
-    if dst.exists() {
-        std::fs::remove_dir_all(&dst).expect("Failed to remove old Ultralight includes!");
-    }
-    copy_dir_all(include_dir, dst).expect("Failed to copy Ultralight includes!");
-
-    let lib_dir = dir.join("lib");
-    let target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-    copy_dir_all(lib_dir, target_dir).expect("Failed to copy ultralight libs!");
-}
+use std::env;
+use std::path::PathBuf;
 
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    download_resources();
-
-    let target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-
-    println!("cargo:rustc-link-search=native={}", target_dir.display());
-    println!("cargo:rustc-link-lib=Ultralight");
-    println!("cargo:rustc-link-lib=WebCore");
-    println!("cargo:rustc-link-lib=AppCore");
+    ultralight_build::build();
 
     let bindings = bindgen::Builder::default()
         .header("wrapped/wrapper.h")
@@ -90,28 +24,4 @@ fn main() {
     bindings
         .write_to_file(out_path.join("bindings.rs"))
         .expect("Couldn't write bindings!");
-
-    let dir = {
-        let mut dir = std::env::temp_dir();
-        dir.push("ultralight");
-
-        dir
-    };
-
-    let bin_dir = dir.join("bin");
-    let target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-    copy_dir_all(bin_dir, target_dir).expect("Failed to copy ultralight bins!");
-
-    let resources_dir = dir.join("resources");
-    let target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-    let target_dir = target_dir.join("resources");
-    if target_dir.exists() {
-        let _ = std::fs::remove_dir_all(&target_dir);
-    }
-    std::fs::create_dir(&target_dir).expect("Failed to create resources dir!");
-    copy_dir_all(resources_dir, &target_dir).expect("Failed to copy ultralight resources!");
 }

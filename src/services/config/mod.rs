@@ -7,7 +7,7 @@ pub struct AppConfig {
     pub start_at_login: bool,
     pub start_minimised: bool,
     pub theme_path: Option<String>,
-    pub sensor_poll_rate: u64,
+    pub sensor_poll_rate_ms: u64,
 }
 
 impl Default for AppConfig {
@@ -17,7 +17,7 @@ impl Default for AppConfig {
             start_at_login: false,
             start_minimised: false,
             theme_path: None,
-            sensor_poll_rate: 1000,
+            sensor_poll_rate_ms: 1000,
         }
     }
 }

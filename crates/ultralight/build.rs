@@ -72,6 +72,8 @@ fn print_compiler_error_with_panic(error: CompilerError) {
 }
 
 pub fn main() {
+    ultralight_build::build();
+
     compile_shaders()
         .map_err(print_compiler_error_with_panic)
         .expect("Failed to compile shaders!");

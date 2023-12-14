@@ -25,9 +25,6 @@ fn download_resources() {
         let mut dir = std::env::temp_dir();
         dir.push("ultralight");
 
-        if dir.exists() {
-            return;
-        }
         std::fs::create_dir_all(&dir).expect("Failed to create Ultralight temp dir!");
 
         dir
@@ -49,15 +46,21 @@ fn download_resources() {
     copy_dir_all(lib_dir, target_dir).expect("Failed to copy ultralight libs!");
 
     let bin_dir = dir.join("bin");
-    let target_dir: PathBuf = std::env::var("CARGO_TARGET_DIR")
+    let mut target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
+    target_dir.pop();
+    target_dir.pop();
+    target_dir.pop();
     copy_dir_all(bin_dir, target_dir).expect("Failed to copy ultralight bins!");
 
     let resources_dir = dir.join("resources");
-    let target_dir: PathBuf = std::env::var("CARGO_TARGET_DIR")
+    let mut target_dir: PathBuf = std::env::var("OUT_DIR")
         .expect("Failed to get target dir!")
         .into();
+    target_dir.pop();
+    target_dir.pop();
+    target_dir.pop();
     let target_dir = target_dir.join("resources");
     if target_dir.exists() {
         std::fs::remove_dir_all(&target_dir).expect("Failed to remove old Ultralight resources!");
@@ -87,6 +90,12 @@ fn validate() -> bool {
     if !lib.exists() {
         return false;
     }
+    let mut target_dir: PathBuf = std::env::var("OUT_DIR")
+        .expect("Failed to get target dir!")
+        .into();
+    target_dir.pop();
+    target_dir.pop();
+    target_dir.pop();
     let lib = target_dir.join("Ultralight.dll");
     if !lib.exists() {
         return false;

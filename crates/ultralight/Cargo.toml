@@ -18,3 +18,4 @@ rusty-fork = "0.3.0"
 
 [build-dependencies]
 spirv-compiler = "0.2.0"
+ultralight-build = {path = "../ultralight-build"}

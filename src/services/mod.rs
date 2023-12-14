@@ -1,9 +1,9 @@
 use self::config::AppConfig;
 use crate::utils::themes::paths::get_default_theme_path;
-use smol_static::ServerMessage;
-use std::future::Future;
-use tachyonix::Sender;
-use tokio::task::{JoinHandle, LocalSet};
+use tokio::{
+    task::{JoinHandle, LocalSet},
+    time::Duration,
+};
 
 mod app;
 mod config;
@@ -25,7 +25,8 @@ pub async fn spawn_services() -> (
     )
     .await;
     let local = LocalSet::new();
-    let (sender_sensors, sensors) = sensors::spawn_sensors(&local).await;
+    let interval = Duration::from_millis(config.sensor_poll_rate_ms);
+    let (sender_sensors, sensors) = sensors::spawn_sensors(&local, interval).await;
     let rendering = rendering::spawn_renderer(&local);
     let app = app::spawn_app().await;
 
