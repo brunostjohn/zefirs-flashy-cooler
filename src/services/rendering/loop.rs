@@ -1,5 +1,6 @@
 use super::{
-    message::RendererMessage,
+    config::load_theme_with_config,
+    message::{RendererMessage, SensorSubscriptionNotification},
     render_helpers::{render_bitmap_and_send, update_and_render},
     setup::setup_rendering,
 };
@@ -23,9 +24,11 @@ pub async fn main_loop(receiver: Receiver<RendererMessage>) {
 
     let mut interval = time::interval(Duration::from_millis(40));
 
+    let mut subscribed_sensors = vec![];
+
     loop {
         update_and_render(&renderer);
-        if !handle_messages(&mut receiver, &mut view).await {
+        if !handle_messages(&mut receiver, &mut view, &mut subscribed_sensors).await {
             break;
         }
 
@@ -42,6 +45,7 @@ pub async fn main_loop(receiver: Receiver<RendererMessage>) {
 async fn handle_messages<'a>(
     receiver: &mut Receiver<RendererMessage>,
     view: &mut ULView<'a>,
+    subscribed_sensors: &mut Vec<SensorSubscriptionNotification>,
 ) -> bool {
     let received = receiver.try_recv();
 
@@ -50,7 +54,23 @@ async fn handle_messages<'a>(
             RendererMessage::Shutdown => {
                 return false;
             }
-            RendererMessage::ReloadCurrentUrl => view.reload(),
+            RendererMessage::ReloadCurrentUrl(fs_name) => {
+                let _ = load_theme_with_config(view, &fs_name).await;
+            }
+            RendererMessage::NewSubscribedSensors(sensors) => {
+                *subscribed_sensors = sensors;
+            }
+            RendererMessage::SensorValues(values) => {
+                for value in values {
+                    if let Some(subscription) = subscribed_sensors
+                        .iter_mut()
+                        .find(|subscription| subscription.sensor_id == value.sensor_id)
+                    {
+                        subscription.sensor_value = value.sensor_value;
+                    }
+                }
+            }
+            _ => {}
         };
 
         true

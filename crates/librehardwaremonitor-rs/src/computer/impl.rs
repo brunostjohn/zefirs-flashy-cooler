@@ -58,13 +58,13 @@ impl Computer {
         }
     }
 
-    pub fn get_hardware_len(&mut self) -> usize {
+    pub fn get_hardware_len(&self) -> usize {
         unsafe { librehardwaremonitor_sys::get_computer_hardware_len(self.id) }
             .try_into()
             .unwrap()
     }
 
-    pub fn iter(&mut self) -> ComputerHardwareIter {
+    pub fn iter(&self) -> ComputerHardwareIter {
         let len = self.get_hardware_len();
 
         ComputerHardwareIter {

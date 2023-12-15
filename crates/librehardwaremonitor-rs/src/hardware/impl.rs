@@ -10,7 +10,7 @@ impl<'a> Hardware<'a> {
         Self { guard, indices }
     }
 
-    pub fn subhardware_iter(&mut self) -> HardwareIter<'_> {
+    pub fn subhardware_iter(&self) -> HardwareIter<'_> {
         HardwareIter {
             inner: self,
             index: 0,
@@ -18,11 +18,11 @@ impl<'a> Hardware<'a> {
         }
     }
 
-    pub fn get_name(&mut self) -> Option<String> {
+    pub fn get_name(&self) -> Option<String> {
         let name_ptr = unsafe {
             librehardwaremonitor_sys::get_hardware_name(
                 self.guard.id,
-                self.indices.as_mut_ptr(),
+                self.indices.as_ptr() as _,
                 self.indices.len() as i32,
             )
         };

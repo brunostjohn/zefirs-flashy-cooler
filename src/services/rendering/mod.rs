@@ -1,3 +1,4 @@
+mod config;
 mod r#loop;
 pub mod message;
 mod render_helpers;

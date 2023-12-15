@@ -1,8 +1,8 @@
 use crate::services::{rendering::message::RendererMessage, sensors::SensorMessage};
 use smol_static::ServerMessage;
+use std::{thread, time::Duration};
 use tachyonix::Sender;
 use tauri::{AppHandle, State, Window};
-use std::{thread, time::Duration};
 
 #[tauri::command]
 pub fn exit_handler(
