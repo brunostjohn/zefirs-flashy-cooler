@@ -1,6 +1,7 @@
 <script lang="ts">
+	import { goto } from "$app/navigation";
 	import { page } from "$app/stores";
-	import { TabAnchor, TabGroup } from "@skeletonlabs/skeleton";
+	import { RadioGroup, RadioItem } from "@skeletonlabs/skeleton";
 
 	const goToAbleRoutes = [
 		{
@@ -17,22 +18,23 @@
 		},
 	];
 
-	let tabSet: string = "/";
+	$: tabSet = goToAbleRoutes.find((route) =>
+		route.path === "/" ? $page.url.pathname === "/" : $page.url.pathname.includes(route.path)
+	)?.path;
 </script>
 
-<aside>
-	<TabGroup active="border-b-2 border-primary-700" rounded="rounded-none" border="border-b-0">
+<aside class="flex align-center items-center">
+	<RadioGroup active="variant-filled-primary" hover="hover:variant-soft-primary" class="ml-2">
 		{#each goToAbleRoutes as route}
-			<TabAnchor
+			<RadioItem
 				bind:group={tabSet}
-				href={route.path}
-				class="font-serif transition-all"
+				name="justify"
 				value={route.path}
-				name={route.title}
-				selected={$page.url.pathname.startsWith(route.path)}
+				class="transition-all"
+				on:click={() => goto(route.path)}
 			>
 				{route.title}
-			</TabAnchor>
+			</RadioItem>
 		{/each}
-	</TabGroup>
+	</RadioGroup>
 </aside>

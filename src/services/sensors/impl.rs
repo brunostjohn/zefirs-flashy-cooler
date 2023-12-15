@@ -53,7 +53,7 @@ impl<'a> Sensors<'a> {
             if !self.handle_messages().await {
                 break;
             }
-            println!("Sensors");
+            // println!("Sensors");
         }
     }
 

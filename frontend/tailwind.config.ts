@@ -6,7 +6,7 @@ import { skeleton } from "@skeletonlabs/tw-plugin";
 import { zfcTheme } from "./theme.js";
 
 export default {
-	jit: true,
+	// jit: true,
 	darkMode: "class",
 	content: [
 		"./src/**/*.{html,js,svelte,ts}",

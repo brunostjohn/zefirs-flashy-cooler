@@ -3,6 +3,6 @@
 </script>
 
 <AppHeader />
-<main class="mt-11 p-4">
+<main class="mt-14 p-4">
 	<slot />
 </main>

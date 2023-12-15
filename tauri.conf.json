@@ -30,11 +30,8 @@
     },
     "bundle": {
       "active": true,
-      "category": "DeveloperTool",
-      "copyright": "",
-      "deb": {
-        "depends": []
-      },
+      "category": "Utility",
+      "copyright": "AGPL",
       "externalBin": [],
       "icon": [
         "icons/32x32.png",
@@ -43,22 +40,27 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.tauri.dev",
-      "longDescription": "",
-      "macOS": {
-        "entitlements": null,
-        "exceptionDomain": "",
-        "frameworks": [],
-        "providerShortName": null,
-        "signingIdentity": null
+      "identifier": "com.brunostjohn.zefirsflashycooler",
+      "publisher": "Bruno St John",
+      "longDescription": "Take your cooler to the next level with Zefir's Flashy Cooler and break free of manufacturers' restrictions.",
+      "resources": {
+        "./target/debug/AppCore.dll": "AppCore.dll"
       },
-      "resources": [],
-      "shortDescription": "",
-      "targets": "all",
+      "shortDescription": "Zefirs Flashy Cooler",
+      "targets": ["nsis", "updater"],
       "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
+        "webviewInstallMode": {
+          "type": "embedBootstrapper",
+          "silent": true
+        },
+        "nsis": {
+          "languages": ["English"],
+          "license": "../LICENSE",
+          "installerIcon": "./icons/installer.ico",
+          "sidebarImage": "./icons/installer-sidebar.bmp",
+          "headerImage": "./icons/installer-header.bmp",
+          "installMode": "perMachine"
+        }
       }
     },
     "security": {

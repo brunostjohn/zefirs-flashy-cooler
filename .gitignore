@@ -1,3 +1,9 @@
 /target
 /Cargo.lock
 logs.txt
+/AppCore.dll
+/Ultralight.dll
+/UltralightCore.dll
+/WebCore.dll
+/resources/cacert.pem
+/resources/icudt67l.dat
