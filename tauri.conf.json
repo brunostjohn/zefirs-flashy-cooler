@@ -26,6 +26,24 @@
         "unmaximize": true,
         "unminimize": true,
         "startDragging": true
+      },
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "path": {
+        "all": true
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": [
+          "$DOCUMENT/Zefir's Flashy Cooler/Themes/**/*.jpg",
+          "$EXE/**/*"
+        ]
+      },
+      "fs": {
+        "readFile": true,
+        "readDir": true
       }
     },
     "bundle": {
@@ -43,9 +61,14 @@
       "identifier": "com.brunostjohn.zefirsflashycooler",
       "publisher": "Bruno St John",
       "longDescription": "Take your cooler to the next level with Zefir's Flashy Cooler and break free of manufacturers' restrictions.",
-      "resources": {
-        "./target/debug/AppCore.dll": "AppCore.dll"
-      },
+      "resources": [
+        "./AppCore.dll",
+        "./resources/cacert.pem",
+        "./resources/icudt67l.dat",
+        "./Ultralight.dll",
+        "./UltralightCore.dll",
+        "./WebCore.dll"
+      ],
       "shortDescription": "Zefirs Flashy Cooler",
       "targets": ["nsis", "updater"],
       "windows": {

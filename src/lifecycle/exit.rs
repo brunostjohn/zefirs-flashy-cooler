@@ -2,6 +2,7 @@ use crate::services::{rendering::message::RendererMessage, sensors::SensorMessag
 use smol_static::ServerMessage;
 use tachyonix::Sender;
 use tauri::{AppHandle, State, Window};
+use std::{thread, time::Duration};
 
 #[tauri::command]
 pub fn exit_handler(
@@ -34,6 +35,8 @@ pub fn exit(
     let _ = sender_renderer.try_send(RendererMessage::Shutdown);
     let _ = sender_sensors.try_send(SensorMessage::Shutdown);
     let _ = sender_server.try_send(ServerMessage::Shutdown);
+
+    thread::sleep(Duration::from_millis(100));
 
     app.exit(0);
 }

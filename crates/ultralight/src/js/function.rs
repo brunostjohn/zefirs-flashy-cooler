@@ -2,14 +2,20 @@ use ultralight_sys::JSValueRef;
 
 use crate::value::JSValue;
 
-use super::types::{JSFunction, IsJSValue, JSOpaque};
+use super::types::{IsJSValue, JSFunction, JSOpaque};
 
 impl<'a> JSValue<JSFunction<'a>> {
-    pub fn call<T>(&mut self, arguments: &[JSValue<T>]) -> Result<Option<JSValue<JSOpaque<'_>>>, JSValue<JSOpaque<'_>>>
+    pub fn call<T>(
+        &mut self,
+        arguments: &[JSValue<T>],
+    ) -> Result<Option<JSValue<JSOpaque<'_>>>, JSValue<JSOpaque<'_>>>
     where
         T: IsJSValue,
     {
-        let arguments: Vec<_> = arguments.iter().map(|value| value.internal.get_value()).collect();
+        let arguments: Vec<_> = arguments
+            .iter()
+            .map(|value| value.internal.get_value())
+            .collect();
         let mut exception = 0 as JSValueRef;
 
         let returned = unsafe {

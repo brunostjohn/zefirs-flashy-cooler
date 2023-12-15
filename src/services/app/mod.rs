@@ -37,7 +37,11 @@ pub async fn spawn_app(
             .system_tray(build_tray())
             .on_system_tray_event(tray_event_handler)
             .setup(setup)
-            .invoke_handler(tauri::generate_handler![crate::lifecycle::exit_handler])
+            .invoke_handler(tauri::generate_handler![
+                crate::lifecycle::exit_handler,
+                crate::themes::get_all::get_all_themes_handler,
+                crate::themes::play::play_theme_handler
+            ])
             .any_thread()
             .build(tauri::generate_context!())
             .map(|app| {

@@ -19,7 +19,9 @@
 	];
 
 	$: tabSet = goToAbleRoutes.find((route) =>
-		route.path === "/" ? $page.url.pathname === "/" : $page.url.pathname.includes(route.path)
+		route.path === "/"
+			? $page.url.pathname === "/" || $page.url.pathname.startsWith("/theme")
+			: $page.url.pathname.includes(route.path)
 	)?.path;
 </script>
 

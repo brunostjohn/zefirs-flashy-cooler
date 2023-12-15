@@ -49,6 +49,7 @@
 	"type": "module",
 	"dependencies": {
 		"@floating-ui/dom": "1.5.3",
+		"svelte-markdown": "^0.4.0",
 		"tauri-plugin-context-menu": "^0.6.0",
 		"tauri-plugin-log-api": "github:tauri-apps/tauri-plugin-log#v1",
 		"tauri-plugin-window-state-api": "github:tauri-apps/tauri-plugin-window-state#v1"

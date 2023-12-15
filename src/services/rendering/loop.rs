@@ -6,7 +6,7 @@ use super::{
 use lcd_coolers::{DeviceCreator, DeviceInfo, DisplayCooler};
 use tachyonix::{Receiver, TryRecvError};
 use tokio::time::{self, Duration};
-use ultralight::ULViewBuilder;
+use ultralight::{ULView, ULViewBuilder};
 
 pub async fn main_loop(receiver: Receiver<RendererMessage>) {
     let (renderer, mut device) = setup_rendering().await.expect("Failed to setup rendering!");
@@ -25,7 +25,7 @@ pub async fn main_loop(receiver: Receiver<RendererMessage>) {
 
     loop {
         update_and_render(&renderer);
-        if !handle_messages(&mut receiver).await {
+        if !handle_messages(&mut receiver, &mut view).await {
             break;
         }
 
@@ -39,15 +39,18 @@ pub async fn main_loop(receiver: Receiver<RendererMessage>) {
     let _ = device.close().await;
 }
 
-async fn handle_messages(receiver: &mut Receiver<RendererMessage>) -> bool {
+async fn handle_messages<'a>(
+    receiver: &mut Receiver<RendererMessage>,
+    view: &mut ULView<'a>,
+) -> bool {
     let received = receiver.try_recv();
 
     if let Ok(message) = received {
         match message {
             RendererMessage::Shutdown => {
                 return false;
-            },
-            _ => {}
+            }
+            RendererMessage::ReloadCurrentUrl => view.reload(),
         };
 
         true

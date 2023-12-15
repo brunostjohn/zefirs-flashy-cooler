@@ -4,6 +4,7 @@ use tokio::runtime::Handle;
 
 mod lifecycle;
 mod services;
+mod themes;
 mod utils;
 use crate::services::spawn_services;
 
