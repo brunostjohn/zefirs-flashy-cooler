@@ -9,21 +9,23 @@
 
 	const handleWindowExit = async () => {
 		trace("Exiting app");
+		await invoke("activity_handler", { setTo: "clear" });
 		await invoke("exit_handler");
 	};
 
-	const handleWindowClose = () => {
+	const handleWindowClose = async () => {
+		await invoke("activity_handler", { setTo: "clear" });
 		trace("Closing window");
 		trace("Saving window state");
-		saveWindowState(StateFlags.ALL);
+		await saveWindowState(StateFlags.ALL);
 		trace("Window state saved");
 		trace("Closing window");
-		appWindow.close();
+		await appWindow.close();
 	};
 
-	const handleWindowMinimise = () => {
+	const handleWindowMinimise = async () => {
 		trace("Minimising window");
-		appWindow.minimize();
+		await appWindow.minimize();
 	};
 </script>
 

@@ -1,12 +1,15 @@
-use self::config::AppConfig;
+use self::{config::AppConfig, discord::register::register};
 use crate::utils::themes::paths::get_default_theme_path;
+use std::sync::Arc;
 use tokio::{
+    sync::RwLock,
     task::{JoinHandle, LocalSet},
     time::Duration,
 };
 
 pub mod app;
 pub mod config;
+pub mod discord;
 pub mod rendering;
 pub mod sensors;
 pub mod server;
@@ -29,11 +32,13 @@ pub async fn spawn_services() -> (
     let (sender_renderer, rendering) = rendering::spawn_renderer(&local);
     let (sender_sensors, receiver_sensors, sensors) =
         sensors::spawn_sensors(&local, interval, sender_renderer.clone()).await;
+    let discord = register().ok();
     let app = app::spawn_app(
         sender_renderer,
         sender_sensors,
         receiver_sensors,
         sender_server,
+        Arc::new(RwLock::new(discord)),
     )
     .await;
 

@@ -167,7 +167,10 @@ impl Sensors {
                         })
                         .collect();
 
-                    let mut subscription_notifications: Vec<(&usize, SensorSubscriptionNotification)> = vec![];
+                    let mut subscription_notifications: Vec<(
+                        &usize,
+                        SensorSubscriptionNotification,
+                    )> = vec![];
 
                     for (id, request) in self.subscribed.iter() {
                         let hardware = self

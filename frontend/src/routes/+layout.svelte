@@ -11,8 +11,13 @@
 	initializeStores();
 	const toastStore = getToastStore();
 
+	const handleActivity = async (setTo: string) => {
+		await invoke("activity_handler", { setTo });
+	};
+
 	const handleMount = async () => {
 		const detach = await attachConsole();
+		await handleActivity("browsing_themes");
 		const fetchedThemes = await invoke<Theme[]>("get_all_themes_handler");
 		const documents = await documentDir();
 		const appDir = await join(documents, "Zefir's Flashy Cooler", "Themes");
