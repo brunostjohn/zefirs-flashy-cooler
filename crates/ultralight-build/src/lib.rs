@@ -20,6 +20,19 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
     Ok(())
 }
 
+fn get_headers(header_location: PathBuf) {
+    let dir = {
+        let mut dir = std::env::temp_dir();
+        dir.push("ultralight");
+        dir.push("include");
+
+        dir
+    };
+
+    fs::create_dir_all(&header_location).expect("Failed to create header dir!");
+    copy_dir_all(dir, header_location).expect("Failed to copy headers!");
+}
+
 fn download_resources() {
     let dir = {
         let mut dir = std::env::temp_dir();
@@ -123,6 +136,22 @@ fn validate() -> bool {
 pub fn build() {
     if !validate() {
         download_resources();
+    }
+
+    let target_dir: PathBuf = std::env::var("OUT_DIR")
+        .expect("Failed to get target dir!")
+        .into();
+
+    println!("cargo:rustc-link-search=native={}", target_dir.display());
+    println!("cargo:rustc-link-lib=Ultralight");
+    println!("cargo:rustc-link-lib=WebCore");
+    println!("cargo:rustc-link-lib=AppCore");
+}
+
+pub fn build_with_headers(header_location: PathBuf) {
+    if !validate() {
+        download_resources();
+        get_headers(header_location);
     }
 
     let target_dir: PathBuf = std::env::var("OUT_DIR")
