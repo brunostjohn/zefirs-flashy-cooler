@@ -1,0 +1,7 @@
+[package]
+name = "librehardwaremonitor-sys"
+version = "0.1.0"
+edition = "2021"
+
+[build-dependencies]
+dotnetaot-build ={path="../dotnetaot-build"}

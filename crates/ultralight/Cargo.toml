@@ -1,0 +1,25 @@
+[package]
+name = "ultralight-rs"
+version = "0.1.1"
+edition = "2021"
+rust-version = "1.75.0"
+description = "High-level Rust bindings for Ultralight."
+homepage = "https://github.com/brunostjohn/zefirs-flashy-cooler"
+license = "MIT"
+
+[dependencies]
+bytemuck = { version = "1.14.0", features = ["derive"] }
+libffi = "3.2.0"
+nohash-hasher = "0.2.0"
+thiserror = "1.0.50"
+ultralight-sys = { path = "../ultralight-sys", version = "0.1.1" }
+wgpu = { version = "0.18.0", features = ["spirv"] }
+wgpu-async = "0.18.0"
+
+[dev-dependencies]
+tokio = { version = "1.35.0", features = ["full"] }
+rusty-fork = "0.3.0"
+
+[build-dependencies]
+spirv-compiler = "0.2.0"
+ultralight-build = { path = "../ultralight-build", version = "0.1.3" }

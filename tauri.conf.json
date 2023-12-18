@@ -1,0 +1,111 @@
+{
+  "build": {
+    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "pnpm dev",
+    "devPath": "http://localhost:5173",
+    "distDir": "./frontend/build"
+  },
+  "package": {
+    "productName": "zefirs-flashy-cooler",
+    "version": "0.1.0"
+  },
+  "tauri": {
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    },
+    "allowlist": {
+      "all": false,
+      "window": {
+        "all": false,
+        "close": true,
+        "hide": true,
+        "show": true,
+        "maximize": true,
+        "minimize": true,
+        "unmaximize": true,
+        "unminimize": true,
+        "startDragging": true
+      },
+      "shell": {
+        "all": false,
+        "open": true
+      },
+      "path": {
+        "all": true
+      },
+      "protocol": {
+        "asset": true,
+        "assetScope": [
+          "$DOCUMENT/Zefir's Flashy Cooler/Themes/**/*.jpg",
+          "$EXE/**/*"
+        ]
+      },
+      "fs": {
+        "readFile": true,
+        "readDir": true
+      }
+    },
+    "bundle": {
+      "active": true,
+      "category": "Utility",
+      "copyright": "AGPL",
+      "externalBin": [],
+      "icon": [
+        "icons/32x32.png",
+        "icons/128x128.png",
+        "icons/128x128@2x.png",
+        "icons/icon.icns",
+        "icons/icon.ico"
+      ],
+      "identifier": "com.brunostjohn.zefirsflashycooler",
+      "publisher": "Bruno St John",
+      "longDescription": "Take your cooler to the next level with Zefir's Flashy Cooler and break free of manufacturers' restrictions.",
+      "resources": [
+        "./AppCore.dll",
+        "./resources/cacert.pem",
+        "./resources/icudt67l.dat",
+        "./Ultralight.dll",
+        "./UltralightCore.dll",
+        "./WebCore.dll"
+      ],
+      "shortDescription": "Zefirs Flashy Cooler",
+      "targets": ["nsis", "updater"],
+      "windows": {
+        "webviewInstallMode": {
+          "type": "embedBootstrapper",
+          "silent": true
+        },
+        "nsis": {
+          "languages": ["English"],
+          "license": "../LICENSE",
+          "installerIcon": "./icons/installer.ico",
+          "sidebarImage": "./icons/installer-sidebar.bmp",
+          "headerImage": "./icons/installer-header.bmp",
+          "installMode": "perMachine"
+        }
+      }
+    },
+    "security": {
+      "csp": null
+    },
+    "updater": {
+      "active": false
+    },
+    "windows": [
+      {
+        "fullscreen": false,
+        "height": 800,
+        "label": "main",
+        "minHeight": 800,
+        "resizable": true,
+        "title": "Zefir's Flashy Cooler",
+        "width": 1130,
+        "minWidth": 1130,
+        "transparent": true,
+        "theme": "Dark",
+        "decorations": false
+      }
+    ]
+  }
+}
