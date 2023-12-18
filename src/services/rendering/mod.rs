@@ -1,4 +1,5 @@
 mod config;
+mod dispatch_sensors;
 mod r#loop;
 pub mod message;
 mod render_helpers;

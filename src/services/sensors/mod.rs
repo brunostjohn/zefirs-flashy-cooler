@@ -23,7 +23,7 @@ pub async fn spawn_sensors(
     let (sender_to, receiver_to) = tachyonix::channel(10);
 
     let handle = local.spawn_local(async move {
-        let mut sensors = Sensors::new(interval, receiver_to, sender_from, sender_renderer);
+        let sensors = Sensors::new(interval, receiver_to, sender_from, sender_renderer);
         sensors.run().await;
     });
 

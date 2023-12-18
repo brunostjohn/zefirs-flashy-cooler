@@ -1,26 +1,18 @@
 {
-	"rust-analyzer.linkedProjects": [
-		".\\src-tauri\\Cargo.toml",
-		".\\src-tauri\\src\\macros\\Cargo.toml"
-	],
-	"liveServer.settings.port": 5501,
-	"files.exclude": {
-		"**/.git": true,
-		"**/.svn": true,
-		"**/.hg": true,
-		"**/CVS": true,
-		"**/.DS_Store": true,
-		"**/Thumbs.db": true,
-		"node_modules/": true,
-		"build/": true,
-		".svelte-kit/": true,
-		"src-tauri/*.dll": true,
-		"src-tauri/target": true,
-		"src-tauri/.idea/": true,
-		"src-tauri/static-libs/": true,
-		"LibreHardwareMonitorNative/.vs/": true,
-		"LibreHardwareMonitorNative/bin/": true,
-		"LibreHardwareMonitorNative/obj/": true,
-		"LibreHardwareMonitorNative/LibreHardwareMonitorNative.csproj.user": true
-	}
+  "liveServer.settings.port": 5501,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.svn": true,
+    "**/.hg": true,
+    "**/CVS": true,
+    "**/.DS_Store": true,
+    "**/Thumbs.db": true,
+    "node_modules/": true,
+    "build/": true,
+    ".svelte-kit/": true,
+    "*.dll": true,
+    "target": true,
+    ".idea/": true,
+    "ultralight-deps": true
+  }
 }

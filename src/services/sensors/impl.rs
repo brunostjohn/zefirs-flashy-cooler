@@ -96,11 +96,13 @@ impl Sensors {
             subhardware = Some(hardware.subhardware_iter().nth(*hardware_idx)?);
         }
 
-        let hardware = if subhardware.is_none() {
+        let mut hardware = if subhardware.is_none() {
             hardware
         } else {
             subhardware?
         };
+
+        hardware.update();
 
         let mut sensor = hardware.sensor_iter().nth(sensor_idx)?;
 
@@ -202,11 +204,22 @@ impl Sensors {
                                 hardware_name: hardware.get_name().unwrap_or_default(),
                                 sensor_type: sensor.get_type(),
                                 sensor_value: sensor.get_value().unwrap_or_default(),
+                                code_name: request.name_as.clone(),
                             };
 
                             subscription_notifications.push((id, notification));
                         }
                     }
+
+                    let _ = self
+                        .sender_renderer
+                        .send(RendererMessage::NewSubscribedSensors(
+                            subscription_notifications
+                                .into_iter()
+                                .map(|(_, notification)| notification)
+                                .collect(),
+                        ))
+                        .await;
                 }
                 _ => {}
             }

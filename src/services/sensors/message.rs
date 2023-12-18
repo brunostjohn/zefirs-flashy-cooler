@@ -22,5 +22,6 @@ pub struct SensorsResponse {
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SubscribeRequest {
     pub hardware_indices: Vec<usize>,
+    pub name_as: String,
     pub sensor_idx: usize,
 }

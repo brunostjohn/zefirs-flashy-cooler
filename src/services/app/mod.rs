@@ -55,7 +55,8 @@ pub async fn spawn_app(
                 crate::lifecycle::exit_handler,
                 crate::themes::get_all::get_all_themes_handler,
                 crate::themes::play::play_theme_handler,
-                crate::services::discord::presence::activity_handler
+                crate::services::discord::presence::activity_handler,
+                crate::themes::now_playing::get_now_playing,
             ])
             .any_thread()
             .build(tauri::generate_context!())

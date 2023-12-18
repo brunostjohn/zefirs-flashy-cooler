@@ -1,9 +1,12 @@
 use crate::{
-    services::rendering::message::RendererMessage, utils::themes::paths::get_all_themes_path,
+    services::{config::AppConfig, rendering::message::RendererMessage},
+    utils::themes::paths::get_all_themes_path,
 };
 use smol_static::ServerMessage;
 use tachyonix::Sender;
 use tauri::State;
+
+use super::validate::validate_theme;
 
 #[tauri::command]
 pub async fn play_theme_handler(
@@ -19,7 +22,15 @@ async fn play_theme<S: AsRef<str>>(
     server_sender: &Sender<ServerMessage>,
     renderer_sender: &Sender<RendererMessage>,
 ) -> Result<(), String> {
+    if !validate_theme(fs_name.as_ref()).await {
+        return Err("Invalid theme name!".into());
+    }
     let path = get_all_themes_path().join(fs_name.as_ref());
+    if let Some(path_str) = path.clone().to_str() {
+        let mut config = AppConfig::load();
+        config.theme_path = Some(path_str.to_string());
+        let _ = config.save();
+    }
     server_sender
         .send(ServerMessage::SetBasePath(path))
         .await

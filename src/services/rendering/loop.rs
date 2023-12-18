@@ -2,7 +2,7 @@ use super::{
     config::load_theme_with_config,
     message::{RendererMessage, SensorSubscriptionNotification},
     render_helpers::{render_bitmap_and_send, update_and_render},
-    setup::setup_rendering,
+    setup::setup_rendering, dispatch_sensors::dispatch_sensors,
 };
 use lcd_coolers::{DeviceCreator, DeviceInfo, DisplayCooler};
 use tachyonix::{Receiver, TryRecvError};
@@ -69,8 +69,9 @@ async fn handle_messages<'a>(
                         subscription.sensor_value = value.sensor_value;
                     }
                 }
+
+                dispatch_sensors(view, subscribed_sensors);
             }
-            _ => {}
         };
 
         true
