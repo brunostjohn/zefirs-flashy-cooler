@@ -4,7 +4,17 @@ use std::path::PathBuf;
 fn main() {
     println!("cargo:rerun-if-changed=build.rs");
 
-    ultralight_build::build();
+    let header_location = {
+        let mut dir: PathBuf = std::env::var("CARGO_MANIFEST_DIR")
+            .expect("Failed to get project dir!")
+            .into();
+        dir.push("wrapped");
+        dir.push("ultralight");
+
+        dir
+    };
+
+    ultralight_build::build_with_headers(header_location);
 
     let bindings = bindgen::Builder::default()
         .header("wrapped/wrapper.h")
