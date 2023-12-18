@@ -23,7 +23,11 @@ pub async fn spawn_services() -> (
 ) {
     let config = AppConfig::load();
     let (sender_server, server) = server::spawn_server(
-        config.theme_path.unwrap_or(get_default_theme_path()),
+        config
+            .theme_path
+            .as_ref()
+            .map(|x| x.to_owned())
+            .unwrap_or(get_default_theme_path()),
         config.port,
     )
     .await;

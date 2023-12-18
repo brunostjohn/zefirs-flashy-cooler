@@ -9,6 +9,10 @@
 			path: "/",
 		},
 		{
+			title: "Now Playing",
+			path: "/now-playing",
+		},
+		{
 			title: "Device",
 			path: "/device",
 		},

@@ -4,7 +4,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-const DOWNLOAD_URL: &str = "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
+const DOWNLOAD_URL: &str =
+    "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
 
 fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
