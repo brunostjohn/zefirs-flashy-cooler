@@ -4,7 +4,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/brunostjohn/zefirs-flashy-cooler">
-    <img src="static/images/android-chrome-192x192.png" alt="Logo" width="150" height="150">
+    <img src="icons/128x128.png" alt="Logo" width="150" height="150">
   </a>
 
 <h1 align="center">Zefir's Flashy Cooler</h1>
@@ -85,7 +85,7 @@ Thank you for your ongoing support. [Click here to become my sponsor.](https://g
 
 ## 🌟 About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://zefirsflashycooler.app)
+<!-- [![Product Name Screen Shot][product-screenshot]](https://zefirsflashycooler.app) -->
 
 This project aims to entirely replace iCUE and other pieces of software like it in control of CPU coolers etc. with LCD displays.
 
@@ -94,13 +94,11 @@ This project aims to entirely replace iCUE and other pieces of software like it 
 ### 👾 Built With
 
 ![Rust](https://img.shields.io/badge/Rust-000000?style=for-the-badge&logo=rust&logoColor=white)
-![OpenGL](https://img.shields.io/badge/OpenGL-%23FFFFFF.svg?style=for-the-badge&logo=opengl)
-[![Svelte][Svelte.dev]][Svelte-url]
+![Svelte](https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&logo=svelte&logoColor=FF3E00)
+![TailwindCSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)
 ![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
 ![C](https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
-![SASS](https://img.shields.io/badge/SASS-hotpink.svg?style=for-the-badge&logo=SASS&logoColor=white)
-[![Bootstrap][Bootstrap.com]][Bootstrap-url]
 ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
@@ -114,14 +112,14 @@ To build this project locally, you will need a few dependencies set up.
 ### ‼️ Prerequisites
 
 1. Set up a Rust toolchain using [Rustup](https://rustup.rs/).
-2. Install cargo-make by running `cargo install cargo-make`.
-3. Install Visual Studio Community 2022 with a C# workload.
+2. Install Visual Studio Community 2022 with a C# workload.
+3. Install the .NET AOT runtime package from NuGet.
 4. Install Chocolatey.
 5. Install the following dependencies from Chocolatey:
    - LLVM 15.0.7
    - NASM
    - CMake
-6. Run `cargo make` in `src-tauri`. The project should build normally.
+6. Run `cargo tauri dev`.
 
 In case of issues, follow the error messages until everything works. For support, try messaging me through [our discord server](https://discord.gg/KXmnwA6zWK).
 
