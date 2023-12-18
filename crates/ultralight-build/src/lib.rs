@@ -1,10 +1,10 @@
 use std::{
-    fs, io,
+    fs,
+    io::{self, Cursor},
     path::{Path, PathBuf},
 };
 
-const WINDOWS_DL: &str =
-    "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
+const DOWNLOAD_URL: &str = "https://ultralight-sdk.sfo2.cdn.digitaloceanspaces.com/ultralight-sdk-latest-win-x64.7z";
 
 fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> {
     fs::create_dir_all(&dst)?;
@@ -22,11 +22,34 @@ fn copy_dir_all(src: impl AsRef<Path>, dst: impl AsRef<Path>) -> io::Result<()> 
 
 fn get_headers(header_location: PathBuf) {
     let dir = {
-        let mut dir = std::env::temp_dir();
-        dir.push("ultralight");
-        dir.push("include");
+        if std::env::var("DOCS_RS").is_ok() {
+            let mut dir: PathBuf = std::env::var("CARGO_MANIFEST_DIR")
+                .expect("Failed to get project dir!")
+                .into();
+            dir.push("ultralight-deps");
+            dir.push("include");
 
-        dir
+            std::fs::create_dir_all(&dir).expect("Failed to create Ultralight deps dir!");
+
+            dir
+        } else {
+            let mut dir: PathBuf = std::env::temp_dir();
+            dir.push("ultralight-deps");
+            std::fs::create_dir_all(&dir).expect("Failed to create Ultralight deps dir!");
+
+            let bytes = reqwest::blocking::get(DOWNLOAD_URL)
+                .expect("Failed to download Ultralight resources!")
+                .bytes()
+                .expect("Failed to get Ultralight bytes!")
+                .to_vec();
+
+            sevenz_rust::decompress(Cursor::new(bytes), &dir)
+                .expect("Failed to decompress UL resources!");
+
+            dir.push("include");
+
+            dir
+        }
     };
 
     fs::create_dir_all(&header_location).expect("Failed to create header dir!");
@@ -35,22 +58,32 @@ fn get_headers(header_location: PathBuf) {
 
 fn download_resources() {
     let dir = {
-        let mut dir = std::env::temp_dir();
-        dir.push("ultralight");
+        if std::env::var("DOCS_RS").is_ok() {
+            let mut dir: PathBuf = std::env::var("CARGO_MANIFEST_DIR")
+                .expect("Failed to get project dir!")
+                .into();
+            dir.push("ultralight-deps");
 
-        std::fs::create_dir_all(&dir).expect("Failed to create Ultralight temp dir!");
+            std::fs::create_dir_all(&dir).expect("Failed to create Ultralight deps dir!");
 
-        dir
+            dir
+        } else {
+            let mut dir: PathBuf = std::env::temp_dir();
+            dir.push("ultralight-deps");
+            std::fs::create_dir_all(&dir).expect("Failed to create Ultralight deps dir!");
+
+            let bytes = reqwest::blocking::get(DOWNLOAD_URL)
+                .expect("Failed to download Ultralight resources!")
+                .bytes()
+                .expect("Failed to get Ultralight bytes!")
+                .to_vec();
+
+            sevenz_rust::decompress(Cursor::new(bytes), &dir)
+                .expect("Failed to decompress UL resources!");
+
+            dir
+        }
     };
-
-    let bundle = reqwest::blocking::get(WINDOWS_DL)
-        .expect("Failed to download Ultralight bundle!")
-        .bytes()
-        .expect("Failed to get Ultralight bytes!")
-        .to_vec();
-    let cursor = std::io::Cursor::new(bundle);
-
-    sevenz_rust::decompress(cursor, &dir).expect("Failed to decompress Ultralight bundle!");
 
     let lib_dir = dir.join("lib");
     let target_dir: PathBuf = std::env::var("OUT_DIR")
@@ -58,29 +91,33 @@ fn download_resources() {
         .into();
     copy_dir_all(lib_dir, target_dir).expect("Failed to copy ultralight libs!");
 
-    let bin_dir = dir.join("bin");
-    let mut target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-    target_dir.pop();
-    target_dir.pop();
-    target_dir.pop();
-    copy_dir_all(bin_dir, target_dir).expect("Failed to copy ultralight bins!");
+    if std::env::var("DOCS_RS").is_err() {
+        let bin_dir = dir.join("bin");
+        let mut target_dir: PathBuf = std::env::var("OUT_DIR")
+            .expect("Failed to get target dir!")
+            .into();
+        target_dir.pop();
+        target_dir.pop();
+        target_dir.pop();
+        copy_dir_all(bin_dir, target_dir).expect("Failed to copy ultralight bins!");
 
-    let resources_dir = dir.join("resources");
-    let mut target_dir: PathBuf = std::env::var("OUT_DIR")
-        .expect("Failed to get target dir!")
-        .into();
-    target_dir.pop();
-    target_dir.pop();
-    target_dir.pop();
-    let target_dir = target_dir.join("resources");
-    if target_dir.exists() {
-        std::fs::remove_dir_all(&target_dir).expect("Failed to remove old Ultralight resources!");
-    } else {
-        std::fs::create_dir_all(&target_dir).expect("Failed to create Ultralight resources dir!");
+        let resources_dir = dir.join("resources");
+        let mut target_dir: PathBuf = std::env::var("OUT_DIR")
+            .expect("Failed to get target dir!")
+            .into();
+        target_dir.pop();
+        target_dir.pop();
+        target_dir.pop();
+        let target_dir = target_dir.join("resources");
+        if target_dir.exists() {
+            std::fs::remove_dir_all(&target_dir)
+                .expect("Failed to remove old Ultralight resources!");
+        } else {
+            std::fs::create_dir_all(&target_dir)
+                .expect("Failed to create Ultralight resources dir!");
+        }
+        copy_dir_all(resources_dir, target_dir).expect("Failed to copy Ultralight resources!");
     }
-    copy_dir_all(resources_dir, target_dir).expect("Failed to copy Ultralight resources!");
 }
 
 fn validate() -> bool {

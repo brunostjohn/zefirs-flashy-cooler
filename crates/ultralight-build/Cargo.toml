@@ -1,10 +1,11 @@
 [package]
 name = "ultralight-build"
-version = "0.1.1"
+version = "0.1.4"
 edition = "2021"
 license = "MIT"
 description = "A build tool helper for Ultralight crates."
 homepage = "https://github.com/brunostjohn/zefirs-flashy-cooler"
+include = ["/ultralight-deps/lib", "/ultralight-deps/include", "/src"]
 
 
 [dependencies]

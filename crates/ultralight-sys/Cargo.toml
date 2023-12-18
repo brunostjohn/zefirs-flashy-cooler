@@ -1,15 +1,16 @@
 [package]
 name = "ultralight-sys"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT"
 description = "C-level bindings for the Ultralight rendering engine."
 homepage = "https://github.com/brunostjohn/zefirs-flashy-cooler"
+include = ["/ultralight-deps/lib", "/ultralight-deps/include", "/src", "/wrapped", "/build.rs"]
 
 [build-dependencies]
 bindgen = "0.69.1"
 reqwest = { version = "0.11.22", features = ["blocking"] }
 sevenz-rust = "0.5.3"
-ultralight-build = { path = "../ultralight-build", version = "0.1.1" }
+ultralight-build = { path = "../ultralight-build", version = "0.1.4" }
 
 [dependencies]
