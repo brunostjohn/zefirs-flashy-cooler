@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 license = "MIT"
 description = "C-level bindings for the Ultralight rendering engine."
+homepage = "https://github.com/brunostjohn/zefirs-flashy-cooler"
 
 [build-dependencies]
 bindgen = "0.69.1"
