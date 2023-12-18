@@ -5,6 +5,7 @@ edition = "2021"
 rust-version = "1.75.0"
 description = "High-level Rust bindings for Ultralight."
 homepage = "https://github.com/brunostjohn/zefirs-flashy-cooler"
+license = "MIT"
 
 [dependencies]
 bytemuck = { version = "1.14.0", features = ["derive"] }
