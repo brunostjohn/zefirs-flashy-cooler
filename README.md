@@ -49,6 +49,10 @@
   </p>
 </div>
 
+## Current project status
+
+I am currently in a very busy period in life so work on this project has significantly slowed down. I'm still here and it's all still happening, it's just going to take much longer until this new version is usable. It's getting there. **Contributions are both welcome and needed.** It's hard to estimate how long it'll take to get this new version off the ground, but it will come. Thanks for waiting. Issues will all be dealt with in due course, I understand that the current JS implementation of this is kind of crap. This new version will be much more robust and much cooler, and most importantly, much more powerful. Cheers.
+
 ## 💖 Sponsors
 
 Thank you for your ongoing support. [Click here to become my sponsor.](https://github.com/sponsors/brunostjohn)
