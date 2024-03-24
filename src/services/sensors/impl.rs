@@ -40,6 +40,7 @@ impl Sensors {
             is_controller_enabled: true,
             is_battery_enabled: true,
         });
+
         Self {
             last_id: 0,
             computer,
@@ -132,6 +133,7 @@ impl Sensors {
                                 hardware_indices: vec![hardware_idx],
                                 sensor_type: sensor.get_type(),
                                 sensor_idx,
+                                sensor_persist_id: sensor.get_id().unwrap_or_default(),
                             };
 
                             sensors.push(response);
@@ -148,6 +150,7 @@ impl Sensors {
                                     hardware_indices: vec![hardware_idx, subhardware_idx],
                                     sensor_type: sensor.get_type(),
                                     sensor_idx: subsensor_idx,
+                                    sensor_persist_id: sensor.get_id().unwrap_or_default(),
                                 };
 
                                 sensors.push(response);
@@ -220,6 +223,68 @@ impl Sensors {
                                 .collect(),
                         ))
                         .await;
+                }
+                SensorMessage::FindAndSubscribeByIdWithCodeName(ids_and_code_names) => {
+                    let mut subscription_notifications = vec![];
+
+                    for (code_name, id) in ids_and_code_names {
+                        // match by string ids on a per-sensor basis and then build internal ids
+                        for (hw_index, hardware) in self.computer.iter().enumerate() {
+                            for (sen_index, mut sensor) in hardware.sensor_iter().enumerate() {
+                                if sensor.get_id().unwrap_or_default() == id {
+                                    let request = SubscribeRequest {
+                                        hardware_indices: vec![hw_index],
+                                        name_as: code_name.clone(),
+                                        sensor_idx: sen_index,
+                                    };
+
+                                    self.last_id += 1;
+                                    let id = self.last_id;
+
+                                    self.subscribed.push((id, request.clone()));
+
+                                    let notification = SensorSubscriptionNotification {
+                                        sensor_id: id,
+                                        sensor_name: sensor.get_name().unwrap_or_default(),
+                                        hardware_name: hardware.get_name().unwrap_or_default(),
+                                        sensor_type: sensor.get_type(),
+                                        sensor_value: sensor.get_value().unwrap_or_default(),
+                                        code_name: request.name_as.clone(),
+                                    };
+
+                                    subscription_notifications.push(notification);
+                                }
+                            }
+
+                            for (sub_idx, subhawrdware) in hardware.subhardware_iter().enumerate() {
+                                for (subsen_idx, mut sensor) in subhawrdware.sensor_iter().enumerate() {
+                                    if sensor.get_id().unwrap_or_default() == id {
+                                        let request = SubscribeRequest {
+                                            hardware_indices: vec![hw_index, sub_idx],
+                                            name_as: code_name.clone(),
+                                            sensor_idx: subsen_idx,
+                                        };
+
+                                        self.last_id += 1;
+                                        let id = self.last_id;
+
+                                        self.subscribed.push((id, request.clone()));
+
+                                        let notification = SensorSubscriptionNotification {
+                                            sensor_id: id,
+                                            sensor_name: sensor.get_name().unwrap_or_default(),
+                                            hardware_name: hardware.get_name().unwrap_or_default(),
+                                            sensor_type: sensor.get_type(),
+                                            sensor_value: sensor.get_value().unwrap_or_default(),
+                                            code_name: request.name_as.clone(),
+                                        };
+
+                                        subscription_notifications.push(notification);
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 _ => {}
             }

@@ -111,4 +111,23 @@ impl<'a> Sensor<'a> {
     pub fn get_parent(&mut self) -> Hardware<'a> {
         Hardware::new(self.computer_guard, self.hardware_guard.indices.clone())
     }
+
+    pub fn get_id(&mut self) -> Option<String> {
+        let id_ptr = unsafe {
+            librehardwaremonitor_sys::get_sensor_id(
+                self.computer_guard.id,
+                self.hardware_guard.indices.as_ptr() as _,
+                self.hardware_guard.indices.len() as i32,
+                self.index,
+            )
+        };
+        if id_ptr.is_null() {
+            None
+        } else {
+            let id_cstr = unsafe { std::ffi::CStr::from_ptr(id_ptr as _) };
+            let id = id_cstr.to_str().ok()?.to_owned();
+
+            Some(id)
+        }
+    }
 }

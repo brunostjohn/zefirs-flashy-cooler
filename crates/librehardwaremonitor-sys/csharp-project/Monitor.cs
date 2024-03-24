@@ -98,6 +98,25 @@ namespace LibreHardwareMonitorNative
             return sensor.SensorType;
         }
 
+        [UnmanagedCallersOnly(EntryPoint = "get_sensor_id")]
+        public static IntPtr GetSensorId(int computerId, IntPtr indicesArrPtr, int indicesLen, int sensorIndex)
+        {
+            var sensor = find_sensor_by_indices(computerId, indicesArrPtr, indicesLen, sensorIndex);
+            string id = sensor.Identifier.ToString();
+            byte[] bytes = Encoding.UTF8.GetBytes(id);
+            IntPtr ptr = Marshal.AllocHGlobal(bytes.Length + 1);
+            Marshal.Copy(bytes, 0, ptr, bytes.Length);
+            Marshal.WriteByte(ptr, bytes.Length, 0);
+            return ptr;
+        }
+
+        [UnmanagedCallersOnly(EntryPoint = "get_sensor_id_len")]
+        public static int GetSensorIdLen(int computerId, IntPtr indicesArrPtr, int indicesLen, int sensorIndex)
+        {
+            var sensor = find_sensor_by_indices(computerId, indicesArrPtr, indicesLen, sensorIndex);
+            return sensor.Identifier.ToString().Length;
+        }
+
         [UnmanagedCallersOnly(EntryPoint = "set_sensor_name")]
         public static int SetSensorName(int computerId, IntPtr indicesArrPtr, int indicesLen, int sensorIndex, IntPtr namePtr)
         {

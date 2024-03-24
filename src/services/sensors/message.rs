@@ -7,6 +7,7 @@ pub enum SensorMessage {
     RequestAllSensors,
     AllSensorsResponse(Vec<SensorsResponse>),
     SubscribeRequestList(Vec<SubscribeRequest>),
+    FindAndSubscribeByIdWithCodeName(Vec<(String, String)>),
     Shutdown,
 }
 
@@ -17,6 +18,7 @@ pub struct SensorsResponse {
     pub hardware_indices: Vec<usize>,
     pub sensor_type: SensorType,
     pub sensor_idx: usize,
+    pub sensor_persist_id: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]

@@ -1,6 +1,6 @@
 use std::ffi::CStr;
 
-use crate::{ComputerHardwareIter, ComputerParams};
+use crate::{ComputerHardwareIter, ComputerParams, Hardware, Sensor};
 
 pub struct Computer {
     pub(crate) id: i32,

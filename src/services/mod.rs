@@ -33,9 +33,10 @@ pub async fn spawn_services() -> (
     .await;
     let local = LocalSet::new();
     let interval = Duration::from_millis(config.sensor_poll_rate_ms);
-    let (sender_renderer, rendering) = rendering::spawn_renderer(&local);
+    let (sender_renderer, receiver_renderer) = tachyonix::channel(10);
     let (sender_sensors, receiver_sensors, sensors) =
         sensors::spawn_sensors(&local, interval, sender_renderer.clone()).await;
+    let rendering = rendering::spawn_renderer(&local, sender_sensors.clone(), receiver_renderer);
     let discord = register().ok();
     let app = app::spawn_app(
         sender_renderer,

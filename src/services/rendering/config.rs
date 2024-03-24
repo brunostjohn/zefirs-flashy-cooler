@@ -1,11 +1,20 @@
-use crate::utils::themes::{config::ThemeConfigItem, paths::get_all_themes_path};
+use crate::{
+    services::sensors::SensorMessage,
+    utils::themes::{config::ThemeConfigItem, paths::get_all_themes_path},
+};
 use anyhow::Context;
+use tachyonix::Sender;
 use tokio::fs;
 use ultralight::ULView;
 
-pub async fn load_theme_with_config(view: &mut ULView<'_>, fs_name: &str) -> anyhow::Result<()> {
+pub async fn load_theme_with_config(
+    view: &mut ULView<'_>,
+    fs_name: &str,
+    sensor_sender: &Sender<SensorMessage>,
+) -> anyhow::Result<()> {
     view.reload();
 
+    // load non-sensor values
     let theme_config_path = get_all_themes_path().join(fs_name).join("config.json");
     let theme_config_unparsed = fs::read_to_string(theme_config_path)
         .await
@@ -35,5 +44,23 @@ pub async fn load_theme_with_config(view: &mut ULView<'_>, fs_name: &str) -> any
 
     view.evaluate_script(script);
 
+    // load sensor values
+    let sensor_values = theme_config
+        .iter()
+        .filter(|item| item.r#type == "sensor" && item.path.is_some())
+        .map(
+            |ThemeConfigItem {
+                 value, name, path, ..
+             }| (value, name, path.as_ref().unwrap()),
+        )
+        .collect::<Vec<_>>();
+
     Ok(())
+}
+
+async fn subscribe_to_sensors(
+    values: &Vec<(&String, &String, &String)>,
+    sensor_sender: &Sender<SensorMessage>,
+) {
+    //
 }

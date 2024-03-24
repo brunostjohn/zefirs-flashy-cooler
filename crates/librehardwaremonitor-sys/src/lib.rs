@@ -147,6 +147,17 @@ extern "C" {
         indices_arr_len: i32,
         sensor_index: i32,
     );
+    pub fn get_sensor_id(
+        computer_id: i32,
+        indices_arr_ptr: *mut i32,
+        indices_arr_len: i32,
+        sensor_index: i32,
+    ) -> *mut i32;
+    pub fn get_sensor_id_len(
+        computer_id: i32,
+        indices_arr_ptr: *mut i32,
+        indices_arr_len: i32,
+    ) -> i32;
 }
 
 #[cfg(test)]

@@ -1,15 +1,17 @@
 use super::{
     config::load_theme_with_config,
+    dispatch_sensors::dispatch_sensors,
     message::{RendererMessage, SensorSubscriptionNotification},
     render_helpers::{render_bitmap_and_send, update_and_render},
-    setup::setup_rendering, dispatch_sensors::dispatch_sensors,
+    setup::setup_rendering,
 };
+use crate::services::sensors::SensorMessage;
 use lcd_coolers::{DeviceCreator, DeviceInfo, DisplayCooler};
-use tachyonix::{Receiver, TryRecvError};
+use tachyonix::{Receiver, Sender, TryRecvError};
 use tokio::time::{self, Duration};
 use ultralight::{ULView, ULViewBuilder};
 
-pub async fn main_loop(receiver: Receiver<RendererMessage>) {
+pub async fn main_loop(receiver: Receiver<RendererMessage>, sensor_sender: Sender<SensorMessage>) {
     let (renderer, mut device) = setup_rendering().await.expect("Failed to setup rendering!");
     let mut receiver = receiver;
     let DeviceInfo { width, height, .. } = device.device_info().await;
@@ -28,7 +30,14 @@ pub async fn main_loop(receiver: Receiver<RendererMessage>) {
 
     loop {
         update_and_render(&renderer);
-        if !handle_messages(&mut receiver, &mut view, &mut subscribed_sensors).await {
+        if !handle_messages(
+            &mut receiver,
+            &mut view,
+            &mut subscribed_sensors,
+            &sensor_sender,
+        )
+        .await
+        {
             break;
         }
 
@@ -46,6 +55,7 @@ async fn handle_messages<'a>(
     receiver: &mut Receiver<RendererMessage>,
     view: &mut ULView<'a>,
     subscribed_sensors: &mut Vec<SensorSubscriptionNotification>,
+    sensor_sender: &Sender<SensorMessage>,
 ) -> bool {
     let received = receiver.try_recv();
 
@@ -55,7 +65,7 @@ async fn handle_messages<'a>(
                 return false;
             }
             RendererMessage::ReloadCurrentUrl(fs_name) => {
-                let _ = load_theme_with_config(view, &fs_name).await;
+                let _ = load_theme_with_config(view, &fs_name, sensor_sender).await;
             }
             RendererMessage::NewSubscribedSensors(sensors) => {
                 *subscribed_sensors = sensors;
