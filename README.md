@@ -57,7 +57,7 @@ I am currently in a very busy period in life so work on this project has signifi
 
 Thank you for your ongoing support. [Click here to become my sponsor.](https://github.com/sponsors/brunostjohn)
 
-<!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><a href="https://github.com/Pseudo-Nym"><img src="https://github.com/Pseudo-Nym.png" width="60px" alt="Serene Scream" /></a><!-- sponsors -->
+<!-- sponsors --><a href="https://github.com/MoocowJay"><img src="https://github.com/MoocowJay.png" width="60px" alt="Jason Chandler" /></a><!-- sponsors -->
 
 <!-- TABLE OF CONTENTS -->
 
